@@ -1,0 +1,36 @@
+{
+  "name": "birdmaid-front",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ci": "vitest run",
+    "coverage": "vitest run --coverage",
+    "coverage:fp1": "vitest run __tests__/fp1 --coverage --reporter=default",
+    "test:fp2": "vitest run __tests__/fp2 --reporter=default",
+    "coverage:fp2": "vitest run __tests__/fp2 --coverage --reporter=default",
+    "preview": "vite preview --host 0.0.0.0 --port 5173"
+  },
+  "dependencies": {
+    "@mui/material": "^5.15.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.1.0",
+    "@testing-library/react": "^14.1.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "@vitest/coverage-v8": "^1.6.1",
+    "jsdom": "^24.0.0",
+    "typescript": "^5.4.0",
+    "vite": "^5.1.0",
+    "vitest": "^1.3.0"
+  }
+}
