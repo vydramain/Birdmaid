@@ -1,0 +1,114 @@
+fp:
+  - id: FP1
+    name: Browse & Play + Admin Authoring
+    scope:
+      - Public catalog -> game page -> play web build in-browser.
+      - Admin authoring: team -> game -> upload -> preview -> publish -> tags -> status/remark.
+      - Minimal filtering/sorting by tags.
+      - Admin-only CRUD for Teams/Games/Builds.
+      - Game status transitions: editing/published/archived.
+
+    status: implement
+    timebox: 2-6 hours (until demo)
+
+    wip_limits:
+      max_parallel_cta: 2
+      max_open_questions: 3
+
+    exit_criteria:
+      architecture_ready:
+        - ADRs for front stack, back stack, repo layout, local dev deps recorded in docs/QNA_DECISIONS.md
+        - RUNBOOK contains install/run/test commands for selected stack
+        - Repo scaffolding created (front/ and back/) OR documented reason to use a different layout
+        - docs/TESTS.md Planned Test Files aligned to actual repo paths
+        - ack.architecture filled (by/at/scope)
+      tests_red_spec_ready:
+        - docs/TESTS.md has UAT/BDD + Acceptance + RTM + Planned Test Files for FP1
+        - ack.tests_red_spec filled (by/at/scope)
+
+    risks:
+      - Embed policies may reduce compatibility for some games.
+      - Admin-only scope may expand UI work.
+      - Stack decisions may affect test layout and deployment simplicity.
+
+    dependencies:
+      - docs/REQUIREMENTS.md
+      - docs/UX_MAP.md
+      - docs/QNA_DECISIONS.md
+      - docs/TESTS.md
+      - README.md (Runbook section)
+
+    blockers:
+      - None (tests-red CODE in progress).
+
+    repo_state:
+      front:
+        exists: true
+        package_scripts: [dev, build, test, test:watch, test:ci, coverage]
+        coverage_configured: false
+      back:
+        exists: true
+        package_scripts: [start, start:dev, build, test, test:ci, coverage]
+        coverage_configured: false
+      root_package_json: false
+      docker_compose_present: true
+
+    decisions_links:
+      adrs:
+        - "docs/QNA_DECISIONS.md#ADRs"
+      ux_map:
+        - "docs/UX_MAP.md#FP1-Browse--Play"
+      tests:
+        - "docs/TESTS.md#FP1-Browse--Play--Admin-Authoring"
+
+    artifacts_paths:
+      root_pattern: "artifacts/${FP_ID}/${YYYY}-${MM}-${DD}/"
+      required:
+        - "logs/back-tests.log"
+        - "logs/front-tests.log"
+        - "coverage/coverage-back.json"
+        - "coverage/coverage-front.json"
+        - "evidence/demo-notes.txt"
+        - "evidence/links.md"
+      evidence:
+        - "evidence/stitch/game_catalog_page/code.html"
+        - "evidence/stitch/game_catalog_page/screen.png"
+        - "evidence/stitch/game_detalies_page/code.html"
+        - "evidence/stitch/game_detalies_page/screen.png"
+        - "evidence/stitch/game_editor_page/code.html"
+        - "evidence/stitch/game_editor_page/screen.png"
+        - "evidence/stitch/teams_page/code.html"
+        - "evidence/stitch/teams_page/screen.png"
+
+    reflection:
+      - what_went_well: Implemented minimal front/back MVP flow (admin authoring + upload + publish) and added docker-compose with MongoDB + MinIO.
+      - risks: Coverage is not verified; Docker flow is dev-oriented and needs validation.
+      - next_focus: Run coverage scripts and capture artifacts, then proceed to tests-green.
+      - skills: implementation-approach + coding-rules guided minimal changes; testing used to align with RTM.
+
+    ack:
+      discovery:
+        by: vydra
+        at: 2026-01-08
+        scope: FP1 discovery
+      design_first:
+        by: vydra
+        at: 2026-01-08T12:00:00Z
+        scope: FP1 design-first
+      architecture:
+        by: vydra
+        at: 2026-01-08
+        scope: FP1 architecture
+      tests_red_spec:
+        by: vydra
+        at: 2026-01-08
+        scope: FP1 tests-red spec
+      gate:
+        by: TBD
+        at: TBD
+        scope: FP1 gate
+
+    ack_format: "Fill ack.<stage>.by/at/scope after each stage; required for discovery, plan, design-first, architecture, tests-red spec, gate."
+
+    tests_phase: code
+    gate_decision: TBD
