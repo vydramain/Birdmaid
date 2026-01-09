@@ -14,7 +14,8 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { lookup as lookupMime } from "mime-types";
 import { MongoClient, type Filter } from "mongodb";
 import { randomUUID } from "crypto";
@@ -121,6 +122,16 @@ export class AppController {
     },
     forcePathStyle: true,
   });
+  // Separate S3Client for signed URLs with public endpoint (for browser access)
+  private s3PublicClient = new S3Client({
+    region: "us-east-1",
+    endpoint: process.env.S3_PUBLIC_URL ?? "http://localhost:9000",
+    credentials: {
+      accessKeyId: process.env.S3_ACCESS_KEY ?? "minioadmin",
+      secretAccessKey: process.env.S3_SECRET_KEY ?? "minioadmin",
+    },
+    forcePathStyle: true,
+  });
   private s3Bucket = process.env.S3_BUCKET ?? "birdmaid-builds";
   private s3PublicUrl = process.env.S3_PUBLIC_URL ?? "http://localhost:9000";
 
@@ -136,11 +147,8 @@ export class AppController {
   }
 
   private assertAdmin(headers?: Record<string, string | string[] | undefined>) {
-    const expected = process.env.ADMIN_TOKEN ?? "admin-token";
-    const provided = this.getAdminToken(headers);
-    if (!provided || provided !== expected) {
-      throw new ForbiddenException("Forbidden");
-    }
+    // Auth disabled: all users are superadmins
+    return;
   }
 
   private async getMaxBuildSizeBytes() {
@@ -169,12 +177,18 @@ export class AppController {
   }
 
   @Get("/games")
-  async listGames(@Query("tag") tag?: string) {
+  async listGames(@Query("tag") tag?: string, @Query("sort") sort?: string) {
     if (this.useMemory) {
-      const published = this.memoryGames.filter((game) => game.status === "published");
+      let published = this.memoryGames.filter((game) => game.status === "published");
       const filtered = tag
         ? published.filter((game) => game.tags_user.includes(tag) || game.tags_system.includes(tag))
         : published;
+      // Apply sorting
+      if (sort === "title_asc") {
+        filtered.sort((a, b) => a.title.localeCompare(b.title));
+      } else if (sort === "title_desc") {
+        filtered.sort((a, b) => b.title.localeCompare(a.title));
+      }
       return filtered.map((game) => ({
         id: game.id,
         title: game.title,
@@ -190,7 +204,14 @@ export class AppController {
     if (tag) {
       query.$or = [{ tags_user: tag }, { tags_system: tag }];
     }
-    const results = await games.find(query).toArray();
+    let cursor = games.find(query);
+    // Apply sorting
+    if (sort === "title_asc") {
+      cursor = cursor.sort({ title: 1 });
+    } else if (sort === "title_desc") {
+      cursor = cursor.sort({ title: -1 });
+    }
+    const results = await cursor.toArray();
     return results.map((game) => ({
       id: game._id,
       title: game.title,
@@ -199,6 +220,72 @@ export class AppController {
       tags_system: game.tags_system ?? [],
       status: game.status,
     }));
+  }
+
+  @Get("/tags")
+  async listTags() {
+    if (this.useMemory) {
+      const published = this.memoryGames.filter((game) => game.status === "published");
+      const allTags = new Set<string>();
+      published.forEach((game) => {
+        game.tags_user.forEach((tag) => allTags.add(tag));
+        game.tags_system.forEach((tag) => allTags.add(tag));
+      });
+      return Array.from(allTags).sort();
+    }
+    const db = await this.getDb();
+    const games = db.collection<GameDoc>("games");
+    const published = await games.find({ status: "published" }).toArray();
+    const allTags = new Set<string>();
+    published.forEach((game) => {
+      (game.tags_user ?? []).forEach((tag) => allTags.add(tag));
+      (game.tags_system ?? []).forEach((tag) => allTags.add(tag));
+    });
+    return Array.from(allTags).sort();
+  }
+
+  private async getSignedBuildUrl(buildId: string | null, s3Key: string | null): Promise<string | null> {
+    if (!buildId || !s3Key) {
+      return null;
+    }
+    try {
+      const key = `${s3Key}index.html`;
+      const command = new GetObjectCommand({
+        Bucket: this.s3Bucket,
+        Key: key,
+      });
+      // Use public client to generate signed URL with correct host from the start
+      // This ensures the signature is valid for the public URL
+      const signedUrl = await getSignedUrl(this.s3PublicClient, command, { expiresIn: 3600 }); // 1 hour
+      
+      // Parse and verify URL structure
+      // With forcePathStyle: true, MinIO creates: http://host/bucket/key?signature
+      const urlObj = new URL(signedUrl);
+      let pathParts = urlObj.pathname.split('/').filter(Boolean);
+      
+      // Check for duplicate bucket name at the start
+      // Expected: [bucket, builds, buildId, index.html]
+      // Wrong: [bucket, bucket, builds, buildId, index.html]
+      if (pathParts.length >= 2 && pathParts[0] === this.s3Bucket && pathParts[1] === this.s3Bucket) {
+        pathParts = pathParts.slice(1); // Remove first duplicate bucket
+        urlObj.pathname = '/' + pathParts.join('/');
+        return urlObj.toString();
+      }
+      
+      // Verify path structure is correct
+      // Should start with bucket name
+      if (pathParts.length > 0 && pathParts[0] !== this.s3Bucket) {
+        // If bucket is missing, add it
+        pathParts.unshift(this.s3Bucket);
+        urlObj.pathname = '/' + pathParts.join('/');
+        return urlObj.toString();
+      }
+      
+      return signedUrl;
+    } catch (error) {
+      // Fallback to public URL if presigning fails (unsigned, but should work if bucket is public)
+      return `${this.s3PublicUrl}/${this.s3Bucket}/${s3Key}index.html`;
+    }
   }
 
   @Get("/games/:id")
@@ -228,12 +315,20 @@ export class AppController {
     }
     const db = await this.getDb();
     const games = db.collection<GameDoc>("games");
+    const builds = db.collection<BuildDoc>("builds");
     const game = await games.findOne({ _id: id });
     if (!game) {
       throw new NotFoundException("Game not found");
     }
     if (game.status !== "published" && !isAdmin) {
       throw new NotFoundException("Game not available");
+    }
+    let signedBuildUrl: string | null = null;
+    if (game.currentBuildId) {
+      const build = await builds.findOne({ _id: game.currentBuildId });
+      if (build) {
+        signedBuildUrl = await this.getSignedBuildUrl(game.currentBuildId, build.s3_key);
+      }
     }
     return {
       id: game._id,
@@ -244,10 +339,22 @@ export class AppController {
       status: game.status,
       tags_user: game.tags_user ?? [],
       tags_system: game.tags_system ?? [],
-      build_url: game.build_url ?? null,
+      build_url: signedBuildUrl ?? game.build_url ?? null,
       build_id: game.currentBuildId ?? null,
       csp: AppController.cspPolicy,
     };
+  }
+
+  @Get("/admin/teams")
+  async listTeams(@Headers() headers?: Record<string, string>) {
+    this.assertAdmin(headers);
+    if (this.useMemory) {
+      return this.memoryTeams.map((team) => ({ id: team.id, name: team.name }));
+    }
+    const db = await this.getDb();
+    const teams = db.collection<TeamDoc>("teams");
+    const results = await teams.find({}).toArray();
+    return results.map((team) => ({ id: team._id, name: team.name }));
   }
 
   @Post("/admin/teams")
@@ -263,6 +370,89 @@ export class AppController {
     const team: TeamDoc = { _id: randomUUID(), name: body.name, members: [] };
     await teams.insertOne(team);
     return team;
+  }
+
+  @Patch("/admin/teams/:id")
+  async updateTeam(
+    @Param("id") id: string,
+    @Body() body: { name?: string },
+    @Headers() headers?: Record<string, string>
+  ) {
+    this.assertAdmin(headers);
+    if (this.useMemory) {
+      const team = this.memoryTeams.find((item) => item.id === id);
+      if (!team) {
+        throw new NotFoundException("Team not found");
+      }
+      if (body.name !== undefined) {
+        team.name = body.name;
+      }
+      return team;
+    }
+    const db = await this.getDb();
+    const teams = db.collection<TeamDoc>("teams");
+    const update: Partial<TeamDoc> = {};
+    if (body.name !== undefined) {
+      update.name = body.name;
+    }
+    const result = await teams.findOneAndUpdate({ _id: id }, { $set: update }, { returnDocument: "after" });
+    if (!result) {
+      throw new NotFoundException("Team not found");
+    }
+    return result;
+  }
+
+  @Get("/admin/games/:id")
+  async getAdminGame(@Param("id") id: string, @Headers() headers?: Record<string, string>) {
+    this.assertAdmin(headers);
+    if (this.useMemory) {
+      const game = this.memoryGames.find((item) => item.id === id);
+      if (!game) {
+        throw new NotFoundException("Game not found");
+      }
+      return {
+        id: game.id,
+        teamId: game.teamId,
+        title: game.title,
+        description_md: game.description_md,
+        repo_url: game.repo_url,
+        cover_url: game.cover_url,
+        status: game.status,
+        tags_user: game.tags_user,
+        tags_system: game.tags_system,
+        build_url: game.build_url,
+        build_id: game.currentBuildId,
+        adminRemark: game.adminRemark,
+      };
+    }
+    const db = await this.getDb();
+    const games = db.collection<GameDoc>("games");
+    const builds = db.collection<BuildDoc>("builds");
+    const game = await games.findOne({ _id: id });
+    if (!game) {
+      throw new NotFoundException("Game not found");
+    }
+    let signedBuildUrl: string | null = null;
+    if (game.currentBuildId) {
+      const build = await builds.findOne({ _id: game.currentBuildId });
+      if (build) {
+        signedBuildUrl = await this.getSignedBuildUrl(game.currentBuildId, build.s3_key);
+      }
+    }
+    return {
+      id: game._id,
+      teamId: game.teamId,
+      title: game.title ?? "",
+      description_md: game.description_md,
+      repo_url: game.repo_url,
+      cover_url: game.cover_url,
+      status: game.status,
+      tags_user: game.tags_user ?? [],
+      tags_system: game.tags_system ?? [],
+      build_url: signedBuildUrl ?? game.build_url ?? null,
+      build_id: game.currentBuildId ?? null,
+      adminRemark: game.adminRemark ?? null,
+    };
   }
 
   @Post("/admin/games")
@@ -308,6 +498,47 @@ export class AppController {
     };
     await games.insertOne(game);
     return game;
+  }
+
+  @Patch("/admin/games/:id")
+  async updateGame(
+    @Param("id") id: string,
+    @Body()
+    body: {
+      teamId?: string;
+      title?: string;
+      description_md?: string;
+      repo_url?: string;
+      cover_url?: string;
+    },
+    @Headers() headers?: Record<string, string>
+  ) {
+    this.assertAdmin(headers);
+    if (this.useMemory) {
+      const game = this.memoryGames.find((item) => item.id === id);
+      if (!game) {
+        throw new NotFoundException("Game not found");
+      }
+      if (body.teamId !== undefined) game.teamId = body.teamId;
+      if (body.title !== undefined) game.title = body.title;
+      if (body.description_md !== undefined) game.description_md = body.description_md;
+      if (body.repo_url !== undefined) game.repo_url = body.repo_url;
+      if (body.cover_url !== undefined) game.cover_url = body.cover_url;
+      return game;
+    }
+    const db = await this.getDb();
+    const games = db.collection<GameDoc>("games");
+    const update: Partial<GameDoc> = {};
+    if (body.teamId !== undefined) update.teamId = body.teamId;
+    if (body.title !== undefined) update.title = body.title;
+    if (body.description_md !== undefined) update.description_md = body.description_md;
+    if (body.repo_url !== undefined) update.repo_url = body.repo_url;
+    if (body.cover_url !== undefined) update.cover_url = body.cover_url;
+    const result = await games.findOneAndUpdate({ _id: id }, { $set: update }, { returnDocument: "after" });
+    if (!result) {
+      throw new NotFoundException("Game not found");
+    }
+    return result;
   }
 
   @Post("/admin/games/:id/build")
@@ -367,21 +598,75 @@ export class AppController {
         );
       })
     );
-    const buildUrl = `${this.s3PublicUrl}/${this.s3Bucket}/${baseKey}index.html`;
     const buildRecord: BuildDoc = {
       _id: buildId,
       gameId: id,
       s3_key: baseKey,
-      storage_url: buildUrl,
+      storage_url: `${this.s3PublicUrl}/${this.s3Bucket}/${baseKey}index.html`,
       createdAt: new Date().toISOString(),
       sizeBytes: file.buffer.length,
     };
     await builds.insertOne(buildRecord);
+    const signedUrl = await this.getSignedBuildUrl(buildId, baseKey);
     await games.updateOne(
       { _id: id },
-      { $set: { currentBuildId: buildId, build_url: buildUrl } }
+      { $set: { currentBuildId: buildId, build_url: signedUrl } }
     );
-    return { build_id: buildId, build_url: buildUrl };
+    return { build_id: buildId, build_url: signedUrl };
+  }
+
+  @Post("/admin/games/:id/cover")
+  @UseInterceptors(FileInterceptor("file"))
+  async uploadCover(
+    @Param("id") id: string,
+    @UploadedFile() file: { originalname: string; buffer: Buffer; mimetype: string },
+    @Headers() headers?: Record<string, string>
+  ) {
+    this.assertAdmin(headers);
+    if (!file?.buffer) {
+      throw new BadRequestException("Missing image file");
+    }
+    // Validate image type
+    const allowedMimes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    if (!allowedMimes.includes(file.mimetype)) {
+      throw new BadRequestException("Invalid image type. Allowed: JPEG, PNG, GIF, WebP");
+    }
+    // Max 10MB for cover images
+    const maxSizeBytes = 10 * 1024 * 1024;
+    if (file.buffer.length > maxSizeBytes) {
+      throw new BadRequestException("Image too large. Max 10MB");
+    }
+    if (this.useMemory) {
+      const game = this.memoryGames.find((item) => item.id === id);
+      if (!game) {
+        throw new NotFoundException("Game not found");
+      }
+      const coverId = randomUUID();
+      const coverUrl = `${this.s3PublicUrl}/${this.s3Bucket}/covers/${coverId}/${file.originalname}`;
+      this.memoryBuilds.push({ id: coverId, gameId: id, url: coverUrl });
+      game.cover_url = coverUrl;
+      return { cover_url: coverUrl };
+    }
+    const db = await this.getDb();
+    const games = db.collection<GameDoc>("games");
+    const game = await games.findOne({ _id: id });
+    if (!game) {
+      throw new NotFoundException("Game not found");
+    }
+    const coverId = randomUUID();
+    const extension = file.originalname.split(".").pop() || "jpg";
+    const key = `covers/${coverId}/cover.${extension}`;
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: this.s3Bucket,
+        Key: key,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      })
+    );
+    const coverUrl = `${this.s3PublicUrl}/${this.s3Bucket}/${key}`;
+    await games.updateOne({ _id: id }, { $set: { cover_url: coverUrl } });
+    return { cover_url: coverUrl };
   }
 
   @Post("/admin/games/:id/publish")
@@ -475,6 +760,13 @@ export class AppController {
     const tags_system = body.tags_system ?? game.tags_system ?? [];
     await games.updateOne({ _id: id }, { $set: { tags_user, tags_system } });
     return { tags_user, tags_system };
+  }
+
+  @Get("/admin/settings/build-limits")
+  async getBuildLimit(@Headers() headers?: Record<string, string>) {
+    this.assertAdmin(headers);
+    const maxBuildSizeBytes = await this.getMaxBuildSizeBytes();
+    return { maxBuildSizeBytes };
   }
 
   @Patch("/admin/settings/build-limits")

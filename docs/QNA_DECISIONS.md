@@ -347,3 +347,209 @@
   - Context: Roles rely on Codex skills for consistent quality and must be verified before work starts.
   - Decision: Require skills preflight and per-role skill run evidence in WORKPLAN reflection.
   - Consequences: Modes refuse to start if required skills are missing; reflections must include skill usage notes.
+
+## Questions / Gaps (FP3)
+
+- id: Q-030
+  fp: FP3
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Do we need a backend login endpoint, or can we use static token validation on frontend only?
+  answer: Use static token validation on frontend only. Backend already validates token via X-Admin-Token header against ADMIN_TOKEN env var. Login page accepts token input directly and stores in localStorage.
+  decision: ADR-030
+
+- id: Q-031
+  fp: FP3
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Should login page accept token input directly, or use credentials (email/password) that backend validates?
+  answer: Accept token input directly. MVP uses static admin token (ADMIN_TOKEN env var or default "admin-token"). No credentials needed.
+  decision: ADR-030
+
+- id: Q-032
+  fp: FP3
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Where should global navigation component be placed (header, sidebar, menu bar)?
+  answer: Place in win-menu bar (existing menu structure). Replace static menu items with functional navigation links.
+  decision: ADR-032
+
+- id: Q-033
+  fp: FP3
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Should navigation show admin links only when authenticated, or always show with disabled state?
+  answer: Show admin links only when authenticated (isAuthenticated === true). Hide completely when not authenticated to avoid confusion.
+  decision: ADR-033
+
+- id: Q-034
+  fp: FP3
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: How should we handle token expiration or invalidation (redirect to login, show error, auto-refresh)?
+  answer: On 401/403 response in fetchJson, clear token from localStorage, set isAuthenticated=false, and redirect to /login. No auto-refresh for MVP (static token).
+  decision: ADR-034
+
+- id: Q-035
+  fp: FP3
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Should ProtectedRoute component wrap admin routes, or use a higher-order component pattern?
+  answer: Use ProtectedRoute component wrapper pattern. Wrap admin routes in Routes: <Route path="/admin/*" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />.
+  decision: ADR-035
+
+- id: Q-036
+  fp: FP3
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Should auth context be React Context API, Zustand, or another state management solution?
+  answer: Use React Context API (minimal, no extra dependencies). Create AuthContext with Provider wrapping App, exposing token, isAuthenticated, login, logout functions.
+  decision: ADR-036
+
+- id: Q-037
+  fp: FP3
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: What happens when user navigates to admin page without token (redirect immediately or show error first)?
+  answer: ProtectedRoute checks auth immediately on mount. If not authenticated, redirect to /login immediately (no error screen delay).
+  decision: ADR-037
+
+- id: Q-038
+  fp: FP3
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Should logout clear only token, or also clear any cached game/team data?
+  answer: Clear only token from localStorage. Page-level state will reset on remount. No need to clear cached data (pages reload on navigation).
+  decision: ADR-038
+
+- id: Q-039
+  fp: FP3
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Should AdminGameEditorPage load existing game when gameId is in URL?
+  answer: Yes. Add useEffect to fetch game data from GET /admin/games/{gameId} when routeGameId is provided and populate form fields.
+  decision: ADR-039
+
+- id: Q-040
+  fp: FP3
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Should AdminTeamsPage load existing teams list on mount?
+  answer: Yes. Add GET /admin/teams endpoint call on mount to display existing teams (currently only shows manually created ones).
+  decision: ADR-040
+
+- id: Q-041
+  fp: FP3
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Should AdminSettingsPage load current build limit settings on mount?
+  answer: Yes. Add GET /admin/settings/build-limits endpoint call on mount to display current maxBuildSizeBytes value.
+  decision: ADR-041
+
+- id: Q-042
+  fp: FP3
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Do we need new backend GET endpoints for admin data loading?
+  answer: Yes. Need GET /admin/teams (list), GET /admin/games/{id} (with adminRemark), GET /admin/settings/build-limits. Existing GET /games/{id} doesn't return adminRemark and may not be sufficient for editor.
+  decision: ADR-042
+
+## ADRs (FP3)
+
+- ADR-030: Static token authentication for MVP
+  - Context: FP3 needs minimal auth flow without backend login endpoint complexity.
+  - Decision: Use static token stored in ADMIN_TOKEN env var (default "admin-token"). Login page accepts token input directly and stores in localStorage. Backend validates via X-Admin-Token header.
+  - Consequences: No backend login endpoint needed. Token must be manually entered on first use. No token expiration/refresh for MVP.
+
+- ADR-032: Navigation placement in win-menu bar
+  - Context: Existing UI has win-menu bar structure; navigation links need consistent placement.
+  - Decision: Replace static menu items (File, Edit, View, etc.) with functional navigation links in win-menu bar. Keep retro aesthetic.
+  - Consequences: Menu bar becomes primary navigation. Admin links conditionally rendered based on auth state.
+
+- ADR-033: Conditional admin link visibility
+  - Context: Navigation should respect auth state to avoid confusion.
+  - Decision: Show admin links (Teams, Games, Settings) only when isAuthenticated === true. Hide completely when not authenticated.
+  - Consequences: Cleaner UI for public users. Admin links appear/disappear based on login state.
+
+- ADR-034: 401/403 error handling with redirect
+  - Context: API errors need consistent handling and user feedback.
+  - Decision: On 401/403 response in fetchJson, clear token from localStorage, set isAuthenticated=false in context, and redirect to /login using React Router navigate.
+  - Consequences: Users automatically redirected on auth failure. Token cleared to prevent stale state.
+
+- ADR-035: ProtectedRoute component wrapper pattern
+  - Context: Admin routes need consistent auth checking.
+  - Decision: Create ProtectedRoute component that checks auth context. If not authenticated, redirect to /login. Otherwise render children.
+  - Consequences: Centralized auth guard logic. All admin routes wrapped consistently.
+
+- ADR-036: React Context API for auth state
+  - Context: Need centralized auth state without adding dependencies.
+  - Decision: Use React Context API with AuthContext provider wrapping App. Expose { token, isAuthenticated, login(token), logout() } via useContext hook.
+  - Consequences: No extra dependencies. Simple state management. All components can access auth state.
+
+- ADR-037: Immediate redirect on unauthorized access
+  - Context: User experience when accessing protected routes without auth.
+  - Decision: ProtectedRoute checks auth immediately on mount. If not authenticated, redirect to /login immediately (no error screen delay).
+  - Consequences: Faster user feedback. No confusing "Access Denied" screens before redirect.
+
+- ADR-038: Logout clears only token
+  - Context: Logout behavior and state cleanup.
+  - Decision: Logout clears only token from localStorage and sets isAuthenticated=false. Page-level state resets on remount. No need to clear cached data.
+  - Consequences: Simpler implementation. Pages reload fresh on navigation.
+
+- ADR-039: AdminGameEditorPage loads existing game data
+  - Context: Editor should populate form when editing existing game.
+  - Decision: Add useEffect to fetch GET /admin/games/{gameId} when routeGameId is provided. Populate form fields (title, description, cover_url, etc.) and build_url.
+  - Consequences: Editor works for both create and edit flows. Users can modify existing games.
+
+- ADR-040: AdminTeamsPage loads teams list
+  - Context: Teams page should show existing teams on mount.
+  - Decision: Add GET /admin/teams endpoint call on mount to fetch and display all teams. Update teams state with fetched data.
+  - Consequences: Teams list persists across page reloads. Users see all teams, not just manually created ones.
+
+- ADR-041: AdminSettingsPage loads current settings
+  - Context: Settings page should display current build limit value.
+  - Decision: Add GET /admin/settings/build-limits endpoint call on mount to fetch current maxBuildSizeBytes and populate input field.
+  - Consequences: Settings page shows current values. Users can see existing configuration before editing.
+
+- ADR-042: Backend GET endpoints for admin data loading
+  - Context: Frontend needs to load existing teams, games (with adminRemark), and settings data.
+  - Decision: Create three new GET endpoints: GET /admin/teams (returns teams list), GET /admin/games/{id} (returns game with adminRemark field), GET /admin/settings/build-limits (returns maxBuildSizeBytes). All require admin auth guard.
+  - Consequences: Frontend can load data on mount. GET /admin/games/{id} differs from public GET /games/{id} by including adminRemark and not filtering by status.
+
+- ADR-043: Team selection via dropdown with search
+  - Context: Team ID input field is not user-friendly; users need to see team names and search for teams.
+  - Decision: Replace Team ID text input with dropdown list that shows all teams (for admin, all teams are visible). Add search functionality to filter teams by name. Auto-create game if needed when uploading cover/build before saving.
+  - Consequences: Better UX for team selection. Teams list must be loaded on editor page mount. Search provides quick team lookup.
+
+- ADR-044: Combined cover image field (URL + upload)
+  - Context: Users should be able to either enter cover image URL or upload file directly.
+  - Decision: Combine cover image input into single field with text input for URL and file upload button side-by-side. Add POST /admin/games/{id}/cover endpoint for file upload. Show preview of cover image when URL is set.
+  - Consequences: More flexible cover image workflow. Cover upload requires game to exist (auto-create if needed).
+
+- ADR-045: Signed URL generation with public endpoint
+  - Context: SignatureDoesNotMatch errors occur when signed URL is generated with internal endpoint (minio:9000) and host is replaced to public (localhost:9000), invalidating the signature.
+  - Decision: Create separate S3Client (s3PublicClient) with public endpoint (S3_PUBLIC_URL) for generating signed URLs. This ensures signature is valid for the public URL from the start. Fix duplicate bucket name in path if it occurs.
+  - Consequences: Signed URLs are valid for browser access. No need to replace host after generation.
+
+- ADR-046: Catalog page real data display
+  - Context: Catalog page shows placeholder content instead of real games from API.
+  - Decision: Remove placeholder "featured" section. Display real games from GET /games endpoint with cover images. Show "No games available" message when games list is empty. Improve game card design with cover images and proper layout.
+  - Consequences: Catalog shows actual published games. Better user experience with real data.
+
+- ADR-047: Build upload workflow warnings
+  - Context: Users may try to upload build before creating game, causing confusion.
+  - Decision: Add warning message in Build Upload section: "Please save the game first before uploading build". Disable build upload input until game is saved. Show red error message if upload attempted before save.
+  - Consequences: Clearer workflow guidance. Prevents errors from uploading before game creation.

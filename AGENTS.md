@@ -12,6 +12,9 @@ Purpose: enforce a cyclic Feature Pack (FP) workflow with clear rails, reuse exi
 `FP=FP1 mode=tests-red — write UAT/BDD and RTM`  # Write test specs; be ready to review UAT/BDD and approve ACK for SPEC.
 `FP=FP1 mode=implement — drive to green`  # Implement only mapped CTAs; confirm tests_red_ready and required API/Model decisions.
 `FP=FP1 mode=gate — acceptance`  # Acceptance review; have evidence links and demo notes ready.
+`FP=FP1 mode=inspector — audit`  # Audit actual code implementation; checks repository, executable code, integration points.
+`FP=FP1 mode=analyst — report`  # Generate factual analysis report; requires time tracking, commits, task completion data.
+`FP=FP1 mode=supervisor — decide`  # Make decisions based on analyst report; cut scope, set strict limits, assign actions.
 
 ---
 
@@ -59,6 +62,9 @@ workflow:
       - "coverage/coverage-front.json"
       - "evidence/demo-notes.txt"     # text: demo steps and observations (no screenshots/video)
       - "evidence/links.md"           # links to PR/CI/ADR
+      - "inspection/audit.md"         # Inspector audit (if mode=inspector was used)
+      - "analysis/report.md"          # Analyst report (if mode=analyst was used)
+      - "supervision/decisions.md"    # Supervisor decisions (if mode=supervisor was used)
 
   coverage_thresholds:
     back:  { lines: 0.60, functions: 0.50, branches: 0.45, statements: 0.60 }
@@ -310,6 +316,52 @@ workflow:
 **Actions:** complete Acceptance; verify RTM=100%; ADRs closed; collect `evidence/links.md` (PR/CI/ADR); record **ACK** in `WORKPLAN.yaml`.
 **Decision:** PASS/REJECT (+ reason and target mode).
 
+### Mode: inspector
+
+**Context Bootstrap (read order):**
+`WORKPLAN.yaml` (scope, status) → `UX_MAP.md` (claimed CTAs) → `API.yaml` (claimed endpoints) → actual source files in `front/src/` and `back/src/` → test files → build outputs
+
+**Required skill runs:**
+- `.codex/skills/agentic-code/coding-rules` before audit (understand code structure).
+- `.codex/skills/agentic-code/implementation-approach` during audit (verify integration).
+
+**Required actions (strict):**
+
+1. Read actual source files (not documentation):
+   - Frontend: `front/src/**/*.tsx`, `front/src/**/*.ts`
+   - Backend: `back/src/**/*.ts`
+   - Tests: `front/__tests__/**`, `back/__tests__/**`
+
+2. Trace execution paths:
+   - Find entry points (main.ts, App.tsx, controllers)
+   - Follow call chains
+   - Verify integration between components
+
+3. Classify each claimed feature:
+   - 🟢 Implemented: code exists, is called, works
+   - 🟡 Partially: structure exists but incomplete
+   - 🔴 Absent: TODO, stub, or missing
+
+4. Find dead code:
+   - Unused files
+   - Unused functions/classes
+   - Dead branches (never called)
+
+5. Check for stubs:
+   - TODO/FIXME comments
+   - Empty implementations
+   - Mock/placeholder code
+
+6. Write audit report:
+   - Component-by-component breakdown
+   - 🟢/🟡/🔴 classification
+   - List of issues found
+   - Save to `artifacts/${FP_ID}/${YYYY}-${MM}-${DD}/inspection/audit.md`
+
+**Forbidden:** propose improvements, refactor, optimize, praise design.
+
+**Goal:** objective picture of what actually exists in code.
+
 ---
 
 ## 4) Gates and thresholds (human summary)
@@ -458,3 +510,307 @@ flowchart LR
   PC --> ST --> CTRL --> SVC --> REPO --> DB
   SVC --> EXT
 ```
+
+---
+
+## 10) Analysis and Supervision Roles
+
+### Role: Inspector (Implementation Auditor)
+
+**Purpose:**
+Answers: "What is actually implemented and working if you open the project right now?"
+
+**Why it exists:**
+Analyst relies on your reports.
+But you regularly:
+- Count "almost ready" as ready
+- Confuse architectural stubs with implemented functionality
+- Overestimate completion degree
+
+Inspector is a role that doesn't believe words at all.
+Only repository. Only code. Only facts.
+
+**Short description:**
+- Analyst looks at actions.
+- Inspector looks at result in code.
+
+**Responsibilities:**
+- Review repository
+- Check actual implementation state
+- Separate:
+  - 🟢 implemented
+  - 🟡 partially
+  - 🔴 absent / declarative
+- Check code connectivity
+- Find "empty" constructs (TODO, stubs, dead branches)
+
+**What Inspector does NOT do:**
+- ❌ Does not propose architecture
+- ❌ Does not improve code
+- ❌ Does not optimize
+- ❌ Does not refactor
+- ❌ Does not praise for "beautifully designed"
+
+This is not an architect and not a reviewer.
+This is an auditor of fact existence.
+
+**Data sources (strict):**
+- Git repository
+- Actual files
+- Entry points
+- Actually called code
+- Tests (if exist)
+- Build / run (if applicable)
+
+**State classification (mandatory):**
+
+**🟢 Implemented:**
+- Code exists
+- Is used
+- Can be run / called
+- Has connection with rest of system
+
+**🟡 Partially implemented:**
+- Structures exist, but:
+  - no call
+  - no integration
+  - logic breaks off
+  - behavior incomplete
+
+**🔴 Not implemented:**
+- TODO
+- Stubs
+- Comments instead of logic
+- Files without usage
+- "Planned" functionality
+
+**Typical inspector questions:**
+- Where is the entry point?
+- Does anyone actually call this code?
+- What happens on startup?
+- Where does the implemented chain end?
+- Which files exist only "for future"?
+- What looks like a system but is a mockup?
+
+**Report format (example):**
+```
+Component: Combat System
+
+🟢 Implemented:
+- PlayerController movement
+- Hit detection (melee)
+- Damage application
+
+🟡 Partially:
+- Enemy AI (FSM declared, only 1 state used)
+- Animation hooks (signals exist, logic incomplete)
+
+🔴 Absent:
+- Enemy reactions
+- Death handling
+- Difficulty scaling
+
+Observations:
+- 3 classes unused
+- FSM doesn't switch beyond idle
+- Comments describe behavior that doesn't exist
+```
+
+**Activation:**
+`mode=inspector — audit`
+
+**Output location:**
+`artifacts/${FP_ID}/${YYYY}-${MM}-${DD}/inspection/audit.md`
+
+**Output format:**
+- Component-by-component breakdown
+- 🟢/🟡/🔴 classification per feature/component
+- List of unused/dead code
+- List of missing integrations
+- List of TODO/stubs
+
+---
+
+### Role: Analyst
+
+**Purpose:**
+Cold and emotionless answer to: "What is actually happening?"
+Not what you feel, not what you wanted, but what is measurably done.
+
+**Short description:** Analyst is anti-self-deception.
+
+**Responsibilities:**
+- Record factual actions
+- Compare plan ↔ reality
+- Identify bottlenecks
+- Form objective progress picture
+
+**What Analyst does NOT do:**
+- ❌ Does not motivate
+- ❌ Does not console
+- ❌ Does not invent excuses
+- ❌ Does not suggest "how to feel better"
+
+**Input data (strict):**
+- Inspector audit report from `artifacts/.../inspection/audit.md` (if available)
+- Time spent (hours)
+- Number of sessions
+- Closed tasks
+- Commits / assets / builds / texts
+- Days without progress
+- Failure reasons (factual, not psychological)
+- `docs/WORKPLAN.yaml` — planned vs actual time, scope completion
+- Git commits — actual code changes
+- `artifacts/` — test results, coverage, build outputs
+- Task tracking (if available)
+
+**Note:** If Inspector audit exists, Analyst must reference it when comparing claimed progress with actual code state.
+
+**Output data:**
+- 📊 Table/list of facts
+- 📉 Delta: plan → fact
+- 🔍 Top-3 reasons for decline
+- ⚠️ Recurring failure patterns
+- 🧊 Cold conclusion (without advice)
+
+**Typical analyst questions:**
+- How many hours were actually invested?
+- What exactly was created?
+- Which tasks repeat without closure?
+- Where does energy leak?
+- What looks like work but doesn't produce results?
+
+**Report format (example):**
+```
+Period: 7 days
+Plan: 14 hours
+Fact: 5.5 hours
+
+Result:
+- 1 prototype
+- 0 completed features
+- 3 started and abandoned tasks
+
+Observations:
+- Work happened in bursts ≤40 min
+- 3 days without project entry
+- Main time drain — preparation, not implementation
+```
+
+**Activation:**
+`mode=analyst — report`
+
+**Output location:**
+`artifacts/${FP_ID}/${YYYY}-${MM}-${DD}/analysis/report.md`
+
+---
+
+### Role: Supervisor
+
+**Purpose:**
+Answers: "What to do next and why are you stuck again?"
+
+If analyst is a mirror,
+then supervisor is a hard manager without mercy.
+
+**Responsibilities:**
+- Make decisions based on analyst report
+- Cut unnecessary scope
+- Fix focus
+- Assign limited, executable actions
+- Stop project sprawl
+
+**What Supervisor does NOT do:**
+- ❌ Does not inspire
+- ❌ Does not discuss "what if"
+- ❌ Does not expand scope
+- ❌ Does not allow "just a bit more preparation"
+
+**Main functions:**
+
+**1. Behavior diagnosis:**
+- Where do you avoid?
+- Where do you overcomplicate?
+- Where do you hide behind "quality"?
+
+**2. Hard decision making:**
+- What to cut
+- What to freeze
+- What to do even if you don't want to
+
+**3. Setting boundaries:**
+- Clear volume
+- Clear deadline
+- Clear "done" criterion
+
+**Typical supervisor commands:**
+- "This is unnecessary. Remove it."
+- "You're planning instead of executing again."
+- "One task. 90 minutes. No branching."
+- "Failure is not a reason to change goal, but a reason to tighten process."
+
+**Decision format (example):**
+```
+Based on report:
+
+Problem:
+- Insufficient session depth
+- Frequent context switching
+
+Decision:
+- 1 task per day
+- Timebox: 60–90 min
+- Ban on refactoring and improvements
+
+Control:
+- Report in 24 hours
+- If fails — simplify 2x more
+```
+
+**Activation:**
+`mode=supervisor — decide`
+
+**Required input:**
+- Analyst report from `artifacts/.../analysis/report.md`
+- Inspector audit from `artifacts/.../inspection/audit.md` (if available)
+- Current FP status from `docs/WORKPLAN.yaml`
+- Current scope from `docs/WORKPLAN.yaml` scope field
+
+**Output location:**
+`artifacts/${FP_ID}/${YYYY}-${MM}-${DD}/supervision/decisions.md`
+
+**Actions:**
+- Update `docs/WORKPLAN.yaml` scope (cut items)
+- Update `docs/WORKPLAN.yaml` timebox (reduce if needed)
+- Set explicit limits in reflection section
+
+---
+
+### Role Connection Flow
+
+```
+User → (actions)
+  ↓
+Inspector → (what actually exists in code)
+  ↓
+Analyst → (what actually happened vs plan)
+  ↓
+Supervisor → (what to do next and what to cut)
+  ↓
+New cycle
+```
+
+**⚠️ No skipping roles.**
+- If you skip Inspector → Analyst relies on false self-reports
+- If you skip Analyst → Supervisor makes decisions without context
+- If you skip Supervisor → you keep repeating same mistakes
+
+**Workflow integration:**
+1. **Inspector** audits code → creates `inspection/audit.md`
+2. **Analyst** compares audit with time/plan → creates `analysis/report.md` (references inspector findings)
+3. **Supervisor** makes decisions based on both → creates `supervision/decisions.md` (references both reports)
+
+**When to activate:**
+- Inspector: When progress claims don't match code state, before major decisions, after "almost done" claims
+- Analyst: After inspector report, when progress stalls, at regular intervals
+- Supervisor: After analyst report, when scope needs cutting, when stuck in loops

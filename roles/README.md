@@ -16,6 +16,9 @@
 - implement
 - tests-green
 - gate
+- inspector
+- analyst
+- supervisor
 
 ## Required skills by role
 
@@ -29,6 +32,9 @@
 | implement | implementation-approach, coding-rules, testing |
 | tests-green | testing-strategy, integration-e2e-testing, documentation-criteria |
 | gate | documentation-criteria, testing-strategy, metacognition |
+| inspector | coding-rules, implementation-approach |
+| analyst | metacognition, documentation-criteria |
+| supervisor | metacognition, ai-development-guide |
 
 Skill paths are under `.codex/skills/agentic-code/<skill-name>/SKILL.md`.
 

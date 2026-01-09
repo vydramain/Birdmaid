@@ -312,3 +312,188 @@ flowchart LR
   CTRL --> SVC --> REPO --> MDB
   SVC --> EXT
 ```
+
+## FP3: Navigation Tabs and Auth Removal
+
+### CTA table
+
+| CTA_ID | CTA | Page | Endpoint(s) | State keys | mock_status |
+| --- | --- | --- | --- | --- | --- |
+| CTA-031 | Navigate to catalog | AllPages | Link to / | - | - |
+| CTA-032 | Navigate to game page | CatalogPage, AdminPages | Link to /games/:gameId | - | - |
+| CTA-033 | Navigate to admin teams | AllPages | Link to /admin/teams | - | - |
+| CTA-034 | Navigate to admin game editor | AdminTeamsPage, GamePage | Link to /admin/games/:gameId or /admin/games/new | - | - |
+| CTA-035 | Navigate to admin settings | AllPages | Link to /admin/settings | - | - |
+| CTA-039 | Load existing game in editor | AdminGameEditorPage | GET /admin/games/{gameId} (returns adminRemark) | admin.game.form, admin.game.current | unknown |
+| CTA-040 | Load teams list | AdminTeamsPage | GET /admin/teams | admin.teams.list | unknown |
+| CTA-041 | Load settings | AdminSettingsPage | GET /admin/settings/build-limits | admin.settings.maxBuildSize | unknown |
+| CTA-042 | Select team from dropdown | AdminGameEditorPage | GET /admin/teams (load teams list) | admin.game.form.teamId, admin.teams.list | unknown |
+| CTA-043 | Upload cover image | AdminGameEditorPage | POST /admin/games/{id}/cover | admin.game.form.cover_url | unknown |
+| CTA-044 | View catalog games | CatalogPage | GET /games?tag=...&sort=... | games.list, ui.loading, ui.empty, ui.error | unknown |
+
+### System Design (per CTA)
+
+#### CTA-031-035 Global navigation (menu bar tabs)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant N as NavigationComponent
+  participant R as Router
+
+  U->>N: Click nav tab (Catalog/Game/Teams/Editor/Settings)
+  N->>R: navigate to target route
+  R-->>U: render target page
+  Note over N,R: All tabs always visible, no auth checks
+```
+
+### System Interaction Overview (FP)
+
+```mermaid
+flowchart LR
+  subgraph Frontend
+    NAV[NavigationComponent]
+    CP[CatalogPage]
+    GP[GamePage]
+    AP[AdminPages]
+  end
+  subgraph Backend
+    CTRL[Controller: All endpoints public]
+    SVC[Service: Games/Teams/Settings]
+  end
+
+  NAV --> CP
+  NAV --> GP
+  NAV --> AP
+  CP --> CTRL
+  GP --> CTRL
+  AP --> CTRL
+  CTRL --> SVC
+```
+
+#### CTA-039 Load existing game in editor
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(AdminGameEditorPage)
+  participant C as API Controller(/admin/games/{id})
+  participant SV as Service(Games)
+
+  U->>P: Navigate to /admin/games/:gameId
+  P->>C: GET /admin/games/{gameId}
+  C->>SV: fetch game
+  SV-->>C: game data
+  C-->>P: return game
+  P->>P: populate form fields (title, description, cover_url, build_url, tags, status)
+  P-->>U: render editor with game data
+  Note over P,C: No auth checks, all endpoints public
+```
+
+#### CTA-040 Load teams list
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(AdminTeamsPage)
+  participant C as API Controller(/admin/teams)
+  participant SV as Service(Teams)
+
+  U->>P: Open /admin/teams
+  P->>C: GET /admin/teams
+  C->>SV: fetch all teams
+  SV-->>C: teams list
+  C-->>P: return teams[]
+  P->>P: update teams state
+  P-->>U: render teams list
+  Note over P,C: No auth checks, all endpoints public
+```
+
+#### CTA-041 Load settings
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(AdminSettingsPage)
+  participant C as API Controller(/admin/settings/build-limits)
+  participant SV as Service(Settings)
+
+  U->>P: Open /admin/settings
+  P->>C: GET /admin/settings/build-limits
+  C->>SV: fetch settings
+  SV-->>C: maxBuildSizeBytes
+  C-->>P: return settings
+  P->>P: populate maxBuildSize input
+  P-->>U: render settings with current values
+  Note over P,C: No auth checks, all endpoints public
+```
+
+#### CTA-042 Select team from dropdown
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(AdminGameEditorPage)
+  participant C as API Controller(/admin/teams)
+  participant SV as Service(Teams)
+
+  U->>P: Open /admin/games/new
+  P->>C: GET /admin/teams
+  C->>SV: fetch all teams
+  SV-->>C: teams list
+  C-->>P: return teams[]
+  U->>P: Type team name in search field
+  P->>P: Filter teams by name
+  U->>P: Select team from dropdown
+  P->>P: Set teamId from selected team
+  P-->>U: render selected team name
+  Note over P,C: All teams visible for admin, searchable by name
+```
+
+#### CTA-043 Upload cover image
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(AdminGameEditorPage)
+  participant C as API Controller(/admin/games/{id}/cover)
+  participant SV as Service(Games)
+  participant EXT as External(S3/MinIO)
+
+  U->>P: Select cover image file or enter URL
+  P->>P: If file selected, create game if needed
+  P->>C: POST /admin/games/{id}/cover (multipart/form-data)
+  C->>SV: validate image type and size
+  SV->>EXT: upload to S3/MinIO (covers/{id}/cover.{ext})
+  SV-->>C: cover_url
+  C-->>P: return { cover_url }
+  P->>P: Update cover_url state and show preview
+  P-->>U: render cover image preview
+  Note over P,C: Cover can be uploaded or URL entered directly
+```
+
+#### CTA-044 View catalog games
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(CatalogPage)
+  participant C as API Controller(/games)
+  participant SV as Service(Games)
+
+  U->>P: Open catalog page
+  P->>C: GET /games?tag=...&sort=...
+  C->>SV: fetch published games
+  SV-->>C: games list
+  C-->>P: return games[]
+  P->>P: Render game cards with cover images
+  P-->>U: display catalog grid or "No games available" message
+  Note over P,C: Shows real games from API, no placeholder content
+```

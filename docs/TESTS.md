@@ -206,3 +206,148 @@ Folder convention: `front/__tests__/fp2/*` and `back/__tests__/fp2/*`.
 | FR-FP2-STAB-009 | front/__tests__/fp2/admin.authoring.test.tsx | back/__tests__/fp2/admin.games.publish.test.ts; back/__tests__/fp2/admin.games.build.test.ts; back/__tests__/fp2/games.visibility.test.ts | N | Contract field coverage sampled via API calls. |
 | FR-FP2-STAB-010 | front/__tests__/fp1/catalog.states.test.tsx; front/__tests__/fp1/game.playback.test.tsx; front/__tests__/fp1/navigation.routes.test.tsx | back/__tests__/fp1/games.list.test.ts; back/__tests__/fp1/games.get.test.ts | N | FP1 critical path regression. |
 | FR-205 | front/__tests__/fp2/admin.build-limit.test.tsx | back/__tests__/fp2/admin.build-limit.test.ts | N | Admin settings build limit. |
+
+## FP3: Navigation Tabs and Auth Removal
+
+### UAT / BDD
+
+- UAT-300 Global navigation visible: Given any page loads, when the page renders, then navigation menu (win-menu) contains links to Catalog, Game (if applicable), Teams, Editor, and Settings. All links are always visible (no auth checks).
+- UAT-301 Navigation to catalog: Given any page, when user clicks "Catalog" link, then they navigate to / and catalog page loads.
+- UAT-302 Navigation to game page: Given catalog or admin page, when user clicks game link or "Open" button, then they navigate to /games/:gameId and game page loads.
+- UAT-303 Navigation to admin teams: Given any page, when user clicks "Teams" link, then they navigate to /admin/teams.
+- UAT-304 Navigation to admin game editor: Given any page, when user clicks "Editor" link or game edit link, then they navigate to /admin/games/:gameId or /admin/games/new.
+- UAT-305 Navigation to admin settings: Given any page, when user clicks "Settings" link, then they navigate to /admin/settings.
+- UAT-306 Catalog shows real games: Given catalog page loads, when GET /games returns games list, then game cards with cover images are displayed. If no games, "No games available" message is shown.
+- UAT-307 Catalog no placeholder: Given catalog page loads, when the page renders, then no placeholder "featured" section or fake game content is shown.
+- UAT-308 AdminGameEditorPage loads existing game: Given user navigates to /admin/games/:gameId with existing gameId, when the page loads, then game data (title, description, cover_url, build_url, tags, status, adminRemark) is fetched and form fields are populated.
+- UAT-309 AdminGameEditorPage creates new game: Given user navigates to /admin/games/new, when the page loads, then form fields are empty and ready for new game creation.
+- UAT-310 AdminTeamsPage loads teams list: Given user opens /admin/teams, when the page loads, then GET /admin/teams is called and existing teams are displayed in the list.
+- UAT-311 AdminSettingsPage loads settings: Given user opens /admin/settings, when the page loads, then GET /admin/settings/build-limits is called and current maxBuildSizeBytes value is displayed in the input field.
+- UAT-312 Team selection dropdown: Given user opens /admin/games/new, when the page loads, then teams list is fetched and Team field shows dropdown with all teams. User can search teams by name and select from list.
+- UAT-313 Cover image upload or URL: Given user is on AdminGameEditorPage, when they interact with cover field, then they can either enter cover image URL in text input or upload file via file input. Both options are in the same field.
+- UAT-314 Cover image upload endpoint: Given user uploads cover image file, when POST /admin/games/{id}/cover is called, then image is uploaded to S3/MinIO and cover_url is returned and displayed in preview.
+- UAT-315 Build upload warning: Given user is on AdminGameEditorPage, when they view Build Upload section, then warning message "Please save the game first before uploading build" is visible. Build upload input is disabled until game is saved.
+- UAT-316 Signed URL generation: Given build is uploaded, when signed URL is generated, then it uses public endpoint (localhost:9000) and signature is valid for browser access (no SignatureDoesNotMatch errors).
+- UAT-317 Backend no auth checks: Given any request to /admin/* endpoints, when the request is processed, then no authentication checks are performed (assertAdmin() is no-op). All endpoints are public.
+- UAT-318 Backend GET /admin/teams: Given any request, when GET /admin/teams is called, then all teams are returned with id and name fields (no auth required).
+- UAT-319 Backend GET /admin/games/{id}: Given any request, when GET /admin/games/{id} is called, then game data including adminRemark field is returned (no auth required).
+- UAT-320 Backend GET /admin/settings/build-limits: Given any request, when GET /admin/settings/build-limits is called, then current maxBuildSizeBytes value is returned (no auth required).
+- UAT-321 Backend POST /admin/games/{id}/cover: Given any request with image file, when POST /admin/games/{id}/cover is called, then image is uploaded to S3/MinIO and cover_url is returned (no auth required).
+
+### Acceptance Checklist (FP3)
+
+- [x] Global navigation menu shows all links (Catalog, Game, Teams, Editor, Settings) always visible.
+- [x] Navigation links route correctly between all pages.
+- [x] Catalog page shows real games from API or "No games available" message (no placeholder content).
+- [x] AdminGameEditorPage loads existing game data when gameId provided.
+- [x] AdminTeamsPage loads and displays teams list.
+- [x] AdminSettingsPage loads and displays current settings.
+- [x] Team selection uses dropdown with search functionality (shows all teams).
+- [x] Cover image field allows both URL input and file upload in single field.
+- [x] Cover image upload endpoint (POST /admin/games/{id}/cover) works correctly.
+- [x] Build upload section shows warning message and disables input until game is saved.
+- [x] Signed URL generation uses public endpoint and produces valid signatures.
+- [x] Backend endpoints have no auth checks (all public, assertAdmin() is no-op).
+
+### RTM (YAML)
+
+```yaml
+fp: FP3
+requirements:
+  - id: FR-FP3-NAV-001
+    name: Global navigation component (always visible)
+    tests:
+      - UAT-300
+      - UAT-301
+      - UAT-302
+      - UAT-303
+      - UAT-304
+      - UAT-305
+    code_targets: [front/navigation.component, front/routes]
+  - id: FR-FP3-CATALOG-001
+    name: Catalog page real data display
+    tests:
+      - UAT-306
+      - UAT-307
+    code_targets: [front/catalog.page, back/games.list]
+  - id: FR-FP3-DATA-001
+    name: AdminGameEditorPage loads existing game
+    tests:
+      - UAT-308
+      - UAT-309
+    code_targets: [front/admin.game.editor, back/admin.games.get]
+  - id: FR-FP3-DATA-002
+    name: AdminTeamsPage loads teams list
+    tests:
+      - UAT-310
+    code_targets: [front/admin.teams, back/admin.teams.get]
+  - id: FR-FP3-DATA-003
+    name: AdminSettingsPage loads settings
+    tests:
+      - UAT-311
+    code_targets: [front/admin.settings, back/admin.settings.get]
+  - id: FR-FP3-UI-001
+    name: Team selection dropdown with search
+    tests:
+      - UAT-312
+    code_targets: [front/admin.game.editor, back/admin.teams.get]
+  - id: FR-FP3-UI-002
+    name: Cover image field (URL + upload)
+    tests:
+      - UAT-313
+      - UAT-314
+    code_targets: [front/admin.game.editor, back/admin.games.cover]
+  - id: FR-FP3-UI-003
+    name: Build upload warnings
+    tests:
+      - UAT-315
+    code_targets: [front/admin.game.editor]
+  - id: FR-FP3-BACKEND-001
+    name: Signed URL generation fix
+    tests:
+      - UAT-316
+    code_targets: [back/admin.games.build, back/s3.client]
+  - id: FR-FP3-BACKEND-002
+    name: Backend no auth checks (all public)
+    tests:
+      - UAT-317
+    code_targets: [back/admin.guard, back/controllers]
+  - id: FR-FP3-BACKEND-003
+    name: Backend GET /admin/teams endpoint (public)
+    tests:
+      - UAT-318
+    code_targets: [back/admin.teams.controller]
+  - id: FR-FP3-BACKEND-004
+    name: Backend GET /admin/games/{id} endpoint (public)
+    tests:
+      - UAT-319
+    code_targets: [back/admin.games.controller]
+  - id: FR-FP3-BACKEND-005
+    name: Backend GET /admin/settings/build-limits endpoint (public)
+    tests:
+      - UAT-320
+    code_targets: [back/admin.settings.controller]
+  - id: FR-FP3-BACKEND-006
+    name: Backend POST /admin/games/{id}/cover endpoint
+    tests:
+      - UAT-321
+    code_targets: [back/admin.games.cover.controller]
+```
+
+### Planned Test Files
+
+Folder convention: `front/__tests__/fp3/*` and `back/__tests__/fp3/*`.
+
+- front/__tests__/fp3/login.page.test.tsx
+- front/__tests__/fp3/auth.context.test.tsx
+- front/__tests__/fp3/protected.route.test.tsx
+- front/__tests__/fp3/navigation.component.test.tsx
+- front/__tests__/fp3/navigation.links.test.tsx
+- front/__tests__/fp3/logout.test.tsx
+- front/__tests__/fp3/error.handling.test.tsx
+- front/__tests__/fp3/admin.game.editor.load.test.tsx
+- front/__tests__/fp3/admin.teams.load.test.tsx
+- front/__tests__/fp3/admin.settings.load.test.tsx
+- back/__tests__/fp3/admin.teams.get.test.ts
+- back/__tests__/fp3/admin.games.get.test.ts
+- back/__tests__/fp3/admin.settings.get.test.ts

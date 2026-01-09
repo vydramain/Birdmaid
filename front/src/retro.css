@@ -205,8 +205,12 @@ button {
 .game-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 6px;
+  padding: 4px;
+  transition: background-color 0.1s;
+}
+
+.game-card:hover {
+  background-color: #d0d0d0;
 }
 
 .game-thumb {
@@ -291,6 +295,28 @@ button {
   border: 2px solid var(--win-gray-dark);
   background: var(--win-white);
   font-family: inherit;
+}
+
+.form-field input[type="file"] {
+  padding: 4px;
+  border: 2px inset var(--win-gray-dark);
+  background: var(--win-gray);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.form-field input[type="file"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Dropdown styles */
+.form-field .win-outset {
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.form-field .win-inset:hover {
+  background-color: #d0d0d0;
 }
 
 .status-pill {

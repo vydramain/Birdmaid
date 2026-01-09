@@ -12,24 +12,30 @@ Birdmaid is an itch.io-at-home for the Omsk gamedev community: a small, hackatho
 
 ## Functional requirements (FR)
 
-- Browse a public catalog of published games.
+- Browse a public catalog of published games with filtering by tags and sorting (title A-Z, Z-A).
 - View a published game page with details and actions.
-- Play the web build in-browser on the game page.
+- Play the web build in-browser on the game page (using signed URLs for security).
 - Super Admin can create and manage Teams, Games, Builds, and Tags (game tags only; no separate tag collection in FP1).
-- Super Admin can create a game on behalf of a team (teams can have zero members in FP1).
+- Super Admin can create and edit games on behalf of a team (teams can have zero members in FP1).
+- Super Admin can edit existing teams (update team name).
 - Game details include description_md, repo_url, and cover_url (cover_url required to publish).
 - Build workflow: upload ZIP -> preview on platform -> publish.
+- Build URLs are signed (presigned S3 URLs, expire after 1 hour) for secure iframe embedding.
 - Publish requires cover_url + description_md + build.
 - Game status transitions: editing (default), published, archived.
 - Super Admin can move a game from published to editing and leave remarks that must be addressed before republish.
 - Tag assignment is restricted to team members and Super Admin (FP1: Super Admin only).
 - Support user tags and optional system tags (assigned by Super Admin) for filtering/sorting by hackathons and genres.
+- Public catalog shows list of available tags for filtering.
+- All API endpoints documented in OpenAPI 3.0.3 specification (docs/API.yaml).
 
 ## Non-functional requirements (NFR)
 
 - Web builds stored in S3-compatible object storage on a separate machine.
+- Build URLs are presigned (signed URLs) with 1-hour expiration for secure access.
 - Max build size 300 MB for MVP; configurable later via Super Admin panel.
 - iframe embed with conservative sandboxing; no guarantee for SharedArrayBuffer/WASM threads (COOP/COEP not required).
+- CSP (Content-Security-Policy) headers applied to all responses for security.
 - Moderation baseline is admin-only takedown with remarks and status changes.
 - Compatibility: Godot HTML5 build works if the ZIP contains index.html and assets.
 

@@ -1,26 +1,43 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, Route, Routes, useParams } from "react-router-dom";
+import { Link, Route, Routes, useLocation, useParams } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
 
-const getAdminToken = () => {
-  if (typeof window !== "undefined" && window.localStorage) {
-    return localStorage.getItem("adminToken");
-  }
-  return null;
+// GlobalNavigation component with menu bar tabs
+const GlobalNavigation = () => {
+  const location = useLocation();
+  const { gameId } = useParams();
+
+  return (
+    <nav className="win-menu">
+      <Link to="/" style={{ textDecoration: "none", color: "inherit" }}>
+        <span>Catalog</span>
+      </Link>
+      {gameId && (
+        <Link to={`/games/${gameId}`} style={{ textDecoration: "none", color: "inherit" }}>
+          <span>Game</span>
+        </Link>
+      )}
+      <Link to="/admin/teams" style={{ textDecoration: "none", color: "inherit" }}>
+        <span>Teams</span>
+      </Link>
+      <Link to="/admin/games/new" style={{ textDecoration: "none", color: "inherit" }}>
+        <span>Editor</span>
+      </Link>
+      <Link to="/admin/settings" style={{ textDecoration: "none", color: "inherit" }}>
+        <span>Settings</span>
+      </Link>
+    </nav>
+  );
 };
 
+// Simplified fetchJson without auth
 const fetchJson = async (path: string, options?: RequestInit) => {
-  const headers: HeadersInit = { ...options?.headers };
-  if (path.startsWith("/admin/")) {
-    const token = getAdminToken();
-    if (token) {
-      headers["X-Admin-Token"] = token;
-    }
-  }
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    headers,
+    headers: {
+      ...options?.headers,
+    },
   });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ message: `Request failed (${response.status})` }));
@@ -80,12 +97,33 @@ const CatalogPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [games, setGames] = useState<GameSummary[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [selectedTag, setSelectedTag] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("");
+
+  const loadTags = async () => {
+    try {
+      const data = (await fetchJson("/tags")) as string[];
+      setTags(data);
+    } catch (err) {
+      // Ignore tag loading errors
+    }
+  };
 
   const loadGames = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = (await fetchJson("/games")) as GameSummary[];
+      const params = new URLSearchParams();
+      if (selectedTag) {
+        params.append("tag", selectedTag);
+      }
+      if (sortBy) {
+        params.append("sort", sortBy);
+      }
+      const queryString = params.toString();
+      const url = `/games${queryString ? `?${queryString}` : ""}`;
+      const data = (await fetchJson(url)) as GameSummary[];
       setGames(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -95,18 +133,16 @@ const CatalogPage = () => {
   };
 
   useEffect(() => {
-    void loadGames();
+    void loadTags();
   }, []);
+
+  useEffect(() => {
+    void loadGames();
+  }, [selectedTag, sortBy]);
 
   return (
     <WindowShell title="Nexus Games - Catalog.exe">
-      <nav className="win-menu">
-        <span>File</span>
-        <span>Edit</span>
-        <span>View</span>
-        <span>Options</span>
-        <span>Help</span>
-      </nav>
+      <GlobalNavigation />
       <div className="toolbar">
         <div className="win-inset" style={{ flex: 1 }}>
           <input
@@ -122,53 +158,131 @@ const CatalogPage = () => {
         </button>
       </div>
       <main className="content">
-        <section className="win-outset">
-          <div className="featured">
-            <div className="win-inset featured-image" />
-            <div className="panel">
-              <h1 style={{ fontSize: 28, margin: 0 }}>Cyber Odyssey: Neon Nights</h1>
-              <p>Welcome to the future. Neon-drenched streets await your command.</p>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button className="win-btn" type="button">
-                  Run Game
-                </button>
-                <button className="win-btn" type="button">
-                  ReadMe.txt
-                </button>
-              </div>
-            </div>
+        <section className="win-outset tag-bar" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", padding: 8 }}>
+          <span
+            className="tag-chip"
+            style={{ cursor: "pointer", backgroundColor: selectedTag === "" ? "#008080" : "transparent" }}
+            onClick={() => setSelectedTag("")}
+          >
+            All Games
+          </span>
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className="tag-chip"
+              style={{ cursor: "pointer", backgroundColor: selectedTag === tag ? "#008080" : "transparent" }}
+              onClick={() => setSelectedTag(tag)}
+            >
+              {tag}
+            </span>
+          ))}
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+            <label style={{ fontSize: 12 }}>Sort:</label>
+            <select
+              className="win-inset"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{ padding: 4, border: "2px inset", background: "#c0c0c0" }}
+            >
+              <option value="">Default</option>
+              <option value="title_asc">Title (A-Z)</option>
+              <option value="title_desc">Title (Z-A)</option>
+            </select>
           </div>
         </section>
-        <section className="win-outset tag-bar">
-          <span className="tag-chip">All Files (*.*)</span>
-          <span className="tag-chip">Action</span>
-          <span className="tag-chip">Strategy</span>
-          <span className="tag-chip">RPG</span>
-          <span className="tag-chip">Sports</span>
-          <span className="tag-chip">Sim</span>
-        </section>
-        {loading && <p>Loading...</p>}
+        {loading && (
+          <div className="win-outset panel" style={{ padding: 16, textAlign: "center" }}>
+            <p>Loading games...</p>
+          </div>
+        )}
         {!loading && error && (
-          <div className="win-outset panel">
-            <p>Unable to load catalog.</p>
+          <div className="win-outset panel" style={{ padding: 16 }}>
+            <p style={{ marginTop: 0 }}>Unable to load catalog.</p>
             <button className="win-btn" type="button" onClick={loadGames}>
               Retry
             </button>
           </div>
         )}
-        {!loading && !error && games.length === 0 && <p>No games available.</p>}
+        {!loading && !error && games.length === 0 && (
+          <div className="win-outset panel" style={{ padding: 32, textAlign: "center" }}>
+            <h2 style={{ marginTop: 0 }}>No games available</h2>
+            <p>There are no published games in the catalog yet.</p>
+            <Link className="win-btn" to="/admin/games/new" style={{ marginTop: 16, display: "inline-block" }}>
+              Create First Game
+            </Link>
+          </div>
+        )}
         {!loading && !error && games.length > 0 && (
           <div className="catalog-grid">
             {games.map((game) => (
               <div key={game.id} className="win-outset game-card">
-                <div className="game-thumb" />
-                <strong>{game.title}</strong>
-                <span style={{ fontSize: 12 }}>
-                  {(game.tags_user ?? []).concat(game.tags_system ?? []).join(", ")}
-                </span>
-                <Link className="win-btn" to={`/games/${game.id}`}>
-                  Open
-                </Link>
+                <div
+                  className="win-inset"
+                  style={{
+                    padding: 2,
+                    marginBottom: 8,
+                    aspectRatio: "3/4",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                >
+                  {game.cover_url ? (
+                    <img
+                      src={game.cover_url}
+                      alt={game.title}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                      onError={(e) => {
+                        // Fallback to placeholder if image fails to load
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div
+                      className="game-thumb"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        background: "linear-gradient(135deg, #0c0c0c, #2b2b2b)",
+                      }}
+                    />
+                  )}
+                </div>
+                <div style={{ padding: "0 4px", flex: 1, display: "flex", flexDirection: "column" }}>
+                  <strong style={{ fontSize: 14, marginBottom: 4, fontFamily: "inherit" }}>{game.title}</strong>
+                  <span style={{ fontSize: 11, color: "#666", marginBottom: 8, fontFamily: "inherit" }}>
+                    {(game.tags_user ?? []).concat(game.tags_system ?? []).join(" • ") || "No tags"}
+                  </span>
+                  <div
+                    style={{
+                      marginTop: "auto",
+                      paddingTop: 8,
+                      borderTop: "1px solid #fff",
+                      boxShadow: "0 -1px 0 #808080",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 10,
+                        textTransform: "uppercase",
+                        color: "#006600",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Published
+                    </span>
+                    <Link className="win-btn" to={`/games/${game.id}`} style={{ padding: "4px 12px", fontSize: 12 }}>
+                      Play
+                    </Link>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -209,13 +323,7 @@ const GamePage = () => {
 
   return (
     <WindowShell title="Birdmaid Admin - Game Details">
-      <nav className="win-menu">
-        <span>File</span>
-        <span>Edit</span>
-        <span>View</span>
-        <span>Tools</span>
-        <span>Help</span>
-      </nav>
+      <GlobalNavigation />
       <main className="content">
         <section className="win-outset game-hero">
           <div className="hero-content">
@@ -232,11 +340,14 @@ const GamePage = () => {
             <p>Unable to load build.</p>
           </>
         )}
-        {!loading && !error && game && (
+            {!loading && !error && game && (
           <>
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 12, display: "flex", gap: 8 }}>
               <Link className="win-btn" to="/">
                 ← Back to Catalog
+              </Link>
+              <Link className="win-btn" to={`/admin/games/${gameId}`}>
+                Edit Game
               </Link>
             </div>
             <div className="win-outset panel">
@@ -270,49 +381,45 @@ const GamePage = () => {
 const AdminTeamsPage = () => {
   const [name, setName] = useState("");
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
-  const [forbidden, setForbidden] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = getAdminToken();
-    if (!token) {
-      setForbidden(true);
-    }
+    const loadTeams = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = (await fetchJson("/admin/teams")) as { id: string; name: string; _id?: string }[];
+        setTeams(data.map((team) => ({ id: team._id ?? team.id, name: team.name })));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load teams");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void loadTeams();
   }, []);
 
   const handleCreate = async () => {
     if (!name.trim()) {
       return;
     }
-    const team = await fetchJson("/admin/teams", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    setTeams((prev) => [...prev, { id: team._id ?? team.id, name: team.name }]);
-    setName("");
+    try {
+      const team = await fetchJson("/admin/teams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      setTeams((prev) => [...prev, { id: team._id ?? team.id, name: team.name }]);
+      setName("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create team");
+    }
   };
-
-  if (forbidden) {
-    return (
-      <WindowShell title="Birdmaid - Access Denied">
-        <main className="content">
-          <div className="win-outset panel">
-            <h2>Access denied</h2>
-            <p>Forbidden. You do not have permission to access this page.</p>
-          </div>
-        </main>
-      </WindowShell>
-    );
-  }
 
   return (
     <WindowShell title="Birdmaid Admin System">
-      <nav className="win-menu">
-        <span>File</span>
-        <span>Edit</span>
-        <span>View</span>
-        <span>Help</span>
-      </nav>
+      <GlobalNavigation />
       <main className="content">
         <div className="teams-layout">
           <aside className="sidebar win-inset">
@@ -365,8 +472,11 @@ const AdminTeamsPage = () => {
 
 const AdminGameEditorPage = () => {
   const { gameId: routeGameId } = useParams();
-  const [teamId, setTeamId] = useState("team-1");
-  const [title, setTitle] = useState("Cyber Odyssey");
+  const [teamId, setTeamId] = useState("");
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
+  const [teamSearch, setTeamSearch] = useState("");
+  const [showTeamDropdown, setShowTeamDropdown] = useState(false);
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
@@ -377,25 +487,99 @@ const AdminGameEditorPage = () => {
   const [tagsUser, setTagsUser] = useState("");
   const [tagsSystem, setTagsSystem] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [forbidden, setForbidden] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const publishDisabled = useMemo(
     () => !description || !coverUrl || !buildUrl,
     [description, coverUrl, buildUrl]
   );
 
+  // Load teams list
   useEffect(() => {
-    if (routeGameId && !gameId) {
+    const loadTeams = async () => {
+      try {
+        const data = (await fetchJson("/admin/teams")) as { id: string; name: string; _id?: string }[];
+        setTeams(data.map((team) => ({ id: team._id ?? team.id, name: team.name })));
+      } catch (err) {
+        // Ignore errors, teams list is optional
+      }
+    };
+    void loadTeams();
+  }, []);
+
+  // Filter teams by search
+  const filteredTeams = useMemo(() => {
+    if (!teamSearch.trim()) {
+      return teams;
+    }
+    const searchLower = teamSearch.toLowerCase();
+    return teams.filter((team) => team.name.toLowerCase().includes(searchLower));
+  }, [teams, teamSearch]);
+
+  // Get selected team name
+  const selectedTeamName = useMemo(() => {
+    const team = teams.find((t) => t.id === teamId);
+    return team ? team.name : "";
+  }, [teams, teamId]);
+
+  // Load existing game when gameId is provided and not "new"
+  useEffect(() => {
+    if (routeGameId && routeGameId !== "new" && routeGameId !== gameId) {
       setGameId(routeGameId);
     }
   }, [routeGameId, gameId]);
 
   useEffect(() => {
-    const token = getAdminToken();
-    if (!token) {
-      setForbidden(true);
+    const loadGame = async () => {
+      if (!gameId || gameId === "new") {
+        return;
+      }
+      setLoading(true);
+      setError(null);
+      try {
+        const game = (await fetchJson(`/admin/games/${gameId}`)) as {
+          id: string;
+          teamId: string;
+          title: string;
+          description_md: string;
+          repo_url: string;
+          cover_url: string;
+          status: string;
+          tags_user: string[];
+          tags_system: string[];
+          build_url: string | null;
+          adminRemark: string | null;
+        };
+        setTeamId(game.teamId);
+        setTitle(game.title);
+        setDescription(game.description_md);
+        setRepoUrl(game.repo_url);
+        setCoverUrl(game.cover_url);
+        setStatus(game.status);
+        setBuildUrl(game.build_url);
+        setTagsUser((game.tags_user ?? []).join(", "));
+        setTagsSystem((game.tags_system ?? []).join(", "));
+        setRemark(game.adminRemark ?? "");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load game");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void loadGame();
+  }, [gameId]);
+
+  // Update team search when teamId or teams change
+  useEffect(() => {
+    if (teamId && teams.length > 0) {
+      const team = teams.find((t) => t.id === teamId);
+      if (team) {
+        setTeamSearch(team.name);
+      }
+    } else if (!teamId) {
+      setTeamSearch("");
     }
-  }, []);
+  }, [teamId, teams]);
 
   const handleCreateGame = async () => {
     try {
@@ -413,33 +597,61 @@ const AdminGameEditorPage = () => {
       });
       setGameId(game._id ?? game.id);
     } catch (err: any) {
-      if (err.status === 403) {
-        setForbidden(true);
-      } else {
-        setError(err.message || "Failed to create game");
-      }
+      setError(err.message || "Failed to create game");
     }
   };
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files?.[0] || !gameId) {
+    const file = event.target.files?.[0];
+    if (!file) {
       return;
     }
-    const formData = new FormData();
-    formData.append("file", event.target.files[0]);
-    const result = await fetchJson(`/admin/games/${gameId}/build`, {
-      method: "POST",
-      body: formData,
-    });
-    setBuildUrl(result.build_url ?? null);
+    try {
+      setError(null);
+      // If game doesn't exist yet, create it first
+      let currentGameId = gameId;
+      if (!currentGameId || currentGameId === "new") {
+                      if (!title.trim() || !teamId.trim()) {
+                        setError("Please select Team and enter Game Title before uploading build");
+                        return;
+                      }
+        const game = await fetchJson("/admin/games", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            teamId,
+            title,
+            description_md: description || "",
+            repo_url: repoUrl || "",
+            cover_url: coverUrl || "",
+          }),
+        });
+        currentGameId = game._id ?? game.id;
+        setGameId(currentGameId);
+      }
+      // Upload build
+      const formData = new FormData();
+      formData.append("file", file);
+      const result = await fetchJson(`/admin/games/${currentGameId}/build`, {
+        method: "POST",
+        body: formData,
+      });
+      setBuildUrl(result.build_url ?? null);
+    } catch (err: any) {
+      setError(err.message || "Failed to upload build");
+    }
   };
 
   const handlePublish = async () => {
     if (!gameId) {
       return;
     }
-    await fetchJson(`/admin/games/${gameId}/publish`, { method: "POST" });
-    setStatus("published");
+    try {
+      await fetchJson(`/admin/games/${gameId}/publish`, { method: "POST" });
+      setStatus("published");
+    } catch (err: any) {
+      setError(err.message || "Failed to publish game");
+    }
   };
 
   const handleStatusUpdate = async () => {
@@ -454,11 +666,7 @@ const AdminGameEditorPage = () => {
         body: JSON.stringify({ status, remark }),
       });
     } catch (err: any) {
-      if (err.status === 403) {
-        setForbidden(true);
-      } else {
-        setError(err.message || "Failed to update status");
-      }
+      setError(err.message || "Failed to update status");
     }
   };
 
@@ -466,46 +674,33 @@ const AdminGameEditorPage = () => {
     if (!gameId) {
       return;
     }
-    const toArray = (value: string) =>
-      value
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean);
-    await fetchJson(`/admin/games/${gameId}/tags`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tags_user: toArray(tagsUser), tags_system: toArray(tagsSystem) }),
-    });
+    try {
+      const toArray = (value: string) =>
+        value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+      await fetchJson(`/admin/games/${gameId}/tags`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tags_user: toArray(tagsUser), tags_system: toArray(tagsSystem) }),
+      });
+    } catch (err: any) {
+      setError(err.message || "Failed to update tags");
+    }
   };
-
-  if (forbidden) {
-    return (
-      <WindowShell title="Birdmaid - Admin Game Editor">
-        <main className="content">
-          <div className="win-outset panel">
-            <h2>Access denied</h2>
-            <p>You do not have permission to access this page.</p>
-          </div>
-        </main>
-      </WindowShell>
-    );
-  }
 
   return (
     <WindowShell title="Birdmaid - Admin Game Editor">
-      <nav className="win-menu">
-        <span>File</span>
-        <span>Edit</span>
-        <span>View</span>
-        <span>Help</span>
-      </nav>
+      <GlobalNavigation />
       <main className="content">
         {error && (
           <div className="win-outset panel" style={{ background: "#ff0000", color: "#fff", marginBottom: 12 }}>
             <p>{error}</p>
           </div>
         )}
-        {publishDisabled && (
+        {loading && <p>Loading game...</p>}
+        {publishDisabled && !loading && (
           <div className="win-outset panel" style={{ marginBottom: 12 }}>
             <p>Publish requires cover, description, and build</p>
           </div>
@@ -520,9 +715,87 @@ const AdminGameEditorPage = () => {
           <div>
             <section className="win-outset panel">
               <h3>General Properties</h3>
-              <div className="form-field">
-                <label>Team ID</label>
-                <input value={teamId} onChange={(event) => setTeamId(event.target.value)} />
+              <div className="form-field" style={{ position: "relative" }}>
+                <label>Team</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    value={showTeamDropdown ? teamSearch : selectedTeamName}
+                    onChange={(event) => {
+                      setTeamSearch(event.target.value);
+                      setShowTeamDropdown(true);
+                      // Clear teamId if search doesn't match any team
+                      const matchingTeam = teams.find(
+                        (t) => t.name.toLowerCase() === event.target.value.toLowerCase()
+                      );
+                      if (matchingTeam) {
+                        setTeamId(matchingTeam.id);
+                      } else if (event.target.value === "") {
+                        setTeamId("");
+                      }
+                    }}
+                    onFocus={() => setShowTeamDropdown(true)}
+                    onBlur={() => {
+                      // Delay to allow click on dropdown item
+                      setTimeout(() => setShowTeamDropdown(false), 200);
+                    }}
+                    placeholder="Search or select team..."
+                  />
+                  {showTeamDropdown && filteredTeams.length > 0 && (
+                    <div
+                      className="win-outset"
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        zIndex: 1000,
+                        maxHeight: 200,
+                        overflowY: "auto",
+                        marginTop: 2,
+                        padding: 4,
+                        background: "var(--win-gray)",
+                      }}
+                    >
+                      {filteredTeams.map((team) => (
+                        <div
+                          key={team.id}
+                          className="win-inset"
+                          style={{
+                            padding: "6px 8px",
+                            cursor: "pointer",
+                            marginBottom: 2,
+                            backgroundColor: teamId === team.id ? "#d0d0d0" : "var(--win-white)",
+                          }}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setTeamId(team.id);
+                            setTeamSearch(team.name);
+                            setShowTeamDropdown(false);
+                          }}
+                        >
+                          {team.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {showTeamDropdown && filteredTeams.length === 0 && teamSearch.trim() && (
+                    <div
+                      className="win-outset"
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        zIndex: 1000,
+                        marginTop: 2,
+                        padding: 8,
+                        background: "var(--win-gray)",
+                      }}
+                    >
+                      <p style={{ margin: 0, fontSize: 12 }}>No teams found</p>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="form-field">
                 <label>Game Title</label>
@@ -537,8 +810,78 @@ const AdminGameEditorPage = () => {
                 <input id="repo" value={repoUrl} onChange={(event) => setRepoUrl(event.target.value)} />
               </div>
               <div className="form-field">
-                <label htmlFor="cover">Cover</label>
-                <input id="cover" value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} />
+                <label htmlFor="cover">Cover Image (URL or upload)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                  <input
+                    id="cover"
+                    type="text"
+                    value={coverUrl}
+                    onChange={(event) => setCoverUrl(event.target.value)}
+                    placeholder="Enter cover image URL"
+                    style={{ flex: 1 }}
+                  />
+                  <span style={{ fontSize: 12 }}>or</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                    onChange={async (event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) {
+                        return;
+                      }
+                      try {
+                        setError(null);
+                        // If game doesn't exist yet, create it first
+                        let currentGameId = gameId;
+                        if (!currentGameId || currentGameId === "new") {
+                        if (!title.trim() || !teamId.trim()) {
+                          setError("Please select Team and enter Game Title before uploading cover");
+                          return;
+                        }
+                          const game = await fetchJson("/admin/games", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              teamId,
+                              title,
+                              description_md: description || "",
+                              repo_url: repoUrl || "",
+                              cover_url: "",
+                            }),
+                          });
+                          currentGameId = game._id ?? game.id;
+                          setGameId(currentGameId);
+                        }
+                        // Upload cover image
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        const result = await fetchJson(`/admin/games/${currentGameId}/cover`, {
+                          method: "POST",
+                          body: formData,
+                        });
+                        setCoverUrl(result.cover_url);
+                      } catch (err: any) {
+                        setError(err.message || "Failed to upload cover image");
+                      }
+                    }}
+                  />
+                </div>
+                {coverUrl && (
+                  <img
+                    src={coverUrl}
+                    alt="Cover preview"
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: 200,
+                      marginTop: 8,
+                      border: "2px solid #000",
+                      objectFit: "contain",
+                    }}
+                    onError={() => {
+                      // Silently fail if image doesn't load
+                    }}
+                  />
+                )}
               </div>
               <button className="win-btn" type="button" onClick={handleCreateGame}>
                 Save game
@@ -547,7 +890,21 @@ const AdminGameEditorPage = () => {
             </section>
             <section className="win-outset panel">
               <h3>Build Upload</h3>
-              <input type="file" accept=".zip" onChange={handleUpload} disabled={!gameId} />
+              <p style={{ fontSize: 12, color: "#666", marginBottom: 8, marginTop: 0 }}>
+                ⚠ <strong>Important:</strong> Please save the game first (click "Save game" above) before uploading the build file.
+              </p>
+              <input
+                type="file"
+                accept=".zip"
+                onChange={handleUpload}
+                disabled={!gameId || gameId === "new"}
+                title={!gameId || gameId === "new" ? "Please create game first (click 'Save game')" : ""}
+              />
+              {(!gameId || gameId === "new") && (
+                <p style={{ fontSize: 11, color: "#aa0000", marginTop: 4, marginBottom: 0, fontWeight: "bold" }}>
+                  Game must be saved before uploading build
+                </p>
+              )}
               {buildUrl && (
                 <iframe
                   title="Build preview"
@@ -604,12 +961,24 @@ const AdminGameEditorPage = () => {
 const AdminSettingsPage = () => {
   const [maxBuildSize, setMaxBuildSize] = useState(300 * 1024 * 1024);
   const [error, setError] = useState<string | null>(null);
-  const [forbidden, setForbidden] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!getAdminToken()) {
-      setForbidden(true);
-    }
+    const loadSettings = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const settings = (await fetchJson("/admin/settings/build-limits")) as {
+          maxBuildSizeBytes: number;
+        };
+        setMaxBuildSize(settings.maxBuildSizeBytes);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load settings");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void loadSettings();
   }, []);
 
   const handleUpdate = async () => {
@@ -621,56 +990,37 @@ const AdminSettingsPage = () => {
         body: JSON.stringify({ maxBuildSizeBytes: maxBuildSize }),
       });
     } catch (err: any) {
-      if (err.status === 403) {
-        setForbidden(true);
-      } else {
-        setError(err.message || "Failed to update settings");
-      }
+      setError(err.message || "Failed to update settings");
     }
   };
 
-  if (forbidden) {
-    return (
-      <WindowShell title="Birdmaid - Access Denied">
-        <main className="content">
-          <div className="win-outset panel">
-            <h2>Access Denied</h2>
-            <p>You do not have permission to access this page.</p>
-          </div>
-        </main>
-      </WindowShell>
-    );
-  }
-
   return (
     <WindowShell title="Birdmaid - Admin Settings">
-      <nav className="win-menu">
-        <span>File</span>
-        <span>Edit</span>
-        <span>View</span>
-        <span>Help</span>
-      </nav>
+      <GlobalNavigation />
       <main className="content">
         {error && (
           <div className="win-outset panel" style={{ background: "#ff0000", color: "#fff", marginBottom: 12 }}>
             <p>{error}</p>
           </div>
         )}
-        <section className="win-outset panel">
-          <h2 style={{ marginTop: 0 }}>Max build size</h2>
-          <div className="form-field">
-            <label htmlFor="maxBuildSize">Max build size (bytes)</label>
-            <input
-              id="maxBuildSize"
-              type="number"
-              value={maxBuildSize}
-              onChange={(event) => setMaxBuildSize(Number(event.target.value))}
-            />
-          </div>
-          <button className="win-btn" type="button" onClick={handleUpdate}>
-            Update
-          </button>
-        </section>
+        {loading && <p>Loading settings...</p>}
+        {!loading && (
+          <section className="win-outset panel">
+            <h2 style={{ marginTop: 0 }}>Max build size</h2>
+            <div className="form-field">
+              <label htmlFor="maxBuildSize">Max build size (bytes)</label>
+              <input
+                id="maxBuildSize"
+                type="number"
+                value={maxBuildSize}
+                onChange={(event) => setMaxBuildSize(Number(event.target.value))}
+              />
+            </div>
+            <button className="win-btn" type="button" onClick={handleUpdate}>
+              Update
+            </button>
+          </section>
+        )}
       </main>
     </WindowShell>
   );
@@ -678,8 +1028,15 @@ const AdminSettingsPage = () => {
 
 const NotFound = () => (
   <WindowShell title="Birdmaid - 404.exe">
+    <GlobalNavigation />
     <main className="content">
-      <p>Not Found</p>
+      <div className="win-outset panel">
+        <h2>404 - Not Found</h2>
+        <p>The page you're looking for doesn't exist.</p>
+        <Link className="win-btn" to="/">
+          Go to Catalog
+        </Link>
+      </div>
     </main>
   </WindowShell>
 );
@@ -691,6 +1048,7 @@ export default function App() {
       <Route path="/games/:gameId" element={<GamePage />} />
       <Route path="/admin/teams" element={<AdminTeamsPage />} />
       <Route path="/admin/games/:gameId" element={<AdminGameEditorPage />} />
+      <Route path="/admin/games/new" element={<AdminGameEditorPage />} />
       <Route path="/admin/settings" element={<AdminSettingsPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

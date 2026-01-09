@@ -1,24 +1,627 @@
-# TBD in design-first
-# Define endpoints and contracts after UX_MAP and MODEL alignment.
+openapi: 3.0.3
+info:
+  title: Birdmaid API
+  version: 1.0.0
+  description: API for Birdmaid game catalog platform
 
-# TODO (FP1 scope):
-# Public
-# - GET /games?tag=...&sort=...
-# - GET /games/{id}
-# - GET /tags (optional; derived from games tags_user/tags_system)
-#
-# Admin
-# - POST /admin/teams
-# - PATCH /admin/teams/{id}
-# - POST /admin/games
-# - PATCH /admin/games/{id}
-# - POST /admin/games/{id}/build (upload ZIP)
-# - POST /admin/games/{id}/publish (or /status)
-# - POST /admin/games/{id}/status (editing/published/archived + remark)
-# - POST/PATCH /admin/games/{id}/tags (restricted; tags_user/tags_system)
-#
-# Constraints
-# - Publish requires cover_url + description_md + build_url/build_id.
-# - Tag assignment allowed for team members + Super Admin (FP1: Super Admin only).
-# - Max upload size 300 MB (configurable later).
-# - Build delivery uses signed build_url for iframe (or equivalent secure URL).
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+
+  /games:
+    get:
+      summary: List published games
+      parameters:
+        - name: tag
+          in: query
+          description: Filter by tag (user or system)
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Sort order (title_asc, title_desc)
+          schema:
+            type: string
+            enum: [title_asc, title_desc]
+      responses:
+        '200':
+          description: List of games
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameSummary'
+
+  /games/{id}:
+    get:
+      summary: Get game details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Game details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameDetails'
+        '404':
+          description: Game not found or not available
+
+  /tags:
+    get:
+      summary: List all tags from published games
+      responses:
+        '200':
+          description: List of tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /admin/teams:
+    get:
+      summary: List all teams (admin only)
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: List of teams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Team'
+        '403':
+          description: Forbidden
+    post:
+      summary: Create a team (admin only)
+      security:
+        - AdminToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Team created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '403':
+          description: Forbidden
+
+  /admin/teams/{id}:
+    patch:
+      summary: Update a team (admin only)
+      security:
+        - AdminToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Team updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '403':
+          description: Forbidden
+        '404':
+          description: Team not found
+
+  /admin/games:
+    post:
+      summary: Create a game (admin only)
+      security:
+        - AdminToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [teamId, title, description_md, repo_url, cover_url]
+              properties:
+                teamId:
+                  type: string
+                title:
+                  type: string
+                description_md:
+                  type: string
+                repo_url:
+                  type: string
+                cover_url:
+                  type: string
+      responses:
+        '200':
+          description: Game created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '403':
+          description: Forbidden
+
+  /admin/games/{id}:
+    get:
+      summary: Get game details with admin fields (admin only)
+      security:
+        - AdminToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Game details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminGameDetails'
+        '403':
+          description: Forbidden
+        '404':
+          description: Game not found
+    patch:
+      summary: Update a game (admin only)
+      security:
+        - AdminToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teamId:
+                  type: string
+                title:
+                  type: string
+                description_md:
+                  type: string
+                repo_url:
+                  type: string
+                cover_url:
+                  type: string
+      responses:
+        '200':
+          description: Game updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '403':
+          description: Forbidden
+        '404':
+          description: Game not found
+
+  /admin/games/{id}/cover:
+    post:
+      summary: Upload cover image (admin only)
+      security:
+        - AdminToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Cover image uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cover_url:
+                    type: string
+        '400':
+          description: Bad request (missing file, invalid image type, exceeds 10MB limit)
+        '403':
+          description: Forbidden
+        '404':
+          description: Game not found
+
+  /admin/games/{id}/build:
+    post:
+      summary: Upload build ZIP (admin only)
+      security:
+        - AdminToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Build uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  build_id:
+                    type: string
+                  build_url:
+                    type: string
+        '400':
+          description: Bad request (missing file, invalid ZIP, exceeds size limit)
+        '403':
+          description: Forbidden
+        '404':
+          description: Game not found
+
+  /admin/games/{id}/publish:
+    post:
+      summary: Publish a game (admin only)
+      security:
+        - AdminToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Game published
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [published]
+        '400':
+          description: Bad request (missing required fields: cover_url, description_md, build)
+        '403':
+          description: Forbidden
+        '404':
+          description: Game not found
+
+  /admin/games/{id}/status:
+    post:
+      summary: Update game status (admin only)
+      security:
+        - AdminToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [editing, published, archived]
+                remark:
+                  type: string
+                  description: Required when moving from published to editing
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  remark:
+                    type: string
+                    nullable: true
+        '400':
+          description: Bad request (invalid status, missing remark when required)
+        '403':
+          description: Forbidden
+        '404':
+          description: Game not found
+
+  /admin/games/{id}/tags:
+    post:
+      summary: Update game tags (admin only)
+      security:
+        - AdminToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tags_user:
+                  type: array
+                  items:
+                    type: string
+                tags_system:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Tags updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tags_user:
+                    type: array
+                    items:
+                      type: string
+                  tags_system:
+                    type: array
+                    items:
+                      type: string
+        '403':
+          description: Forbidden
+        '404':
+          description: Game not found
+
+  /admin/settings/build-limits:
+    get:
+      summary: Get build size limit (admin only)
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: Build limit settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  maxBuildSizeBytes:
+                    type: integer
+        '403':
+          description: Forbidden
+    patch:
+      summary: Update build size limit (admin only)
+      security:
+        - AdminToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [maxBuildSizeBytes]
+              properties:
+                maxBuildSizeBytes:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: Build limit updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  maxBuildSizeBytes:
+                    type: integer
+        '400':
+          description: Bad request (invalid size)
+        '403':
+          description: Forbidden
+
+components:
+  securitySchemes:
+    AdminToken:
+      type: apiKey
+      in: header
+      name: X-Admin-Token
+      description: Admin authentication token
+
+  schemas:
+    GameSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        cover_url:
+          type: string
+        tags_user:
+          type: array
+          items:
+            type: string
+        tags_system:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [published]
+
+    GameDetails:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description_md:
+          type: string
+        repo_url:
+          type: string
+        cover_url:
+          type: string
+        status:
+          type: string
+          enum: [published]
+        tags_user:
+          type: array
+          items:
+            type: string
+        tags_system:
+          type: array
+          items:
+            type: string
+        build_url:
+          type: string
+          nullable: true
+          description: Signed URL for iframe (expires in 1 hour)
+        build_id:
+          type: string
+          nullable: true
+        csp:
+          type: string
+          description: Content Security Policy (for reference)
+
+    AdminGameDetails:
+      allOf:
+        - $ref: '#/components/schemas/GameDetails'
+        - type: object
+          properties:
+            teamId:
+              type: string
+            status:
+              type: string
+              enum: [editing, published, archived]
+            adminRemark:
+              type: string
+              nullable: true
+
+    Game:
+      type: object
+      properties:
+        _id:
+          type: string
+        id:
+          type: string
+        teamId:
+          type: string
+        title:
+          type: string
+        description_md:
+          type: string
+        repo_url:
+          type: string
+        cover_url:
+          type: string
+        status:
+          type: string
+          enum: [editing, published, archived]
+        tags_user:
+          type: array
+          items:
+            type: string
+        tags_system:
+          type: array
+          items:
+            type: string
+        currentBuildId:
+          type: string
+          nullable: true
+        build_url:
+          type: string
+          nullable: true
+        adminRemark:
+          type: string
+          nullable: true
+
+    Team:
+      type: object
+      properties:
+        _id:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        members:
+          type: array
+          items:
+            type: string
