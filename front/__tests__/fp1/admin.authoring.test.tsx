@@ -10,7 +10,8 @@ describe("Admin authoring", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/Create team/i)).toBeInTheDocument();
+    const createButton = screen.getByRole("button", { name: /Create team/i });
+    expect(createButton).toBeInTheDocument();
   });
 
   it("allows editing game details", () => {

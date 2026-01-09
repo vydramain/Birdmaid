@@ -8,10 +8,15 @@ describe("POST /admin/games/{id}/status", () => {
   });
 
   it("updates status and saves remark", async () => {
-    const result = await controller.updateStatus("game-1", {
-      status: "editing",
-      remark: "Fix issue",
-    });
+    const adminHeaders = { "x-admin-token": "admin-token" };
+    const result = await controller.updateStatus(
+      "game-1",
+      {
+        status: "editing",
+        remark: "Fix issue",
+      },
+      adminHeaders
+    );
 
     expect(result.status).toBe("editing");
     expect(result.remark).toBe("Fix issue");

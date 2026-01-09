@@ -8,10 +8,15 @@ describe("POST /admin/games/{id}/tags", () => {
   });
 
   it("updates tags_user/tags_system", async () => {
-    const result = await controller.updateTags("game-1", {
-      tags_user: ["jam"],
-      tags_system: ["winter"],
-    });
+    const adminHeaders = { "x-admin-token": "admin-token" };
+    const result = await controller.updateTags(
+      "game-1",
+      {
+        tags_user: ["jam"],
+        tags_system: ["winter"],
+      },
+      adminHeaders
+    );
 
     expect(result.tags_user).toEqual(["jam"]);
     expect(result.tags_system).toEqual(["winter"]);

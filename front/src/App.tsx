@@ -3,10 +3,31 @@ import { Link, Route, Routes, useParams } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
 
+const getAdminToken = () => {
+  if (typeof window !== "undefined" && window.localStorage) {
+    return localStorage.getItem("adminToken");
+  }
+  return null;
+};
+
 const fetchJson = async (path: string, options?: RequestInit) => {
-  const response = await fetch(`${API_BASE_URL}${path}`, options);
+  const headers: HeadersInit = { ...options?.headers };
+  if (path.startsWith("/admin/")) {
+    const token = getAdminToken();
+    if (token) {
+      headers["X-Admin-Token"] = token;
+    }
+  }
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
   if (!response.ok) {
-    throw new Error(`Request failed (${response.status})`);
+    const errorData = await response.json().catch(() => ({ message: `Request failed (${response.status})` }));
+    const error = new Error(errorData.message || `Request failed (${response.status})`);
+    (error as any).status = response.status;
+    (error as any).data = errorData;
+    throw error;
   }
   return response.json();
 };
@@ -213,6 +234,11 @@ const GamePage = () => {
         )}
         {!loading && !error && game && (
           <>
+            <div style={{ marginBottom: 12 }}>
+              <Link className="win-btn" to="/">
+                ← Back to Catalog
+              </Link>
+            </div>
             <div className="win-outset panel">
               <h2 style={{ marginTop: 0 }}>{game.title}</h2>
               <div className="game-meta">
@@ -227,6 +253,8 @@ const GamePage = () => {
               <iframe
                 title="Game build"
                 src={game.build_url}
+                sandbox="allow-scripts allow-forms allow-pointer-lock"
+                allow="fullscreen; autoplay; gamepad"
                 style={{ width: "100%", height: 480, border: "2px solid #000" }}
                 onError={() => setIframeError(true)}
               />
@@ -242,6 +270,14 @@ const GamePage = () => {
 const AdminTeamsPage = () => {
   const [name, setName] = useState("");
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
+  const [forbidden, setForbidden] = useState(false);
+
+  useEffect(() => {
+    const token = getAdminToken();
+    if (!token) {
+      setForbidden(true);
+    }
+  }, []);
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -255,6 +291,19 @@ const AdminTeamsPage = () => {
     setTeams((prev) => [...prev, { id: team._id ?? team.id, name: team.name }]);
     setName("");
   };
+
+  if (forbidden) {
+    return (
+      <WindowShell title="Birdmaid - Access Denied">
+        <main className="content">
+          <div className="win-outset panel">
+            <h2>Access denied</h2>
+            <p>Forbidden. You do not have permission to access this page.</p>
+          </div>
+        </main>
+      </WindowShell>
+    );
+  }
 
   return (
     <WindowShell title="Birdmaid Admin System">
@@ -295,6 +344,9 @@ const AdminTeamsPage = () => {
                 <div className="win-outset panel" key={team.id}>
                   <strong>{team.name}</strong>
                   <p>ID: {team.id}</p>
+                  <Link className="win-btn" to={`/admin/games/new`}>
+                    Create Game
+                  </Link>
                 </div>
               ))}
               {teams.length === 0 && (
@@ -324,25 +376,49 @@ const AdminGameEditorPage = () => {
   const [remark, setRemark] = useState("");
   const [tagsUser, setTagsUser] = useState("");
   const [tagsSystem, setTagsSystem] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [forbidden, setForbidden] = useState(false);
 
   const publishDisabled = useMemo(
     () => !description || !coverUrl || !buildUrl,
     [description, coverUrl, buildUrl]
   );
 
+  useEffect(() => {
+    if (routeGameId && !gameId) {
+      setGameId(routeGameId);
+    }
+  }, [routeGameId, gameId]);
+
+  useEffect(() => {
+    const token = getAdminToken();
+    if (!token) {
+      setForbidden(true);
+    }
+  }, []);
+
   const handleCreateGame = async () => {
-    const game = await fetchJson("/admin/games", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        teamId,
-        title,
-        description_md: description,
-        repo_url: repoUrl,
-        cover_url: coverUrl,
-      }),
-    });
-    setGameId(game._id ?? game.id);
+    try {
+      setError(null);
+      const game = await fetchJson("/admin/games", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId,
+          title,
+          description_md: description,
+          repo_url: repoUrl,
+          cover_url: coverUrl,
+        }),
+      });
+      setGameId(game._id ?? game.id);
+    } catch (err: any) {
+      if (err.status === 403) {
+        setForbidden(true);
+      } else {
+        setError(err.message || "Failed to create game");
+      }
+    }
   };
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -370,11 +446,20 @@ const AdminGameEditorPage = () => {
     if (!gameId) {
       return;
     }
-    await fetchJson(`/admin/games/${gameId}/status`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, remark }),
-    });
+    try {
+      setError(null);
+      await fetchJson(`/admin/games/${gameId}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, remark }),
+      });
+    } catch (err: any) {
+      if (err.status === 403) {
+        setForbidden(true);
+      } else {
+        setError(err.message || "Failed to update status");
+      }
+    }
   };
 
   const handleTagsUpdate = async () => {
@@ -393,6 +478,19 @@ const AdminGameEditorPage = () => {
     });
   };
 
+  if (forbidden) {
+    return (
+      <WindowShell title="Birdmaid - Admin Game Editor">
+        <main className="content">
+          <div className="win-outset panel">
+            <h2>Access denied</h2>
+            <p>You do not have permission to access this page.</p>
+          </div>
+        </main>
+      </WindowShell>
+    );
+  }
+
   return (
     <WindowShell title="Birdmaid - Admin Game Editor">
       <nav className="win-menu">
@@ -402,6 +500,16 @@ const AdminGameEditorPage = () => {
         <span>Help</span>
       </nav>
       <main className="content">
+        {error && (
+          <div className="win-outset panel" style={{ background: "#ff0000", color: "#fff", marginBottom: 12 }}>
+            <p>{error}</p>
+          </div>
+        )}
+        {publishDisabled && (
+          <div className="win-outset panel" style={{ marginBottom: 12 }}>
+            <p>Publish requires cover, description, and build</p>
+          </div>
+        )}
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
           <div>
             <div className="status-pill">STATUS: {status.toUpperCase()}</div>
@@ -421,16 +529,16 @@ const AdminGameEditorPage = () => {
                 <input value={title} onChange={(event) => setTitle(event.target.value)} />
               </div>
               <div className="form-field">
-                <label>Description</label>
-                <textarea value={description} onChange={(event) => setDescription(event.target.value)} />
+                <label htmlFor="description">Description</label>
+                <textarea id="description" value={description} onChange={(event) => setDescription(event.target.value)} />
               </div>
               <div className="form-field">
-                <label>Repository</label>
-                <input value={repoUrl} onChange={(event) => setRepoUrl(event.target.value)} />
+                <label htmlFor="repo">Repository</label>
+                <input id="repo" value={repoUrl} onChange={(event) => setRepoUrl(event.target.value)} />
               </div>
               <div className="form-field">
-                <label>Cover</label>
-                <input value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} />
+                <label htmlFor="cover">Cover</label>
+                <input id="cover" value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} />
               </div>
               <button className="win-btn" type="button" onClick={handleCreateGame}>
                 Save game
@@ -451,12 +559,12 @@ const AdminGameEditorPage = () => {
             <section className="win-outset panel">
               <h3>Tags</h3>
               <div className="form-field">
-                <label>User tags</label>
-                <input value={tagsUser} onChange={(event) => setTagsUser(event.target.value)} />
+                <label htmlFor="tagsUser">User tags</label>
+                <input id="tagsUser" value={tagsUser} onChange={(event) => setTagsUser(event.target.value)} />
               </div>
               <div className="form-field">
-                <label>System tags</label>
-                <input value={tagsSystem} onChange={(event) => setTagsSystem(event.target.value)} />
+                <label htmlFor="tagsSystem">System tags</label>
+                <input id="tagsSystem" value={tagsSystem} onChange={(event) => setTagsSystem(event.target.value)} />
               </div>
               <button className="win-btn" type="button" onClick={handleTagsUpdate} disabled={!gameId}>
                 Save tags
@@ -493,6 +601,81 @@ const AdminGameEditorPage = () => {
   );
 };
 
+const AdminSettingsPage = () => {
+  const [maxBuildSize, setMaxBuildSize] = useState(300 * 1024 * 1024);
+  const [error, setError] = useState<string | null>(null);
+  const [forbidden, setForbidden] = useState(false);
+
+  useEffect(() => {
+    if (!getAdminToken()) {
+      setForbidden(true);
+    }
+  }, []);
+
+  const handleUpdate = async () => {
+    try {
+      setError(null);
+      await fetchJson("/admin/settings/build-limits", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ maxBuildSizeBytes: maxBuildSize }),
+      });
+    } catch (err: any) {
+      if (err.status === 403) {
+        setForbidden(true);
+      } else {
+        setError(err.message || "Failed to update settings");
+      }
+    }
+  };
+
+  if (forbidden) {
+    return (
+      <WindowShell title="Birdmaid - Access Denied">
+        <main className="content">
+          <div className="win-outset panel">
+            <h2>Access Denied</h2>
+            <p>You do not have permission to access this page.</p>
+          </div>
+        </main>
+      </WindowShell>
+    );
+  }
+
+  return (
+    <WindowShell title="Birdmaid - Admin Settings">
+      <nav className="win-menu">
+        <span>File</span>
+        <span>Edit</span>
+        <span>View</span>
+        <span>Help</span>
+      </nav>
+      <main className="content">
+        {error && (
+          <div className="win-outset panel" style={{ background: "#ff0000", color: "#fff", marginBottom: 12 }}>
+            <p>{error}</p>
+          </div>
+        )}
+        <section className="win-outset panel">
+          <h2 style={{ marginTop: 0 }}>Max build size</h2>
+          <div className="form-field">
+            <label htmlFor="maxBuildSize">Max build size (bytes)</label>
+            <input
+              id="maxBuildSize"
+              type="number"
+              value={maxBuildSize}
+              onChange={(event) => setMaxBuildSize(Number(event.target.value))}
+            />
+          </div>
+          <button className="win-btn" type="button" onClick={handleUpdate}>
+            Update
+          </button>
+        </section>
+      </main>
+    </WindowShell>
+  );
+};
+
 const NotFound = () => (
   <WindowShell title="Birdmaid - 404.exe">
     <main className="content">
@@ -508,6 +691,7 @@ export default function App() {
       <Route path="/games/:gameId" element={<GamePage />} />
       <Route path="/admin/teams" element={<AdminTeamsPage />} />
       <Route path="/admin/games/:gameId" element={<AdminGameEditorPage />} />
+      <Route path="/admin/settings" element={<AdminSettingsPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

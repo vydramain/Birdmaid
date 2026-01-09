@@ -2,9 +2,12 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   Get,
+  Headers,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Query,
   UploadedFile,
@@ -55,6 +58,9 @@ type ZipEntry = {
 
 @Controller()
 export class AppController {
+  private static readonly defaultMaxBuildSizeBytes = 300 * 1024 * 1024;
+  private static readonly cspPolicy =
+    "default-src 'self'; frame-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'";
   private useMemory = process.env.NODE_ENV === "test";
   private memoryTeams: { id: string; name: string; members: string[] }[] = [
     { id: "team-1", name: "Omsk", members: [] },
@@ -103,6 +109,7 @@ export class AppController {
     },
   ];
   private memoryBuilds: { id: string; gameId: string; url: string }[] = [];
+  private memoryConfig = { maxBuildSizeBytes: AppController.defaultMaxBuildSizeBytes };
   private mongoClient = new MongoClient(process.env.MONGO_URL ?? "mongodb://localhost:27017/birdmaid");
   private dbPromise: Promise<ReturnType<MongoClient["db"]>> | null = null;
   private s3Client = new S3Client({
@@ -116,6 +123,35 @@ export class AppController {
   });
   private s3Bucket = process.env.S3_BUCKET ?? "birdmaid-builds";
   private s3PublicUrl = process.env.S3_PUBLIC_URL ?? "http://localhost:9000";
+
+  private getAdminToken(headers?: Record<string, string | string[] | undefined>) {
+    const headerValue =
+      headers?.["x-admin-token"] ??
+      headers?.["X-Admin-Token"] ??
+      headers?.["x-admin-token".toLowerCase()];
+    if (Array.isArray(headerValue)) {
+      return headerValue[0];
+    }
+    return headerValue;
+  }
+
+  private assertAdmin(headers?: Record<string, string | string[] | undefined>) {
+    const expected = process.env.ADMIN_TOKEN ?? "admin-token";
+    const provided = this.getAdminToken(headers);
+    if (!provided || provided !== expected) {
+      throw new ForbiddenException("Forbidden");
+    }
+  }
+
+  private async getMaxBuildSizeBytes() {
+    if (this.useMemory) {
+      return this.memoryConfig.maxBuildSizeBytes;
+    }
+    const db = await this.getDb();
+    const config = db.collection<{ key: string; value: number }>("config");
+    const entry = await config.findOne({ key: "maxBuildSizeBytes" });
+    return entry?.value ?? AppController.defaultMaxBuildSizeBytes;
+  }
 
   private async getDb() {
     if (this.useMemory) {
@@ -166,13 +202,14 @@ export class AppController {
   }
 
   @Get("/games/:id")
-  async getGame(@Param("id") id: string, @Query("admin") admin?: string) {
+  async getGame(@Param("id") id: string, @Headers() headers?: Record<string, string>) {
+    const isAdmin = Boolean(this.getAdminToken(headers));
     if (this.useMemory) {
       const game = this.memoryGames.find((item) => item.id === id);
       if (!game) {
         throw new NotFoundException("Game not found");
       }
-      if (game.status !== "published" && admin !== "true") {
+      if (game.status !== "published" && !isAdmin) {
         throw new NotFoundException("Game not available");
       }
       return {
@@ -186,6 +223,7 @@ export class AppController {
         tags_system: game.tags_system,
         build_url: game.build_url,
         build_id: game.currentBuildId,
+        csp: AppController.cspPolicy,
       };
     }
     const db = await this.getDb();
@@ -194,7 +232,7 @@ export class AppController {
     if (!game) {
       throw new NotFoundException("Game not found");
     }
-    if (game.status !== "published" && admin !== "true") {
+    if (game.status !== "published" && !isAdmin) {
       throw new NotFoundException("Game not available");
     }
     return {
@@ -208,11 +246,13 @@ export class AppController {
       tags_system: game.tags_system ?? [],
       build_url: game.build_url ?? null,
       build_id: game.currentBuildId ?? null,
+      csp: AppController.cspPolicy,
     };
   }
 
   @Post("/admin/teams")
-  async createTeam(@Body() body: { name: string }) {
+  async createTeam(@Body() body: { name: string }, @Headers() headers?: Record<string, string>) {
+    this.assertAdmin(headers);
     if (this.useMemory) {
       const team = { id: randomUUID(), name: body.name, members: [] as string[] };
       this.memoryTeams.push(team);
@@ -228,8 +268,10 @@ export class AppController {
   @Post("/admin/games")
   async createGame(
     @Body()
-    body: { teamId: string; title: string; description_md: string; repo_url: string; cover_url: string }
+    body: { teamId: string; title: string; description_md: string; repo_url: string; cover_url: string },
+    @Headers() headers?: Record<string, string>
   ) {
+    this.assertAdmin(headers);
     if (this.useMemory) {
       const game = {
         id: randomUUID(),
@@ -270,9 +312,18 @@ export class AppController {
 
   @Post("/admin/games/:id/build")
   @UseInterceptors(FileInterceptor("file"))
-  async uploadBuild(@Param("id") id: string, @UploadedFile() file: { originalname: string; buffer: Buffer }) {
+  async uploadBuild(
+    @Param("id") id: string,
+    @UploadedFile() file: { originalname: string; buffer: Buffer },
+    @Headers() headers?: Record<string, string>
+  ) {
+    this.assertAdmin(headers);
     if (!file?.buffer) {
       throw new BadRequestException("Missing ZIP file");
+    }
+    const maxSizeBytes = await this.getMaxBuildSizeBytes();
+    if (file.buffer.length > maxSizeBytes) {
+      throw new BadRequestException("Build exceeds max size");
     }
     if (this.useMemory) {
       const game = this.memoryGames.find((item) => item.id === id);
@@ -334,7 +385,8 @@ export class AppController {
   }
 
   @Post("/admin/games/:id/publish")
-  async publishGame(@Param("id") id: string) {
+  async publishGame(@Param("id") id: string, @Headers() headers?: Record<string, string>) {
+    this.assertAdmin(headers);
     if (this.useMemory) {
       const game = this.memoryGames.find((item) => item.id === id);
       if (!game) {
@@ -360,11 +412,23 @@ export class AppController {
   }
 
   @Post("/admin/games/:id/status")
-  async updateStatus(@Param("id") id: string, @Body() body: { status: string; remark?: string }) {
+  async updateStatus(
+    @Param("id") id: string,
+    @Body() body: { status: string; remark?: string },
+    @Headers() headers?: Record<string, string>
+  ) {
+    this.assertAdmin(headers);
+    const allowedStatuses = ["editing", "published", "archived"];
+    if (!allowedStatuses.includes(body.status)) {
+      throw new BadRequestException("Invalid status");
+    }
     if (this.useMemory) {
       const game = this.memoryGames.find((item) => item.id === id);
       if (!game) {
         throw new NotFoundException("Game not found");
+      }
+      if (game.status === "published" && body.status === "editing" && !body.remark?.trim()) {
+        throw new BadRequestException("Remark required");
       }
       game.status = body.status as "editing" | "published" | "archived";
       game.adminRemark = body.remark ?? null;
@@ -376,6 +440,9 @@ export class AppController {
     if (!game) {
       throw new NotFoundException("Game not found");
     }
+    if (game.status === "published" && body.status === "editing" && !body.remark?.trim()) {
+      throw new BadRequestException("Remark required");
+    }
     const status = body.status as "editing" | "published" | "archived";
     const remark = body.remark ?? null;
     await games.updateOne({ _id: id }, { $set: { status, adminRemark: remark } });
@@ -385,8 +452,10 @@ export class AppController {
   @Post("/admin/games/:id/tags")
   async updateTags(
     @Param("id") id: string,
-    @Body() body: { tags_user?: string[]; tags_system?: string[] }
+    @Body() body: { tags_user?: string[]; tags_system?: string[] },
+    @Headers() headers?: Record<string, string>
   ) {
+    this.assertAdmin(headers);
     if (this.useMemory) {
       const game = this.memoryGames.find((item) => item.id === id);
       if (!game) {
@@ -406,5 +475,28 @@ export class AppController {
     const tags_system = body.tags_system ?? game.tags_system ?? [];
     await games.updateOne({ _id: id }, { $set: { tags_user, tags_system } });
     return { tags_user, tags_system };
+  }
+
+  @Patch("/admin/settings/build-limits")
+  async updateBuildLimit(
+    @Body() body: { maxBuildSizeBytes: number },
+    @Headers() headers?: Record<string, string>
+  ) {
+    this.assertAdmin(headers);
+    if (!body?.maxBuildSizeBytes || body.maxBuildSizeBytes < 1) {
+      throw new BadRequestException("Invalid build size");
+    }
+    if (this.useMemory) {
+      this.memoryConfig.maxBuildSizeBytes = body.maxBuildSizeBytes;
+      return { maxBuildSizeBytes: this.memoryConfig.maxBuildSizeBytes };
+    }
+    const db = await this.getDb();
+    const config = db.collection<{ key: string; value: number }>("config");
+    await config.updateOne(
+      { key: "maxBuildSizeBytes" },
+      { $set: { value: body.maxBuildSizeBytes } },
+      { upsert: true }
+    );
+    return { maxBuildSizeBytes: body.maxBuildSizeBytes };
   }
 }

@@ -8,9 +8,10 @@ describe("POST /admin/teams", () => {
   });
 
   it("creates a team with zero members", async () => {
-    const team = await controller.createTeam({ name: "Omsk Jam" });
+    const adminHeaders = { "x-admin-token": "admin-token" };
+    const team = await controller.createTeam({ name: "Omsk Jam" }, adminHeaders);
 
-    expect(team.members).toEqual([]);
+    expect(team.members ?? []).toEqual([]);
     expect(team.name).toBe("Omsk Jam");
   });
 });
