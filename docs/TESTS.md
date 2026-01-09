@@ -93,3 +93,147 @@ requirements:
 - back/__tests__/fp1/admin.games.status.test.ts
 - back/__tests__/fp1/admin.games.tags.test.ts
 - back/__tests__/fp1/admin.teams.test.ts
+
+---
+
+## FP4: User Accounts & Windows 95 UI
+
+### UAT / BDD
+
+- User registration: Given a user opens registration modal, when they enter valid email, unique login, and password (min 6 chars), then account is created and JWT token is returned.
+- User login with email: Given a registered user, when they login with email and password, then JWT token is returned and user is authenticated.
+- User login with username: Given a registered user, when they login with login (username) and password, then JWT token is returned and user is authenticated.
+- Password recovery request: Given a user requests password recovery, when they enter email, then recovery code is generated, previous code is invalidated, and email is sent.
+- Password recovery verify: Given a recovery code was sent, when user enters code and new password, then password is updated and JWT token is returned.
+- Unauthenticated catalog access: Given an unauthenticated visitor, when they browse catalog, then only published games are visible, and Editor/Settings tabs are hidden.
+- Authenticated catalog access: Given an authenticated user, when they browse catalog, then all games (including editing/archived for their teams) are visible, and Editor tab is accessible for their teams' games.
+- Create team: Given an authenticated user, when they create a team, then team is created with user as leader and member.
+- Add team member: Given a team leader, when they add a user to team, then user is added to members array.
+- Transfer team leadership: Given a team leader, when they transfer leadership to another member, then leader field is updated.
+- Create game for team: Given a team member, when they create a game for their team, then game is created with status "editing".
+- Edit game (team member): Given a team member, when they edit their team's game, then changes are saved.
+- Edit game (super admin): Given a super admin, when they edit any game, then changes are saved regardless of team membership.
+- Publish game: Given a team member, when they publish their team's game (with cover, description, build), then status changes to "published".
+- Archive game: Given a team member, when they archive their team's game, then status changes to "archived".
+- Super admin force status: Given a super admin, when they force status change with optional remark, then game status and remark are updated.
+- View comments: Given any user (authenticated or not), when they view a published game, then comments are visible with userLogin and timestamp.
+- Post comment: Given an authenticated user, when they post a comment on a published game, then comment is saved with userLogin.
+- Play game modal: Given a user clicks "Play" button, when game page loads, then Windows 95 styled draggable modal opens with game iframe.
+- Login modal: Given an unauthenticated user clicks "Login" button, when modal opens, then Windows 95 styled draggable modal appears with login/registration form.
+- Windows 95 styling: Given any page, when page renders, then all UI elements follow Windows 95 design (title bars, buttons, inputs, modals).
+
+### Acceptance Checklist (FP4)
+
+- Authentication flow complete: registration, login (email/username), password recovery.
+- JWT tokens stored and sent with API requests.
+- Unauthenticated users see only published games; Editor/Settings hidden.
+- Authenticated users can create teams, add members, create games for teams.
+- Super admin can edit any game and force status changes.
+- Comments visible to all on published games; authenticated users can post.
+- Windows 95 modals (login, play) are draggable by title bar.
+- Game page shows description, team, members, repo, Play button (no iframe on main page).
+- Entire site styled in Windows 95 aesthetic (no MUI Material 3 artifacts).
+- Team sidebar removed from Teams page.
+
+### RTM (YAML)
+
+```yaml
+fp: FP4
+requirements:
+  - id: FR-FP4-001
+    name: User account system
+    tests:
+      - UAT-FP4-001
+      - UAT-FP4-002
+      - UAT-FP4-003
+      - UAT-FP4-004
+      - UAT-FP4-005
+    code_targets: [front/auth, back/auth]
+  - id: FR-FP4-002
+    name: Unauthenticated visitor access
+    tests:
+      - UAT-FP4-006
+    code_targets: [front/catalog, back/games.list]
+  - id: FR-FP4-003
+    name: Authenticated user access
+    tests:
+      - UAT-FP4-007
+      - UAT-FP4-010
+      - UAT-FP4-011
+      - UAT-FP4-012
+      - UAT-FP4-014
+      - UAT-FP4-015
+    code_targets: [front/teams, front/editor, back/teams, back/games]
+  - id: FR-FP4-004
+    name: Super admin access
+    tests:
+      - UAT-FP4-013
+      - UAT-FP4-016
+    code_targets: [front/editor, back/games.status]
+  - id: FR-FP4-005
+    name: UI navigation changes
+    tests:
+      - UAT-FP4-006
+      - UAT-FP4-007
+    code_targets: [front/header, front/teams]
+  - id: FR-FP4-006
+    name: Authentication UI (Windows 95)
+    tests:
+      - UAT-FP4-020
+    code_targets: [front/auth.modal]
+  - id: FR-FP4-007
+    name: Game page redesign
+    tests:
+      - UAT-FP4-019
+    code_targets: [front/game]
+  - id: FR-FP4-008
+    name: Windows 95 UI styling
+    tests:
+      - UAT-FP4-021
+    code_targets: [front/components]
+  - id: FR-FP4-009
+    name: Comments system
+    tests:
+      - UAT-FP4-017
+      - UAT-FP4-018
+    code_targets: [front/game, back/comments]
+  - id: NFR-FP4-001
+    name: Authentication security
+    tests:
+      - UAT-FP4-001
+      - UAT-FP4-002
+      - UAT-FP4-003
+    code_targets: [back/auth]
+  - id: NFR-FP4-003
+    name: Windows 95 UI consistency
+    tests:
+      - UAT-FP4-020
+      - UAT-FP4-021
+    code_targets: [front/components]
+```
+
+### Planned Test Files
+
+- front/__tests__/fp4/auth.registration.test.tsx
+- front/__tests__/fp4/auth.login.test.tsx
+- front/__tests__/fp4/auth.recovery.test.tsx
+- front/__tests__/fp4/auth.modal.test.tsx
+- front/__tests__/fp4/catalog.visibility.test.tsx
+- front/__tests__/fp4/teams.creation.test.tsx
+- front/__tests__/fp4/teams.members.test.tsx
+- front/__tests__/fp4/game.editor.test.tsx
+- front/__tests__/fp4/game.comments.test.tsx
+- front/__tests__/fp4/game.play-modal.test.tsx
+- front/__tests__/fp4/ui.windows95.test.tsx
+- back/__tests__/fp4/auth.register.test.ts
+- back/__tests__/fp4/auth.login.test.ts
+- back/__tests__/fp4/auth.recovery.test.ts
+- back/__tests__/fp4/auth.jwt.test.ts
+- back/__tests__/fp4/teams.create.test.ts
+- back/__tests__/fp4/teams.members.test.ts
+- back/__tests__/fp4/teams.leader.test.ts
+- back/__tests__/fp4/games.create.test.ts
+- back/__tests__/fp4/games.edit-permissions.test.ts
+- back/__tests__/fp4/games.status-superadmin.test.ts
+- back/__tests__/fp4/comments.create.test.ts
+- back/__tests__/fp4/comments.list.test.ts

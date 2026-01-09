@@ -1,15 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, Route, Routes, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { Link, Route, Routes, useParams, useNavigate } from "react-router-dom";
+import { apiClient } from "./api/client";
+import { useAuth } from "./contexts/AuthContext";
+import { useWindowPosition } from "./contexts/WindowPositionContext";
+import { AuthModal } from "./components/AuthModal";
+import { PlayModal } from "./components/PlayModal";
+import { HourglassLoader } from "./components/win95/HourglassLoader";
+import { Win95Button } from "./components/win95/Win95Button";
+import { Win95Input } from "./components/win95/Win95Input";
+import { Win95Textarea } from "./components/win95/Win95Textarea";
+import { Win95Modal } from "./components/win95/Win95Modal";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
-
-const fetchJson = async (path: string, options?: RequestInit) => {
-  const response = await fetch(`${API_BASE_URL}${path}`, options);
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status})`);
+// Fix for TypeScript import.meta.env
+declare global {
+  interface ImportMetaEnv {
+    readonly VITE_API_BASE_URL?: string;
   }
-  return response.json();
-};
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
+}
 
 type GameSummary = {
   id: string;
@@ -18,12 +28,32 @@ type GameSummary = {
   tags_user?: string[];
   tags_system?: string[];
   status: string;
+  teamId?: string;
 };
 
 type GameDetails = GameSummary & {
   description_md?: string;
   repo_url?: string;
   build_url?: string | null;
+  team?: { name: string; members: string[] };
+  teamId?: string;
+};
+
+type Team = {
+  id: string;
+  name: string;
+  leader: string;
+  leaderLogin?: string;
+  members: string[];
+  memberLogins?: string[];
+};
+
+type Comment = {
+  id: string;
+  text: string;
+  userLogin: string;
+  userId: string;
+  createdAt: string;
 };
 
 const WindowControls = () => (
@@ -40,32 +70,208 @@ const WindowControls = () => (
   </div>
 );
 
-const WindowShell = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="app-root">
-    <div className="win-window">
-      <header className="win-titlebar">
-        <div className="title">
-          <span>◆</span>
-          <span>{title}</span>
-        </div>
-        <WindowControls />
-      </header>
-      {children}
+const WindowShell = ({ title, children, toolbar }: { title: string; children: React.ReactNode; toolbar?: React.ReactNode }) => {
+  const { position, setPosition } = useWindowPosition();
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const windowRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest(".win-titlebar")) {
+      setIsDragging(true);
+      if (windowRef.current) {
+        const rect = windowRef.current.getBoundingClientRect();
+        setDragStart({
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        setPosition({
+          x: e.clientX - dragStart.x,
+          y: e.clientY - dragStart.y,
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, dragStart, setPosition]);
+
+  return (
+    <div className="app-root">
+      <div
+        ref={windowRef}
+        className="win-window"
+        style={{
+          position: "absolute",
+          left: `${position.x}px`,
+          top: `${position.y}px`,
+          cursor: isDragging ? "grabbing" : "default",
+        }}
+      >
+        <header
+          className="win-titlebar"
+          onMouseDown={handleMouseDown}
+          style={{ cursor: isDragging ? "grabbing" : "grab" }}
+        >
+          <div className="title">
+            <span>◆</span>
+            <span>{title}</span>
+          </div>
+          <WindowControls />
+        </header>
+        {toolbar}
+        {children}
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+// Component for cover image with loader
+const CoverImageWithLoader = ({ src, alt }: { src: string | null | undefined; alt: string }) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  // Don't render if src is empty
+  if (!src) {
+    return (
+      <div style={{ padding: "20px", textAlign: "center", color: "var(--win-gray-dark)" }}>
+        No image available
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {loading && (
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
+          <HourglassLoader />
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        style={{
+          width: "100%",
+          height: "auto",
+          display: "block",
+          border: "2px solid var(--win-gray-dark)",
+          opacity: loading ? 0 : 1,
+          transition: "opacity 0.3s",
+        }}
+        onLoad={() => {
+          setLoading(false);
+          setError(false);
+        }}
+        onError={(e) => {
+          console.error("Failed to load cover image:", src, e);
+          setLoading(false);
+          setError(true);
+        }}
+      />
+      {error && (
+        <div style={{ padding: "20px", textAlign: "center", color: "var(--win-gray-dark)" }}>
+          Failed to load image
+        </div>
+      )}
+    </>
+  );
+};
 
 const CatalogPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [games, setGames] = useState<GameSummary[]>([]);
+  const [searchTitle, setSearchTitle] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const [teamFilterId, setTeamFilterId] = useState<string | null>(null);
+  const [teamFilterName, setTeamFilterName] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const auth = useAuth();
+  const navigate = useNavigate();
+
+  // Check URL params for teamId filter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const teamId = params.get("teamId");
+    if (teamId) {
+      setTeamFilterId(teamId);
+      // Load team name
+      apiClient.json<{ teams: Team[] }>("/teams")
+        .then((data) => {
+          const team = data.teams.find((t) => t.id === teamId);
+          if (team) {
+            setTeamFilterName(team.name);
+            if (!selectedTags.includes(team.name)) {
+              setSelectedTags((prev) => [...prev, team.name]);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   const loadGames = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = (await fetchJson("/games")) as GameSummary[];
+      const params = new URLSearchParams();
+      if (searchTitle.trim()) params.append("title", searchTitle.trim());
+      if (selectedTags.length > 0) {
+        selectedTags.forEach((tag) => params.append("tag", tag));
+      }
+      if (teamFilterId) {
+        params.append("teamId", teamFilterId);
+      }
+      const query = params.toString();
+      const data = (await apiClient.json<GameSummary[]>(`/games${query ? `?${query}` : ""}`)) as GameSummary[];
+      
+      // Debug: log cover URLs to verify they are signed URLs, not S3 keys
+      data.forEach((game) => {
+        if (game.cover_url) {
+          if (game.cover_url.startsWith('covers/')) {
+            console.error(`[CatalogPage] ERROR: Received S3 key instead of signed URL for game ${game.id}: ${game.cover_url}`);
+          } else if (game.cover_url.startsWith('http')) {
+            console.log(`[CatalogPage] Received signed URL for game ${game.id}: ${game.cover_url.substring(0, 100)}...`);
+          } else {
+            console.warn(`[CatalogPage] Unexpected cover_url format for game ${game.id}: ${game.cover_url}`);
+          }
+        }
+      });
+      
       setGames(data);
+      
+      // Extract all unique tags from games
+      const tagsSet = new Set<string>();
+      data.forEach((game) => {
+        (game.tags_user || []).forEach((tag) => tagsSet.add(tag));
+        (game.tags_system || []).forEach((tag) => tagsSet.add(tag));
+      });
+      // Add team filter name to tags if present
+      if (teamFilterName && !tagsSet.has(teamFilterName)) {
+        tagsSet.add(teamFilterName);
+      }
+      setAllTags(Array.from(tagsSet).sort());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -77,83 +283,206 @@ const CatalogPage = () => {
     void loadGames();
   }, []);
 
-  return (
-    <WindowShell title="Nexus Games - Catalog.exe">
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void loadGames();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTitle, selectedTags, teamFilterId]);
+
+  const toggleTag = (tag: string) => {
+    // If removing team filter tag, clear team filter
+    if (teamFilterName && tag === teamFilterName) {
+      setTeamFilterId(null);
+      setTeamFilterName(null);
+      navigate("/", { replace: true });
+    }
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  };
+
+  const toolbar = (
+    <>
       <nav className="win-menu">
-        <span>File</span>
-        <span>Edit</span>
-        <span>View</span>
-        <span>Options</span>
-        <span>Help</span>
+        <Link to="/" style={{ textDecoration: "none", color: "inherit" }}><span>Catalog</span></Link>
+        <Link to="/teams" style={{ textDecoration: "none", color: "inherit" }}><span>Teams</span></Link>
+        {auth.user && <Link to="/editor/games/new" style={{ textDecoration: "none", color: "inherit" }}><span>New Game</span></Link>}
+        {auth.user?.isSuperAdmin && <Link to="#" style={{ textDecoration: "none", color: "inherit" }}><span>Settings</span></Link>}
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <span onClick={() => setHelpOpen(!helpOpen)} style={{ cursor: "pointer" }}>Help</span>
+          {helpOpen && (
+            <div
+              className="win-outset"
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                marginTop: "4px",
+                minWidth: "300px",
+                zIndex: 101,
+                padding: "12px",
+              }}
+            >
+              <p style={{ margin: 0, fontSize: "12px" }}>
+                <strong>Birdmaid</strong> — каталог игр для сообщества геймдевов Омска. 
+                Здесь можно публиковать веб-сборки игр, просматривать каталог и играть в браузере.
+              </p>
+            </div>
+          )}
+        </div>
       </nav>
       <div className="toolbar">
-        <div className="win-inset" style={{ flex: 1 }}>
-          <input
-            placeholder="C:\\Nexus\\Games\\Search..."
-            style={{ width: "100%", border: "none", background: "transparent" }}
-          />
-        </div>
-        <button className="win-btn" type="button">
-          Go
-        </button>
-        <button className="win-btn" type="button">
-          User_01
-        </button>
-      </div>
-      <main className="content">
-        <section className="win-outset">
-          <div className="featured">
-            <div className="win-inset featured-image" />
-            <div className="panel">
-              <h1 style={{ fontSize: 28, margin: 0 }}>Cyber Odyssey: Neon Nights</h1>
-              <p>Welcome to the future. Neon-drenched streets await your command.</p>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button className="win-btn" type="button">
-                  Run Game
-                </button>
-                <button className="win-btn" type="button">
-                  ReadMe.txt
-                </button>
-              </div>
+        <Win95Input
+          placeholder="Search by title..."
+          value={searchTitle}
+          onChange={(e) => setSearchTitle(e.target.value)}
+          style={{ flex: 1 }}
+        />
+        <div style={{ marginLeft: "8px", position: "relative" }}>
+          {auth.user ? (
+            <div style={{ position: "relative" }}>
+              <Win95Button
+                type="button"
+                onClick={() => setMenuOpen(!menuOpen)}
+                style={{ minWidth: "120px" }}
+              >
+                {auth.user.login}
+              </Win95Button>
+              {menuOpen && (
+                <div
+                  className="win-outset"
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    right: 0,
+                    marginTop: "4px",
+                    minWidth: "120px",
+                    zIndex: 101,
+                  }}
+                >
+                  <button
+                    className="win-btn"
+                    type="button"
+                    onClick={() => {
+                      auth.logout();
+                      setMenuOpen(false);
+                    }}
+                    style={{ width: "100%" }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
+          ) : (
+            <Win95Button type="button" onClick={() => setAuthModalOpen(true)}>
+              Login
+            </Win95Button>
+          )}
+        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      <WindowShell title="Birdmaid - Catalog.exe" toolbar={toolbar}>
+        {allTags.length > 0 && (
+          <div className="tag-bar" style={{ padding: "8px 12px", borderBottom: "1px solid var(--win-gray-dark)" }}>
+            {allTags.slice(0, 10).map((tag) => (
+              <button
+                key={tag}
+                className={`tag-chip ${selectedTags.includes(tag) ? "selected" : ""}`}
+                onClick={() => toggleTag(tag)}
+                style={{
+                  backgroundColor: selectedTags.includes(tag) ? "var(--win-blue)" : "var(--win-gray)",
+                  color: selectedTags.includes(tag) ? "var(--win-white)" : "var(--win-black)",
+                }}
+              >
+                {tag}
+              </button>
+            ))}
+            {allTags.length > 10 && (
+              <select
+                className="win-inset"
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) toggleTag(e.target.value);
+                  e.target.value = "";
+                }}
+                style={{ padding: "4px 6px", marginLeft: "8px" }}
+              >
+                <option value="">More tags...</option>
+                {allTags.slice(10).map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
-        </section>
-        <section className="win-outset tag-bar">
-          <span className="tag-chip">All Files (*.*)</span>
-          <span className="tag-chip">Action</span>
-          <span className="tag-chip">Strategy</span>
-          <span className="tag-chip">RPG</span>
-          <span className="tag-chip">Sports</span>
-          <span className="tag-chip">Sim</span>
-        </section>
+        )}
+        <main className="content">
         {loading && <p>Loading...</p>}
         {!loading && error && (
           <div className="win-outset panel">
             <p>Unable to load catalog.</p>
-            <button className="win-btn" type="button" onClick={loadGames}>
+            <Win95Button type="button" onClick={loadGames}>
               Retry
-            </button>
+            </Win95Button>
           </div>
         )}
         {!loading && !error && games.length === 0 && <p>No games available.</p>}
         {!loading && !error && games.length > 0 && (
           <div className="catalog-grid">
             {games.map((game) => (
-              <div key={game.id} className="win-outset game-card">
-                <div className="game-thumb" />
-                <strong>{game.title}</strong>
-                <span style={{ fontSize: 12 }}>
-                  {(game.tags_user ?? []).concat(game.tags_system ?? []).join(", ")}
-                </span>
-                <Link className="win-btn" to={`/games/${game.id}`}>
-                  Open
-                </Link>
+              <div key={game.id} className="win-outset game-card" style={{ aspectRatio: "1", display: "flex", flexDirection: "column" }}>
+                <div className="game-thumb" style={{ width: "100%", flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
+                  {game.cover_url && game.cover_url.startsWith('http') ? (
+                    <img
+                      src={game.cover_url}
+                      alt={game.title}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                      onError={(e) => {
+                        console.error("[CatalogPage] Failed to load cover image for game:", game.id, game.cover_url);
+                        // Hide image on error
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                      onLoad={() => {
+                        console.log(`[CatalogPage] Successfully loaded cover for game ${game.id}`);
+                      }}
+                    />
+                  ) : game.cover_url && game.cover_url.startsWith('covers/') ? (
+                    <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #0c0c0c, #2b2b2b)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--win-red)", fontSize: "10px", padding: "4px" }}>
+                      Invalid cover URL (S3 key received)
+                    </div>
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #0c0c0c, #2b2b2b)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--win-gray-dark)", fontSize: "10px" }}>
+                      No cover
+                    </div>
+                  )}
+                </div>
+                <div style={{ padding: "4px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <strong style={{ fontSize: "12px" }}>{game.title}</strong>
+                  <span style={{ fontSize: 10, color: "var(--win-gray-dark)" }}>
+                    {(game.tags_user ?? []).concat(game.tags_system ?? []).slice(0, 2).join(", ")}
+                  </span>
+                  <Link className="win-btn" to={`/games/${game.id}`} style={{ textDecoration: "none", color: "inherit", fontSize: "11px", padding: "4px 8px" }}>
+                    Open
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
         )}
-      </main>
-    </WindowShell>
+        </main>
+      </WindowShell>
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+    </>
   );
 };
 
@@ -162,16 +491,27 @@ const GamePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [game, setGame] = useState<GameDetails | null>(null);
-  const [play, setPlay] = useState(false);
-  const [iframeError, setIframeError] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [playModalOpen, setPlayModalOpen] = useState(false);
+  const auth = useAuth();
+
+  const loadComments = async () => {
+    if (!gameId) return;
+    try {
+      const data = await apiClient.json<{ comments: Comment[] }>(`/games/${gameId}/comments`);
+      setComments(data.comments);
+    } catch (err) {
+      // Ignore errors
+    }
+  };
 
   useEffect(() => {
     const loadGame = async () => {
       setLoading(true);
       setError(null);
-      setIframeError(false);
       try {
-        const data = (await fetchJson(`/games/${gameId}`)) as GameDetails;
+        const data = (await apiClient.json<GameDetails>(`/games/${gameId}`)) as GameDetails;
         setGame(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
@@ -181,140 +521,468 @@ const GamePage = () => {
     };
     if (gameId) {
       void loadGame();
+      void loadComments();
     }
   }, [gameId]);
 
-  const canPlay = Boolean(game?.build_url);
-
-  return (
-    <WindowShell title="Birdmaid Admin - Game Details">
-      <nav className="win-menu">
-        <span>File</span>
-        <span>Edit</span>
-        <span>View</span>
-        <span>Tools</span>
-        <span>Help</span>
-      </nav>
-      <main className="content">
-        <section className="win-outset game-hero">
-          <div className="hero-content">
-            <button className="win-btn" type="button" onClick={() => setPlay(true)} disabled={!canPlay}>
-              Play
-            </button>
-            <span style={{ color: "#7fff7f" }}>System Ready...</span>
-          </div>
-        </section>
-        {loading && <p>Loading...</p>}
-        {!loading && error && (
-          <>
-            <p>Game unavailable.</p>
-            <p>Unable to load build.</p>
-          </>
-        )}
-        {!loading && !error && game && (
-          <>
-            <div className="win-outset panel">
-              <h2 style={{ marginTop: 0 }}>{game.title}</h2>
-              <div className="game-meta">
-                <span>{game.repo_url}</span>
-                <span>WebGL</span>
-                <span>Rating 4.8</span>
-              </div>
-              <p>{game.description_md}</p>
-            </div>
-            {!canPlay && <p>Unable to load build.</p>}
-            {play && game.build_url && (
-              <iframe
-                title="Game build"
-                src={game.build_url}
-                style={{ width: "100%", height: 480, border: "2px solid #000" }}
-                onError={() => setIframeError(true)}
-              />
-            )}
-            {iframeError && <p>Unable to load build.</p>}
-          </>
-        )}
-      </main>
-    </WindowShell>
-  );
-};
-
-const AdminTeamsPage = () => {
-  const [name, setName] = useState("");
-  const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
-
-  const handleCreate = async () => {
-    if (!name.trim()) {
-      return;
+  const handlePostComment = async () => {
+    if (!commentText.trim() || !auth.user) return;
+    try {
+      await apiClient.json(`/games/${gameId}/comments`, {
+        method: "POST",
+        body: JSON.stringify({ text: commentText }),
+      });
+      setCommentText("");
+      void loadComments();
+    } catch (err) {
+      // Ignore errors
     }
-    const team = await fetchJson("/admin/teams", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    setTeams((prev) => [...prev, { id: team._id ?? team.id, name: team.name }]);
-    setName("");
   };
 
-  return (
-    <WindowShell title="Birdmaid Admin System">
+  const canPlay = Boolean(game?.build_url);
+  const currentGameId = game?.id;
+
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const toolbar = (
+    <>
       <nav className="win-menu">
-        <span>File</span>
-        <span>Edit</span>
-        <span>View</span>
-        <span>Help</span>
-      </nav>
-      <main className="content">
-        <div className="teams-layout">
-          <aside className="sidebar win-inset">
-            <strong>Teams</strong>
-            <ul>
-              <li>Dashboard</li>
-              <li>Teams</li>
-              <li>Users</li>
-              <li>Settings</li>
-            </ul>
-          </aside>
-          <section>
-            <div className="win-outset panel" style={{ marginBottom: 12 }}>
-              <h2 style={{ marginTop: 0 }}>Team Registry</h2>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <input
-                  className="win-inset"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Team name"
-                />
-                <button className="win-btn" type="button" onClick={handleCreate}>
-                  Create team
-                </button>
-              </div>
+        <Link to="/" style={{ textDecoration: "none", color: "inherit" }}><span>Catalog</span></Link>
+        <Link to="/teams" style={{ textDecoration: "none", color: "inherit" }}><span>Teams</span></Link>
+        {auth.user && <Link to="/editor/games/new" style={{ textDecoration: "none", color: "inherit" }}><span>New Game</span></Link>}
+        {auth.user?.isSuperAdmin && <Link to="#" style={{ textDecoration: "none", color: "inherit" }}><span>Settings</span></Link>}
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <span onClick={() => setHelpOpen(!helpOpen)} style={{ cursor: "pointer" }}>Help</span>
+          {helpOpen && (
+            <div
+              className="win-outset"
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                marginTop: "4px",
+                minWidth: "300px",
+                zIndex: 101,
+                padding: "12px",
+              }}
+            >
+              <p style={{ margin: 0, fontSize: "12px" }}>
+                <strong>Birdmaid</strong> — каталог игр для сообщества геймдевов Омска. 
+                Здесь можно публиковать веб-сборки игр, просматривать каталог и играть в браузере.
+              </p>
             </div>
-            <div className="teams-cards">
-              {teams.map((team) => (
-                <div className="win-outset panel" key={team.id}>
-                  <strong>{team.name}</strong>
-                  <p>ID: {team.id}</p>
-                </div>
-              ))}
-              {teams.length === 0 && (
-                <div className="win-outset panel">
-                  <strong>New Team Object</strong>
-                  <p>Use “Create team” to add a new entry.</p>
+          )}
+        </div>
+      </nav>
+      <div className="toolbar">
+        <div style={{ marginLeft: "auto", position: "relative" }}>
+          {auth.user ? (
+            <div style={{ position: "relative" }}>
+              <Win95Button
+                type="button"
+                onClick={() => setMenuOpen(!menuOpen)}
+                style={{ minWidth: "120px" }}
+              >
+                {auth.user.login}
+              </Win95Button>
+              {menuOpen && (
+                <div
+                  className="win-outset"
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    right: 0,
+                    marginTop: "4px",
+                    minWidth: "120px",
+                    zIndex: 101,
+                  }}
+                >
+                  <button
+                    className="win-btn"
+                    type="button"
+                    onClick={() => {
+                      auth.logout();
+                      setMenuOpen(false);
+                    }}
+                    style={{ width: "100%" }}
+                  >
+                    Logout
+                  </button>
                 </div>
               )}
             </div>
-          </section>
+          ) : (
+            <Win95Button type="button" onClick={() => setAuthModalOpen(true)}>
+              Login
+            </Win95Button>
+          )}
         </div>
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      <WindowShell title="Birdmaid - Game Details" toolbar={toolbar}>
+        <main className="content">
+          {loading && <p>Loading...</p>}
+          {!loading && error && (
+            <>
+              <p>Game unavailable.</p>
+            </>
+          )}
+          {!loading && !error && game && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "16px" }}>
+              <div>
+                <div className="win-outset panel">
+                  <h2 style={{ marginTop: 0 }}>{game.title}</h2>
+                  {game.description_md && <p>{game.description_md}</p>}
+                  {game.team && (
+                    <div style={{ marginTop: "12px" }}>
+                      <strong>Team:</strong> {game.team.name}
+                      {game.team.members.length > 0 && (
+                        <div style={{ marginTop: "4px", fontSize: "12px" }}>
+                          Members: {game.team.members.join(", ")}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {game.repo_url && (
+                    <div style={{ marginTop: "8px" }}>
+                      <a href={game.repo_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--win-blue)" }}>
+                        Repository
+                      </a>
+                    </div>
+                  )}
+                  <div style={{ marginTop: "12px", display: "flex", gap: "8px" }}>
+                    <Win95Button 
+                      type="button" 
+                      onClick={() => {
+                        console.log("Play button clicked, build_url:", game?.build_url);
+                        setPlayModalOpen(true);
+                      }} 
+                      disabled={!canPlay}
+                    >
+                      Play
+                    </Win95Button>
+                    {auth.user?.isSuperAdmin && currentGameId && (
+                      <Link to={`/editor/games/${currentGameId}`}>
+                        <Win95Button type="button">
+                          Edit
+                        </Win95Button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                <div className="win-outset panel" style={{ marginTop: "12px" }}>
+                  <h3 style={{ marginTop: 0 }}>Comments</h3>
+                  {comments.length === 0 && <p style={{ fontSize: "12px", color: "var(--win-gray-dark)" }}>No comments yet.</p>}
+                  {comments.map((comment) => (
+                    <div key={comment.id} style={{ marginBottom: "12px", paddingBottom: "12px", borderBottom: "1px solid var(--win-gray-dark)" }}>
+                      <div style={{ fontSize: "12px", fontWeight: "bold" }}>{comment.userLogin}</div>
+                      <div style={{ fontSize: "13px", marginTop: "4px" }}>{comment.text}</div>
+                      <div style={{ fontSize: "11px", color: "var(--win-gray-dark)", marginTop: "4px" }}>
+                        {new Date(comment.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                  {auth.user && (
+                    <div style={{ marginTop: "12px" }}>
+                      <Win95Textarea
+                        placeholder="Write a comment..."
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        style={{ width: "100%", minHeight: "60px", marginBottom: "8px" }}
+                      />
+                      <Win95Button type="button" onClick={handlePostComment}>
+                        Post Comment
+                      </Win95Button>
+                    </div>
+                  )}
+                  {!auth.user && (
+                    <p style={{ fontSize: "12px", marginTop: "12px", color: "var(--win-gray-dark)" }}>
+                      <Link to="/" style={{ color: "var(--win-blue)" }}>Login</Link> to post comments
+                    </p>
+                  )}
+                </div>
+              </div>
+              {game.cover_url && (
+                <div className="win-outset panel" style={{ height: "fit-content", position: "relative", minHeight: "200px" }}>
+                  <CoverImageWithLoader src={game.cover_url} alt={game.title} />
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+      </WindowShell>
+      <PlayModal open={playModalOpen} onClose={() => setPlayModalOpen(false)} buildUrl={game?.build_url || null} />
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+    </>
+  );
+};
+
+const TeamsPage = () => {
+  const [name, setName] = useState("");
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [infoModalOpen, setInfoModalOpen] = useState<string | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [allUsers, setAllUsers] = useState<Array<{ id: string; login: string }>>([]);
+  const [newMemberLogin, setNewMemberLogin] = useState("");
+  const [filteredUsers, setFilteredUsers] = useState<Array<{ id: string; login: string }>>([]);
+  const auth = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    void loadTeams();
+    void loadUsers();
+  }, []);
+
+  const loadTeams = async () => {
+    setLoading(true);
+    try {
+      const data = await apiClient.json<{ teams: Team[] }>("/teams");
+      setTeams(data.teams);
+    } catch (err) {
+      // Ignore errors
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    // TODO: Add endpoint to get all users
+    // For now, we'll use empty array
+    setAllUsers([]);
+  };
+
+  const handleCreate = async () => {
+    if (!name.trim() || !auth.user) return;
+    try {
+      const team = await apiClient.json<Team>("/teams", {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      });
+      setTeams((prev) => [...prev, team]);
+      setName("");
+    } catch (err) {
+      // Ignore errors
+    }
+  };
+
+  const handleOpenInfo = (team: Team) => {
+    setSelectedTeam(team);
+    setInfoModalOpen(team.id);
+  };
+
+  const handleAddMember = async () => {
+    if (!selectedTeam || !newMemberLogin.trim() || !auth.user) return;
+    // TODO: Implement add member via API
+    // For now, just close modal
+    setInfoModalOpen(null);
+    setNewMemberLogin("");
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!selectedTeam || !auth.user) return;
+    // TODO: Implement remove member via API
+    void loadTeams();
+  };
+
+  const handleTransferLeadership = async (userId: string) => {
+    if (!selectedTeam || !auth.user) return;
+    // TODO: Implement transfer leadership via API
+    void loadTeams();
+  };
+
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const toolbar = (
+    <>
+      <nav className="win-menu">
+        <Link to="/" style={{ textDecoration: "none", color: "inherit" }}><span>Catalog</span></Link>
+        <Link to="/teams" style={{ textDecoration: "none", color: "inherit" }}><span>Teams</span></Link>
+        {auth.user && <Link to="/editor/games/new" style={{ textDecoration: "none", color: "inherit" }}><span>New Game</span></Link>}
+        {auth.user?.isSuperAdmin && <Link to="#" style={{ textDecoration: "none", color: "inherit" }}><span>Settings</span></Link>}
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <span onClick={() => setHelpOpen(!helpOpen)} style={{ cursor: "pointer" }}>Help</span>
+          {helpOpen && (
+            <div
+              className="win-outset"
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                marginTop: "4px",
+                minWidth: "300px",
+                zIndex: 101,
+                padding: "12px",
+              }}
+            >
+              <p style={{ margin: 0, fontSize: "12px" }}>
+                <strong>Birdmaid</strong> — каталог игр для сообщества геймдевов Омска. 
+                Здесь можно публиковать веб-сборки игр, просматривать каталог и играть в браузере.
+              </p>
+            </div>
+          )}
+        </div>
+      </nav>
+      <div className="toolbar">
+        <div style={{ marginLeft: "auto", position: "relative" }}>
+          {auth.user ? (
+            <div style={{ position: "relative" }}>
+              <Win95Button
+                type="button"
+                onClick={() => setMenuOpen(!menuOpen)}
+                style={{ minWidth: "120px" }}
+              >
+                {auth.user.login}
+              </Win95Button>
+              {menuOpen && (
+                <div
+                  className="win-outset"
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    right: 0,
+                    marginTop: "4px",
+                    minWidth: "120px",
+                    zIndex: 101,
+                  }}
+                >
+                  <button
+                    className="win-btn"
+                    type="button"
+                    onClick={() => {
+                      auth.logout();
+                      setMenuOpen(false);
+                    }}
+                    style={{ width: "100%" }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Win95Button type="button" onClick={() => setAuthModalOpen(true)}>
+              Login
+            </Win95Button>
+          )}
+        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <WindowShell title="Birdmaid - Teams" toolbar={toolbar}>
+      <main className="content">
+        <div className="win-outset panel" style={{ marginBottom: 12 }}>
+          <h2 style={{ marginTop: 0 }}>Team Registry</h2>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <Win95Input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Team name"
+            />
+            <Win95Button type="button" onClick={handleCreate}>
+              Create team
+            </Win95Button>
+          </div>
+        </div>
+        {loading && <p>Loading...</p>}
+        {!loading && (
+          <div className="teams-cards">
+            {teams.map((team) => (
+              <div className="win-outset panel" key={team.id}>
+                <strong>{team.name}</strong>
+                <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                  <Win95Button
+                    type="button"
+                    onClick={() => {
+                      navigate(`/?teamId=${team.id}`);
+                      window.location.reload();
+                    }}
+                  >
+                    View Games
+                  </Win95Button>
+                  <Win95Button type="button" onClick={() => handleOpenInfo(team)}>
+                    Info
+                  </Win95Button>
+                </div>
+              </div>
+            ))}
+            {teams.length === 0 && (
+              <div className="win-outset panel">
+                <strong>New Team Object</strong>
+                <p>Use "Create team" to add a new entry.</p>
+              </div>
+            )}
+          </div>
+        )}
       </main>
+      {infoModalOpen && selectedTeam && (
+        <Win95Modal title={`Team: ${selectedTeam.name}`} open={!!infoModalOpen} onClose={() => setInfoModalOpen(null)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", minWidth: "250px", maxWidth: "350px" }}>
+            <div>
+              <strong>Leader:</strong> {selectedTeam.leaderLogin || selectedTeam.leader}
+            </div>
+            <div>
+              <strong>Members:</strong>
+              <ul style={{ margin: "4px 0", paddingLeft: "20px" }}>
+                {selectedTeam.members.map((memberId, idx) => (
+                  <li key={memberId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span>{selectedTeam.memberLogins?.[idx] || memberId}</span>
+                    {auth.user && auth.user.id === selectedTeam.leader && (
+                      <div style={{ display: "flex", gap: "4px" }}>
+                        <Win95Button type="button" onClick={() => handleTransferLeadership(memberId)} style={{ fontSize: "10px", padding: "2px 6px" }}>
+                          Make Leader
+                        </Win95Button>
+                        {memberId !== selectedTeam.leader && (
+                          <Win95Button type="button" onClick={() => handleRemoveMember(memberId)} style={{ fontSize: "10px", padding: "2px 6px" }}>
+                            Remove
+                          </Win95Button>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {auth.user && auth.user.id === selectedTeam.leader && (
+              <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid var(--win-gray-dark)" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <Win95Input
+                    placeholder="Search by login..."
+                    value={newMemberLogin}
+                    onChange={(e) => {
+                      setNewMemberLogin(e.target.value);
+                      // TODO: Filter users by login
+                    }}
+                  />
+                  <Win95Button type="button" onClick={handleAddMember}>
+                    Add Member
+                  </Win95Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </Win95Modal>
+      )}
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </WindowShell>
   );
 };
 
-const AdminGameEditorPage = () => {
+const EditorPage = () => {
   const { gameId: routeGameId } = useParams();
-  const [teamId, setTeamId] = useState("team-1");
-  const [title, setTitle] = useState("Cyber Odyssey");
+  const [teamId, setTeamId] = useState("");
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
@@ -324,6 +992,60 @@ const AdminGameEditorPage = () => {
   const [remark, setRemark] = useState("");
   const [tagsUser, setTagsUser] = useState("");
   const [tagsSystem, setTagsSystem] = useState("");
+  const [teams, setTeams] = useState<Team[]>([]);
+  const auth = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!auth.user) {
+      navigate("/");
+      return;
+    }
+    void loadTeams();
+    if (routeGameId && routeGameId !== "new") {
+      void loadGame();
+    } else {
+      // Reset form for new game
+      setGameId("");
+      setTitle("");
+      setDescription("");
+      setRepoUrl("");
+      setCoverUrl("");
+      setBuildUrl(null);
+      setStatus("editing");
+      setTagsUser("");
+      setTagsSystem("");
+    }
+  }, [auth.user, routeGameId]);
+
+  const loadTeams = async () => {
+    try {
+      const data = await apiClient.json<{ teams: Team[] }>("/teams");
+      setTeams(data.teams.filter((t) => t.members.includes(auth.user!.id) || auth.user!.isSuperAdmin));
+    } catch (err) {
+      // Ignore errors
+    }
+  };
+
+  const loadGame = async () => {
+    try {
+      const data = await apiClient.json<GameDetails>(`/games/${routeGameId}`);
+      setTitle(data.title);
+      setDescription(data.description_md || "");
+      setRepoUrl(data.repo_url || "");
+      setCoverUrl(data.cover_url || "");
+      setStatus(data.status);
+      setTagsUser((data.tags_user || []).join(", "));
+      setTagsSystem((data.tags_system || []).join(", "));
+      setBuildUrl(data.build_url || null);
+      // Load teamId from the game data
+      if (data.teamId) {
+        setTeamId(data.teamId);
+      }
+    } catch (err) {
+      // Ignore errors
+    }
+  };
 
   const publishDisabled = useMemo(
     () => !description || !coverUrl || !buildUrl,
@@ -331,165 +1053,444 @@ const AdminGameEditorPage = () => {
   );
 
   const handleCreateGame = async () => {
-    const game = await fetchJson("/admin/games", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        teamId,
-        title,
-        description_md: description,
-        repo_url: repoUrl,
-        cover_url: coverUrl,
-      }),
-    });
-    setGameId(game._id ?? game.id);
+    if (!teamId || !title || !auth.user) return;
+    try {
+      const game = await apiClient.json<{ id: string }>("/games", {
+        method: "POST",
+        body: JSON.stringify({
+          teamId,
+          title,
+          description_md: description,
+          repo_url: repoUrl,
+          // cover_url is not sent here - it will be uploaded via /cover endpoint after game creation
+        }),
+      });
+      setGameId(game.id);
+      
+      // Upload cover if user selected a file
+      if (coverFile && coverUrl && coverUrl.startsWith("blob:")) {
+        try {
+          const formData = new FormData();
+          formData.append("file", coverFile);
+          await apiClient.json(`/games/${game.id}/cover`, {
+            method: "POST",
+            body: formData,
+          });
+        } catch (err) {
+          console.error("Error uploading cover:", err);
+          // Continue even if cover upload fails
+        }
+      }
+      
+      navigate(`/editor/games/${game.id}`);
+    } catch (err) {
+      // Ignore errors
+    }
+  };
+
+  const handleUpdateGame = async () => {
+    if (!gameId || !auth.user) return;
+    try {
+      // Don't send cover_url in update - it's handled by separate upload endpoint
+      // If coverUrl is a blob URL, it means user selected a file but didn't upload yet
+      // In that case, we should upload it first
+      if (coverFile && coverUrl && coverUrl.startsWith("blob:")) {
+        // Upload cover if it's a new file
+        const formData = new FormData();
+        formData.append("file", coverFile);
+        await apiClient.json(`/games/${gameId}/cover`, {
+          method: "POST",
+          body: formData,
+        });
+      }
+      
+      await apiClient.json(`/games/${gameId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          teamId,
+          title,
+          description_md: description,
+          repo_url: repoUrl,
+          // cover_url is not sent here - it's managed via /cover endpoint
+        }),
+      });
+      // Reload game to get updated team info and cover URL
+      void loadGame();
+    } catch (err) {
+      // Ignore errors
+    }
   };
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files?.[0] || !gameId) {
-      return;
+    if (!event.target.files?.[0]) return;
+    // For new games, create the game first if it doesn't exist
+    if (!gameId && teamId && title) {
+      try {
+        const game = await apiClient.json<{ id: string }>("/games", {
+          method: "POST",
+          body: JSON.stringify({
+            teamId,
+            title,
+            description_md: description,
+            repo_url: repoUrl,
+            cover_url: coverUrl,
+          }),
+        });
+        setGameId(game.id);
+        // Continue with upload after game is created
+        const formData = new FormData();
+        formData.append("file", event.target.files[0]);
+        const result = await apiClient.json<{ build_url: string }>(`/admin/games/${game.id}/build`, {
+          method: "POST",
+          body: formData,
+        });
+        setBuildUrl(result.build_url);
+        navigate(`/editor/games/${game.id}`);
+        return;
+      } catch (err) {
+        console.error("Error creating game for upload:", err);
+        return;
+      }
     }
+    if (!gameId) return;
     const formData = new FormData();
     formData.append("file", event.target.files[0]);
-    const result = await fetchJson(`/admin/games/${gameId}/build`, {
-      method: "POST",
-      body: formData,
-    });
-    setBuildUrl(result.build_url ?? null);
+    try {
+      const result = await apiClient.json<{ build_url: string }>(`/admin/games/${gameId}/build`, {
+        method: "POST",
+        body: formData,
+      });
+      setBuildUrl(result.build_url);
+    } catch (err) {
+      // Ignore errors
+    }
   };
 
   const handlePublish = async () => {
-    if (!gameId) {
-      return;
+    if (!gameId) return;
+    try {
+      await apiClient.json(`/games/${gameId}/publish`, { method: "POST" });
+      setStatus("published");
+    } catch (err) {
+      // Ignore errors
     }
-    await fetchJson(`/admin/games/${gameId}/publish`, { method: "POST" });
-    setStatus("published");
+  };
+
+  const handleArchive = async () => {
+    if (!gameId) return;
+    try {
+      await apiClient.json(`/games/${gameId}/archive`, { method: "POST" });
+      setStatus("archived");
+    } catch (err) {
+      // Ignore errors
+    }
   };
 
   const handleStatusUpdate = async () => {
-    if (!gameId) {
-      return;
+    if (!gameId || !auth.user?.isSuperAdmin) return;
+    try {
+      await apiClient.json(`/games/${gameId}/status`, {
+        method: "POST",
+        body: JSON.stringify({ status, remark: remark || undefined }),
+      });
+    } catch (err) {
+      // Ignore errors
     }
-    await fetchJson(`/admin/games/${gameId}/status`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, remark }),
-    });
   };
 
   const handleTagsUpdate = async () => {
-    if (!gameId) {
-      return;
-    }
+    if (!gameId) return;
     const toArray = (value: string) =>
       value
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean);
-    await fetchJson(`/admin/games/${gameId}/tags`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tags_user: toArray(tagsUser), tags_system: toArray(tagsSystem) }),
-    });
+    try {
+      await apiClient.json(`/games/${gameId}/tags`, {
+        method: "PATCH",
+        body: JSON.stringify({ tags_user: toArray(tagsUser), tags_system: toArray(tagsSystem) }),
+      });
+    } catch (err) {
+      // Ignore errors
+    }
   };
 
-  return (
-    <WindowShell title="Birdmaid - Admin Game Editor">
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const handleCoverUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (300 KB)
+    const maxSize = 300 * 1024; // 300 KB
+    if (file.size > maxSize) {
+      alert(`File size exceeds 300 KB limit. Current size: ${(file.size / 1024).toFixed(2)} KB`);
+      event.target.value = ""; // Clear input
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("File must be an image");
+      event.target.value = ""; // Clear input
+      return;
+    }
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setCoverUrl(previewUrl);
+    setCoverFile(file);
+
+    // Upload to server if game exists
+    if (gameId) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        await apiClient.json(`/games/${gameId}/cover`, {
+          method: "POST",
+          body: formData,
+        });
+        // Reload game to get signed URL for cover
+        void loadGame();
+      } catch (err) {
+        console.error("Error uploading cover:", err);
+        alert(err instanceof Error ? err.message : "Failed to upload cover image");
+        // Keep preview URL for now
+      }
+    }
+  };
+
+  if (!auth.user) return null;
+
+  const toolbar = (
+    <>
       <nav className="win-menu">
-        <span>File</span>
-        <span>Edit</span>
-        <span>View</span>
-        <span>Help</span>
+        <Link to="/" style={{ textDecoration: "none", color: "inherit" }}><span>Catalog</span></Link>
+        <Link to="/teams" style={{ textDecoration: "none", color: "inherit" }}><span>Teams</span></Link>
+        {auth.user && <Link to="/editor/games/new" style={{ textDecoration: "none", color: "inherit" }}><span>New Game</span></Link>}
+        {auth.user?.isSuperAdmin && <Link to="#" style={{ textDecoration: "none", color: "inherit" }}><span>Settings</span></Link>}
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <span onClick={() => setHelpOpen(!helpOpen)} style={{ cursor: "pointer" }}>Help</span>
+          {helpOpen && (
+            <div
+              className="win-outset"
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                marginTop: "4px",
+                minWidth: "300px",
+                zIndex: 101,
+                padding: "12px",
+              }}
+            >
+              <p style={{ margin: 0, fontSize: "12px" }}>
+                <strong>Birdmaid</strong> — каталог игр для сообщества геймдевов Омска. 
+                Здесь можно публиковать веб-сборки игр, просматривать каталог и играть в браузере.
+              </p>
+            </div>
+          )}
+        </div>
       </nav>
+      <div className="toolbar">
+        <div style={{ marginLeft: "auto", position: "relative" }}>
+          {auth.user ? (
+            <div style={{ position: "relative" }}>
+              <Win95Button
+                type="button"
+                onClick={() => setMenuOpen(!menuOpen)}
+                style={{ minWidth: "120px" }}
+              >
+                {auth.user.login}
+              </Win95Button>
+              {menuOpen && (
+                <div
+                  className="win-outset"
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    right: 0,
+                    marginTop: "4px",
+                    minWidth: "120px",
+                    zIndex: 101,
+                  }}
+                >
+                  <button
+                    className="win-btn"
+                    type="button"
+                    onClick={() => {
+                      auth.logout();
+                      setMenuOpen(false);
+                    }}
+                    style={{ width: "100%" }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Win95Button type="button" onClick={() => setAuthModalOpen(true)}>
+              Login
+            </Win95Button>
+          )}
+        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      <WindowShell title="Birdmaid - Game Editor" toolbar={toolbar}>
       <main className="content">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
           <div>
             <div className="status-pill">STATUS: {status.toUpperCase()}</div>
           </div>
-          <div className="status-pill">LAST_EDIT: ADMIN</div>
         </div>
         <div className="editor-layout">
           <div>
             <section className="win-outset panel">
               <h3>General Properties</h3>
               <div className="form-field">
-                <label>Team ID</label>
-                <input value={teamId} onChange={(event) => setTeamId(event.target.value)} />
+                <label>Team</label>
+                <select
+                  className="win-inset"
+                  value={teamId}
+                  onChange={(e) => setTeamId(e.target.value)}
+                  style={{ padding: "4px 6px", width: "100%" }}
+                >
+                  <option value="">Select team</option>
+                  {teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="form-field">
                 <label>Game Title</label>
-                <input value={title} onChange={(event) => setTitle(event.target.value)} />
+                <Win95Input value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
               <div className="form-field">
                 <label>Description</label>
-                <textarea value={description} onChange={(event) => setDescription(event.target.value)} />
+                <Win95Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
               </div>
               <div className="form-field">
                 <label>Repository</label>
-                <input value={repoUrl} onChange={(event) => setRepoUrl(event.target.value)} />
+                <Win95Input value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} />
               </div>
               <div className="form-field">
-                <label>Cover</label>
-                <input value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} />
-              </div>
-              <button className="win-btn" type="button" onClick={handleCreateGame}>
-                Save game
-              </button>
-              {gameId && <span style={{ marginLeft: 8 }}>Game ID: {gameId}</span>}
-            </section>
-            <section className="win-outset panel">
-              <h3>Build Upload</h3>
-              <input type="file" accept=".zip" onChange={handleUpload} disabled={!gameId} />
-              {buildUrl && (
-                <iframe
-                  title="Build preview"
-                  src={buildUrl}
-                  style={{ width: "100%", height: 240, marginTop: 12, border: "2px solid #000" }}
+                <label>Cover Image (max 300 KB)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverUpload}
+                  style={{ marginBottom: "8px" }}
                 />
+                {coverUrl && (
+                  <div style={{ marginTop: "8px", position: "relative", minHeight: "200px" }}>
+                    <CoverImageWithLoader src={coverUrl} alt="Cover preview" />
+                  </div>
+                )}
+                {coverFile && (
+                  <div style={{ marginTop: "4px", fontSize: "11px", color: "var(--win-gray-dark)" }}>
+                    File: {coverFile.name} ({(coverFile.size / 1024).toFixed(2)} KB)
+                  </div>
+                )}
+              </div>
+              {!gameId ? (
+                <Win95Button type="button" onClick={handleCreateGame}>
+                  Create game
+                </Win95Button>
+              ) : (
+                <>
+                  <Win95Button type="button" onClick={handleUpdateGame}>
+                    Save game
+                  </Win95Button>
+                  <span style={{ marginLeft: 8 }}>Game ID: {gameId}</span>
+                </>
               )}
             </section>
-            <section className="win-outset panel">
-              <h3>Tags</h3>
-              <div className="form-field">
-                <label>User tags</label>
-                <input value={tagsUser} onChange={(event) => setTagsUser(event.target.value)} />
-              </div>
-              <div className="form-field">
-                <label>System tags</label>
-                <input value={tagsSystem} onChange={(event) => setTagsSystem(event.target.value)} />
-              </div>
-              <button className="win-btn" type="button" onClick={handleTagsUpdate} disabled={!gameId}>
-                Save tags
-              </button>
-            </section>
+            {gameId && (
+              <>
+                <section className="win-outset panel">
+                  <h3>Build Upload</h3>
+                  <div style={{ marginBottom: "8px" }}>
+                    <input type="file" accept=".zip" onChange={handleUpload} />
+                  </div>
+                  {buildUrl && (
+                    <div style={{ marginTop: "12px" }}>
+                      <iframe
+                        title="Build preview"
+                        src={buildUrl}
+                        style={{ width: "100%", height: 240, border: "2px solid #000" }}
+                      />
+                    </div>
+                  )}
+                </section>
+                <section className="win-outset panel">
+                  <h3>Tags</h3>
+                  <div className="form-field">
+                    <label>User tags</label>
+                    <Win95Input value={tagsUser} onChange={(e) => setTagsUser(e.target.value)} />
+                  </div>
+                  <div className="form-field">
+                    <label>System tags</label>
+                    <Win95Input value={tagsSystem} onChange={(e) => setTagsSystem(e.target.value)} />
+                  </div>
+                  <Win95Button type="button" onClick={handleTagsUpdate}>
+                    Save tags
+                  </Win95Button>
+                </section>
+              </>
+            )}
           </div>
-          <aside className="win-outset panel">
-            <h3>Publishing</h3>
-            <button className="win-btn" type="button" disabled={publishDisabled} onClick={handlePublish}>
-              Publish
-            </button>
-            <div className="form-field">
-              <label>Status</label>
-              <select value={status} onChange={(event) => setStatus(event.target.value)}>
-                <option value="editing">editing</option>
-                <option value="published">published</option>
-                <option value="archived">archived</option>
-              </select>
-            </div>
-            <div className="form-field">
-              <label>Remark</label>
-              <input value={remark} onChange={(event) => setRemark(event.target.value)} />
-            </div>
-            <button className="win-btn" type="button" onClick={handleStatusUpdate} disabled={!gameId}>
-              Update status
-            </button>
-            <div className="danger" style={{ marginTop: 12 }}>
-              Danger Zone
-            </div>
-          </aside>
+          {gameId && (
+            <aside className="win-outset panel">
+              <h3>Publishing</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <Win95Button type="button" disabled={publishDisabled} onClick={handlePublish}>
+                  Publish
+                </Win95Button>
+                <Win95Button type="button" onClick={handleArchive}>
+                  Archive
+                </Win95Button>
+              </div>
+              {auth.user.isSuperAdmin && (
+                <>
+                  <div className="form-field" style={{ marginTop: "12px" }}>
+                    <label>Status</label>
+                    <select
+                      className="win-inset"
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                      style={{ padding: "4px 6px", width: "100%" }}
+                    >
+                      <option value="editing">editing</option>
+                      <option value="published">published</option>
+                      <option value="archived">archived</option>
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label>Remark (optional)</label>
+                    <Win95Input value={remark} onChange={(e) => setRemark(e.target.value)} />
+                  </div>
+                  <Win95Button type="button" onClick={handleStatusUpdate}>
+                    Force Status Change
+                  </Win95Button>
+                </>
+              )}
+            </aside>
+          )}
         </div>
       </main>
-    </WindowShell>
+      </WindowShell>
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+    </>
   );
 };
 
@@ -506,8 +1507,9 @@ export default function App() {
     <Routes>
       <Route path="/" element={<CatalogPage />} />
       <Route path="/games/:gameId" element={<GamePage />} />
-      <Route path="/admin/teams" element={<AdminTeamsPage />} />
-      <Route path="/admin/games/:gameId" element={<AdminGameEditorPage />} />
+      <Route path="/teams" element={<TeamsPage />} />
+      <Route path="/editor/games/new" element={<EditorPage />} />
+      <Route path="/editor/games/:gameId" element={<EditorPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

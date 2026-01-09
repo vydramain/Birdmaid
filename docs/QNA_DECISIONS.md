@@ -347,3 +347,432 @@
   - Context: Roles rely on Codex skills for consistent quality and must be verified before work starts.
   - Decision: Require skills preflight and per-role skill run evidence in WORKPLAN reflection.
   - Consequences: Modes refuse to start if required skills are missing; reflections must include skill usage notes.
+
+- ADR-030: Password requirements for FP4
+  - Context: FP4 requires user registration with password authentication.
+  - Decision: Minimum password length is 6 characters. No complexity requirements (no special characters, numbers, or uppercase required).
+  - Consequences: Simple password policy; users may choose weak passwords. Security relies on password hashing and rate limiting.
+
+- ADR-031: Password recovery code model
+  - Context: Password recovery via email requires code expiration and validation rules.
+  - Decision: Recovery codes have no time expiration. Only the last sent code is valid (new code request invalidates previous code). No limit on number of requests, but only one active code at a time.
+  - Consequences: Codes remain valid until new code is requested; simpler implementation but potential security risk if email is compromised. No rate limiting on code requests (may need future enhancement).
+
+- ADR-032: Email service configuration
+  - Context: Password recovery requires email sending capability.
+  - Decision: Email service provider is configurable via environment variables or configuration file. No specific provider is required; implementation must support pluggable email service.
+  - Consequences: Flexible deployment; requires configuration documentation and example setup for common providers (SMTP, SendGrid, etc.).
+
+- ADR-033: Unique email and login constraints
+  - Context: User accounts need unique identifiers for authentication.
+  - Decision: Both email and login (username) must be unique across all users. MongoDB indexes enforce uniqueness.
+  - Consequences: Registration must validate uniqueness; login can use either email or login as identifier.
+
+- ADR-034: Team leadership model
+  - Context: Team membership management requires permission rules for adding members.
+  - Decision: Teams have a leader field (userId). Only team leader can add users to team. Leader can be transferred to another team member. Team creator becomes initial leader.
+  - Consequences: Teams collection requires leader field; permission checks needed for add-member operations; leader transfer endpoint required.
+
+- ADR-035: Comments storage model
+  - Context: Comment system needs data persistence strategy.
+  - Decision: Comments stored in separate `comments` collection (not embedded in games). Each comment references gameId and userId.
+  - Consequences: Easier querying and pagination; requires join/aggregation for game page display; separate collection for scalability.
+
+- ADR-036: Session management with JWT
+  - Context: Authenticated users need session management.
+  - Decision: Use JWT (JSON Web Tokens) for session management. Tokens stored client-side (localStorage or cookie). Backend validates JWT on protected routes.
+  - Consequences: Stateless authentication; tokens must include user ID and isSuperAdmin flag; requires JWT secret configuration; token expiration policy needed.
+
+- ADR-037: Windows 95 styling replaces MUI Material 3
+  - Context: FP4 requires Windows 95 aesthetic throughout the site.
+  - Decision: Windows 95 styling completely replaces MUI Material 3 baseline. Remove all MUI Material 3 components and styling. Implement custom Windows 95 styled components.
+  - Consequences: Significant UI refactoring; custom component library needed; reference artifacts from FP1 stitch outputs guide implementation.
+
+- ADR-038: Optional admin remarks on forced status changes
+  - Context: Super Admin can force game status changes and leave remarks.
+  - Decision: Remarks/requirements are optional when Super Admin forces status change (published -> editing/archived). Admin can change status without remark.
+  - Consequences: Simpler admin workflow; remarks field can be empty/null.
+
+- ADR-039: Migrate FP1 Super Admin to users collection
+  - Context: FP1 has separate admins collection; FP4 introduces users collection with isSuperAdmin flag.
+  - Decision: Migrate existing Super Admin account from admins collection to users collection with isSuperAdmin: true. Migration script required.
+  - Consequences: One-time migration needed; admins collection can be deprecated after migration.
+
+- ADR-040: JWT library choice for NestJS
+  - Context: FP4 requires JWT token generation and validation for authentication (ADR-036).
+  - Decision: Use `@nestjs/jwt` package (official NestJS JWT module) with `jsonwebtoken` as underlying library. Store JWT secret in environment variable `JWT_SECRET`. Token expiration: 7 days (configurable via `JWT_EXPIRES_IN`).
+  - Consequences: Standard NestJS patterns; easy integration with guards and decorators; token expiration requires refresh or re-login after expiry.
+  - Decision matrix (weights: maintainability 0.30, delivery speed 0.25, ecosystem 0.25, security 0.20):
+    - @nestjs/jwt: 4.6, passport-jwt: 4.2, jsonwebtoken directly: 3.8 (weighted totals)
+
+- ADR-041: Password hashing library
+  - Context: User passwords must be securely hashed before storage (NFR-FP4-001).
+  - Decision: Use `bcrypt` library with `@nestjs/bcrypt` wrapper for NestJS integration. Salt rounds: 10 (configurable via `BCRYPT_ROUNDS` env var, default 10).
+  - Consequences: Industry-standard hashing; async operations; configurable security vs performance tradeoff.
+
+- ADR-042: Email service integration strategy
+  - Context: Password recovery requires email sending (ADR-032). Email service must be configurable and pluggable.
+  - Decision: Create abstract `EmailService` interface in NestJS. Implement SMTP provider using `nodemailer` as default. Configuration via environment variables: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`. Support for other providers (SendGrid, AWS SES) via additional implementations (deferred to implement if needed).
+  - Consequences: Flexible email provider selection; SMTP is universal but requires server configuration; other providers can be added later without changing interface.
+
+- ADR-043: Windows 95 UI component strategy
+  - Context: FP4 requires Windows 95 styling to replace MUI Material 3 (ADR-037). Frontend already has `retro.css` with Windows 95 styles.
+  - Decision: Remove MUI Material 3 dependency. Build custom Windows 95 styled components using existing `retro.css` as base. Create reusable components: `Win95Modal` (draggable), `Win95Button`, `Win95Input`, `Win95Window`, `Win95Menu`. Use CSS modules or styled-components pattern for component-specific styles. Reference artifacts from `artifacts/FP1/2026-01-08/evidence/stitch/**/*` for visual consistency.
+  - Consequences: Full control over styling; no external UI library overhead; requires building all components from scratch; draggable modals need custom drag implementation.
+
+- ADR-044: Authentication guard and decorator pattern
+  - Context: Protected routes need JWT validation and user context injection.
+  - Decision: Use NestJS `@UseGuards(JwtAuthGuard)` pattern. Create `JwtAuthGuard` that validates JWT and extracts user info. Create `@CurrentUser()` decorator to inject user object (with isSuperAdmin flag) into controller methods. Optional `@RequireSuperAdmin()` decorator for super admin-only endpoints.
+  - Consequences: Clean controller code; reusable guards; easy to test with mocked guards.
+
+- ADR-045: Frontend authentication state management
+  - Context: Frontend needs to store JWT token, user info, and handle authentication state across pages.
+  - Decision: Use React Context API for authentication state (`AuthContext`). Store JWT token in `localStorage` (key: `birdmaid_token`). Store user info in context state. Create `useAuth` hook for accessing auth state and methods (login, logout, register, recovery). Intercept API requests to add `Authorization: Bearer <token>` header.
+  - Consequences: Simple state management; token persists across page reloads; localStorage accessible to XSS (mitigated by httpOnly cookies not used); manual token refresh needed.
+
+- ADR-046: Recovery code storage model
+  - Context: Password recovery codes need temporary storage (ADR-031: only last code valid, no expiration).
+  - Decision: Store recovery codes in MongoDB `users` collection as embedded field: `recoveryCode: { code: string, createdAt: Date }`. On new code request, overwrite previous code. Validate code by comparing with stored code (case-sensitive).
+  - Consequences: Simple implementation; codes stored in same collection as user; no separate collection needed; manual cleanup of old codes not required (overwritten).
+
+- ADR-047: Team membership permission checks
+  - Context: Team operations require permission validation (leader can add members, members can create games for team).
+  - Decision: Create `TeamPermissionService` that validates: (1) user is team leader for add-member/transfer-leadership operations, (2) user is team member (or super admin) for game creation/editing. Cache team membership lookups in service layer to avoid repeated DB queries.
+  - Consequences: Centralized permission logic; easy to test; potential performance optimization with caching.
+
+- ADR-048: Draggable modal implementation
+  - Context: Windows 95 modals must be draggable by title bar (FR-FP4-006, FR-FP4-007).
+  - Decision: Implement drag functionality using React mouse events (`onMouseDown`, `onMouseMove`, `onMouseUp`) on modal title bar. Store modal position in component state. Use CSS `transform: translate()` for positioning. Support touch events for mobile (optional, deferred if mobile not priority).
+  - Consequences: Native React implementation; no external drag library; mobile support deferred; accessibility considerations (keyboard navigation) may need enhancement.
+
+- ADR-049: Comment denormalization strategy
+  - Context: Comments display user login/username (FR-FP4-003). User login stored in users collection.
+  - Decision: Denormalize `userLogin` field in comments collection (store login string directly in comment document). Update userLogin if user changes login (deferred: no login change feature in FP4). Fetch comments with embedded userLogin (no join needed).
+  - Consequences: Faster comment queries; no joins required; potential data inconsistency if login changes (mitigated by no login change in FP4).
+
+- ADR-050: FP4 UI/UX fixes (Change Request CR-FP4-20260109-01)
+  - Context: FP4 implementation revealed 11 UI/behavior issues requiring fixes.
+  - Decision: Apply all 11 fixes: (1) Update menu tabs to Catalog/Teams/Edit/Settings/Help, (2) Make game cards square in catalog, (3) Add game cover image on right side of game page, (4) Style comment input field, (5) Add Help dropdown with site description, (6) Show Settings tab only for admin, (7) Replace Refresh button with Login/username button, (8) Add tag selection bar and dropdown on catalog, (9) Make main window draggable, (10) Add file upload for Cover image, (11) Restore publish and upload game functionality.
+  - Consequences: Improved UX consistency, better Windows 95 styling, restored missing functionality.
+
+- ADR-051: FP4 Additional UI/UX refinements (Change Request CR-FP4-20260109-02)
+  - Context: Additional 13 UI/behavior refinements required after initial fixes.
+  - Decision: Apply all 13 fixes: (1) Move Login/Username to toolbar, remove Header component, (2) Remove team dropdown from Catalog, (3) Fix and style search input, (4) Fix comment input styling, (5) Fix game launch in modal, (6) Make game fill entire modal, (7) Fix window position persistence, (8) Simplify team cards, (9) Add team info modal with member management, (10) Fix Create Game button, (11) Add Edit button for super admin, (12) Allow unauthenticated access to Teams, (13) Make login modal smaller.
+  - Consequences: Better UX flow, consistent Windows 95 styling, fixed functionality issues.
+
+- ADR-052: FP4 Additional UI/UX refinements and bug fixes (Change Request CR-FP4-20260109-03)
+  - Context: 12 additional UI/behavior fixes and bug fixes required during implement phase.
+  - Decision: Apply all 12 fixes: (1) Hide "Add Member" for unregistered users (permission-based UI), (2) Real-time catalog filtering by name (debounced), (3) Team filter in catalog with URL params and tag display, (4) Modal height fixes (auto height, not full screen), (5) Visual tabs in AuthModal (Windows 95 style), (6) Smaller team info modal, (7) Display user logins instead of UUIDs (backend enhancement), (8) Fix game creation endpoints, (9) Remove Settings tab highlighting, (10) Fix CORS for local network access, (11) Add PlayModal margin, (12) Note build URL expiration (public URLs used, signed URLs may need backend changes).
+  - Consequences: Improved UX consistency, better permission handling, fixed functionality issues, enhanced backend API (user logins in teams), better CORS support for local development.
+
+- ADR-053: PlayModal fixes - game loading and margins (Change Request CR-FP4-20260109-04)
+  - Context: PlayModal had issues with game not loading and black iframe block overflowing window edges (missing right margin).
+  - Decision: (1) Improved iframe loading logic with proper timeout (50ms), added console logging for debugging, better error handling. (2) Fixed margins - added 8px margin on all sides, removed padding from modal content div for Game title, adjusted container dimensions using calc() to account for modal padding and prevent overflow.
+  - Consequences: Games now load properly in modal, iframe container has proper margins on all sides, no overflow issues, better debugging capabilities with console logs.
+
+- ADR-054: CORS fixes for local network access (Change Request CR-FP4-20260109-05)
+  - Context: CORS errors persisted when accessing site from other machines in local network (e.g., http://192.168.100.35:5173).
+  - Decision: (1) Enhanced backend CORS config with explicit origin callback allowing all origins for development, added all required headers (Content-Type, Authorization, Accept, Origin, X-Requested-With, etc.), proper preflight handling with OPTIONS requests returning 204, fallback middleware to ensure CORS headers are always set. (2) Backend listens on 0.0.0.0 instead of localhost to accept connections from all network interfaces. (3) Frontend auto-detects API URL: if VITE_API_BASE_URL is set, use it; otherwise, if accessing via IP, use same IP with port 3000; if localhost, use localhost:3000. (4) Added credentials: 'include' to all fetch requests. (5) Fixed FormData handling - don't set Content-Type header for FormData requests (browser sets it automatically with boundary).
+  - Consequences: Site can be accessed from any machine in local network without CORS errors, API URL automatically adapts to current hostname, proper credential handling for authenticated requests, FormData uploads work correctly.
+
+- ADR-055: Fix build URL expiration - generate signed URLs dynamically (Change Request CR-FP4-20260109-06)
+  - Context: "AccessDeniedRequest has expired" error appeared when opening games in PlayModal. Stored build_url in database was static and expired after some time, causing MinIO/S3 to reject requests. Also, signed URLs contained internal Docker hostname "minio" instead of public "localhost", making them inaccessible from browser.
+  - Decision: (1) Created BuildUrlService injectable service that generates signed S3 URLs dynamically using @aws-sdk/s3-request-presigner. (2) Updated GamesController.getGame() to call BuildUrlService.getSignedBuildUrl() which extracts buildId from stored build_url, generates fresh signed URL with 1-hour expiration using GetObjectCommand, and returns it. (3) BuildUrlService uses regex to match S3/MinIO URLs and extract buildId, falls back to original URL if signing fails or URL doesn't point to S3. (4) Fixed hostname replacement - after generating signed URL, replaces internal Docker hostname (from S3_ENDPOINT, e.g. "minio") with public URL hostname (from S3_PUBLIC_URL, e.g. "localhost") so URLs are accessible from browser. (5) Installed @aws-sdk/s3-request-presigner package.
+  - Consequences: Build URLs are now always fresh and valid when games are requested, no more expiration errors in PlayModal, URLs expire after 1 hour but are regenerated on each game request, works with both S3/MinIO and external URLs, signed URLs use correct public hostname for browser access.
+
+- ADR-056: UI/UX fixes - modal heights, loader, New Game page (Change Request CR-FP4-20260109-07)
+  - Context: Multiple UI/UX issues: (1) AuthModal and Team info modal still taking full screen height, (2) Signed URLs using internal Docker hostname "minio" causing connection errors, (3) No loading indicator when game is loading in PlayModal, (4) "Edit" tab confusing for creating new games.
+  - Decision: (1) Fixed modal heights - updated Win95Modal to use title.startsWith("Team:") check and added explicit height: auto for Authentication and Team modals. (2) Fixed signed URL hostname - BuildUrlService now replaces internal hostname with public hostname after URL generation. (3) Added HourglassLoader component - Windows 95 style animated hourglass loader with sand falling effect, shows in PlayModal while iframe loads, positioned absolutely over game container. (4) Replaced "Edit" with "New Game" - changed all toolbar instances, updated route to /editor/games/new. (5) Fixed editor/games/new page - added check for routeGameId === "new" to reset form instead of loading game, allows creating game before upload (handleUpload creates game if needed), proper form state management.
+  - Consequences: Modals now have proper auto height, signed URLs work correctly from browser, users see loading feedback when games load, clearer navigation with "New Game" tab, new game creation flow works properly.
+
+- ADR-057: Fix team update and cover image loading issues (Change Request CR-FP4-20260109-08)
+  - Context: (1) When editing a game, team information was not updating correctly - teamId was not being loaded or saved. (2) Cover images from MinIO were not loading - same hostname issue as build URLs. (3) No loading indicator for cover images.
+  - Decision: (1) Fixed team update - added teamId to GameDetails type, loadGame() now sets teamId from response, handleUpdateGame() includes teamId in request body and reloads game after update to refresh team info. (2) Fixed cover image loading - updated BuildUrlService.getSignedBuildUrl() to support any S3 URL path (changed regex from specific builds pattern to generic bucket path pattern), GamesController.getGame() now generates signed URL for cover_url using BuildUrlService, returns teamId in response. (3) Added cover image loader - created CoverImageWithLoader component that wraps img tag, shows HourglassLoader while loading, handles onLoad/onError events, displays error message on failure.
+  - Consequences: Team information updates correctly when editing games, cover images from MinIO load properly with signed URLs, users see loading feedback for cover images, better UX with visual feedback during image loading.
+
+- ADR-058: Cover image upload refactoring - S3 storage and file upload only (Change Request CR-FP4-20260109-09)
+  - Context: Users could enter blob URLs or external URLs for cover images, which caused issues. Need to store covers in S3 and only allow file uploads with size limit (300 KB).
+  - Decision: (1) Created POST /games/:id/cover endpoint in GamesController - validates file size (300 KB max), file type (image/*), uploads to S3 with key "covers/{coverId}.{ext}", stores S3 key in game.cover_url field. (2) Updated GameDoc schema - cover_url now stores S3 key (e.g., "covers/{coverId}.jpg") instead of full URL, allows generating fresh signed URLs. (3) Updated BuildUrlService - added getSignedUrlFromKey() method to generate signed URLs directly from S3 keys, updated getGame() to detect S3 keys (starts with "covers/") and use getSignedUrlFromKey(), updated listGames() to generate signed URLs for all cover images. (4) Removed cover URL input field - users can only upload files via file input, added file size validation (300 KB) and type validation on frontend, shows file name and size after selection. (5) Updated frontend upload flow - handleCoverUpload validates file, creates blob preview, uploads to endpoint if game exists, reloads game after upload to get signed URL, handleCreateGame uploads cover after game creation, handleUpdateGame uploads cover if new file selected.
+  - Consequences: Cover images are now stored in S3 with proper access control, users can only upload files (no manual URLs), file size is limited to 300 KB, signed URLs are generated fresh on each request, better security and consistency.
+
+## Questions / Gaps (FP4)
+
+- id: Q-FP4-001
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: What are the password requirements (minimum length, complexity, special characters)?
+  answer: минимум 6 символов. больше никаких требований
+  decision: ADR-030
+
+- id: Q-FP4-002
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: How long should password recovery codes be valid (expiration time)?
+  answer: нет ограничений на время. есть ограничение на количество. действует только последний отправленный код
+  decision: ADR-031
+
+- id: Q-FP4-003
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: What email service/provider should be used for sending password recovery codes?
+  answer: не ебу пока что. Сделай просто так, чтобы можно было его указать где-то
+  decision: ADR-032
+
+- id: Q-FP4-004
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Should login (username) and email both be unique, or can multiple users share the same email?
+  answer: Both login and email must be unique (per requirements: email unique, login unique).
+  decision: ADR-033
+
+- id: Q-FP4-005
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Who can add users to teams - only team creator, or any team member?
+  answer: людей в команду может добавлять только лидер. лидера можно передавать. изначально лидером считается создатель
+  decision: ADR-034
+
+- id: Q-FP4-006
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Should comments be stored embedded in games collection or as separate comments collection?
+  answer: пусть комменты в отдельной коллекции лежат
+  decision: ADR-035
+
+- id: Q-FP4-007
+  fp: FP4
+  status: answered
+  owner: vydra
+  date: 2026-01-09
+  question: Can unauthenticated users view comments, or only authenticated users?
+  answer: Per requirements, comments should be visible to all users (authenticated and unauthenticated) on published games.
+  decision: TBD
+
+- id: Q-FP4-008
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: What session management approach should be used (JWT tokens, secure cookies, session storage)?
+  answer: JWT токены
+  decision: ADR-036
+
+- id: Q-FP4-009
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: Should Windows 95 styling completely replace MUI Material 3, or be a theme overlay?
+  answer: Per requirements, Windows 95 styling should replace existing styling (remove non-Windows 95 artifacts).
+  decision: ADR-037
+
+- id: Q-FP4-010
+  fp: FP4
+  status: answered
+  owner: vydra
+  date: 2026-01-09
+  question: What is the exact data model for team membership (members array structure, user ID references)?
+  answer: user ID ref
+  decision: TBD
+
+- id: Q-FP4-011
+  fp: FP4
+  status: answered
+  owner: vydra
+  date: 2026-01-09
+  question: Should Editor tab be visible but disabled for unauthenticated users, or completely hidden?
+  answer: Per requirements, Editor tab should not be visible/accessible for unauthenticated users (hidden).
+  decision: TBD
+
+- id: Q-FP4-012
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: When Super Admin forces status change, should the requirement/remark be mandatory or optional?
+  answer: опциональная
+  decision: ADR-038
+
+- id: Q-FP4-013
+  fp: FP4
+  status: answered
+  owner: vydra
+  date: 2026-01-09
+  question: Should the login/registration modal support switching between login and registration modes, or be separate modals?
+  answer: Per requirements, single modal for both login and registration (Windows 95 style).
+  decision: TBD
+
+- id: Q-FP4-014
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  question: What happens to existing Super Admin account from FP1 - should it be migrated to new users collection with isSuperAdmin flag?
+  answer: да
+  decision: ADR-039
+
+## Change Requests (FP4)
+
+- id: CR-FP4-20260109-01
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  change: UI/UX fixes for FP4 implementation
+  description: |
+    11 UI/behavior fixes required:
+    1. Fix tabs: should be "Catalog Teams Edit Settings Help" instead of "File Edit View Help"
+    2. Games in catalog should have square cards
+    3. Game page should have image on the right
+    4. Comment input field not styled
+    5. Help tab should show dropdown with brief description about the site
+    6. Settings tab should only appear for admin
+    7. Login/username button should be instead of Refresh button
+    8. On catalog, missing tag selection bar and dropdown for tags that don't fit
+    9. Main info window cannot be dragged
+    10. On game creation page, no ability to upload Cover image from files
+    11. Missing module with ability to publish game and upload game
+  decision: ADR-050
+
+- id: CR-FP4-20260109-02
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  change: Additional UI/UX fixes and refinements
+  description: |
+    13 additional fixes required:
+    1. Login/Username button should be in toolbar, no Header component
+    2. Remove team dropdown from Catalog toolbar
+    3. Fix search input in Catalog (not working, not styled for Windows 95)
+    4. Fix comment input styling in Game Details
+    5. Game doesn't start when Play button clicked
+    6. Game should fill entire modal window
+    7. Window position jumps when switching tabs - should stay fixed
+    8. Remove leader and member count from team cards
+    9. Add Info button to team cards with modal showing members/leader and management options
+    10. Create Game button doesn't work
+    11. Super admin needs Edit button on game details page
+    12. Unauthenticated users should be able to access Teams tab
+    13. Login modal should be small (reference Windows 95 small windows)
+  decision: ADR-051
+
+- id: CR-FP4-20260109-03
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  change: Additional UI/UX refinements and bug fixes
+  description: |
+    12 fixes implemented:
+    1. Hide "Add Member" button for unregistered users in team info modal (only shows for authenticated team leaders)
+    2. Real-time filtering by game name in Catalog search input (debounced, 300ms)
+    3. "View Games" redirect with team filter - redirects to catalog with teamId param, team name appears as tag, clicking removes filter
+    4. Fixed login/register modal height (not full screen, uses auto height)
+    5. Replaced login/register buttons with visual tabs in AuthModal (Windows 95 style)
+    6. Made team info modal smaller (250-350px width, auto height)
+    7. Display leader and members' logins instead of UUIDs (backend returns leaderLogin/memberLogins arrays)
+    8. Fixed game creation page functionality (corrected endpoint paths: /games instead of /admin/games for most endpoints)
+    9. Removed visual highlighting from Settings tab (now uses Link component like other tabs)
+    10. Fixed CORS errors for local network IP access (updated backend CORS config with credentials, methods, headers)
+    11. Added left margin (8px) to PlayModal game iframe container
+    12. Build URL expiration issue noted (resolved in CR-FP4-20260109-06 with dynamic signed URL generation)
+  decision: ADR-052
+
+- id: CR-FP4-20260109-04
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  change: PlayModal fixes - game loading and margins
+  description: |
+    2 fixes implemented:
+    1. Fixed PlayModal game loading - improved iframe loading logic with proper timeout and error handling, added console logging for debugging
+    2. Fixed PlayModal margins - added right margin (8px on all sides), removed padding from modal content for Game title, adjusted container dimensions to use calc() for proper sizing without overflow
+  decision: ADR-053
+
+- id: CR-FP4-20260109-05
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  change: CORS fixes for local network access
+  description: |
+    Enhanced CORS configuration to fix access from other machines in local network:
+    1. Enhanced backend CORS config - added explicit origin callback, all required headers, proper preflight handling, fallback middleware for CORS headers
+    2. Backend listens on all interfaces (0.0.0.0) instead of just localhost
+    3. Frontend auto-detects API URL based on current hostname (if accessing via IP, uses same IP for API)
+    4. Added credentials: 'include' to fetch requests for proper CORS with credentials
+    5. Fixed FormData handling - don't set Content-Type header for FormData (browser sets it automatically with boundary)
+  decision: ADR-054
+
+- id: CR-FP4-20260109-06
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  change: Fix build URL expiration issue - generate signed URLs dynamically
+  description: |
+    Fixed "AccessDeniedRequest has expired" error when opening games in PlayModal:
+    1. Created BuildUrlService to generate signed S3 URLs dynamically on each game request
+    2. Updated GamesController.getGame() to generate fresh signed URL (expires in 1 hour) instead of using stored static URL
+    3. Installed @aws-sdk/s3-request-presigner package for signed URL generation
+    4. BuildUrlService extracts buildId from stored build_url and generates fresh signed URL using GetObjectCommand
+    5. Falls back to original URL if signing fails or URL doesn't point to S3
+    6. Fixed signed URL hostname - replaces internal Docker hostname (minio) with public URL hostname (localhost) so URLs are accessible from browser
+  decision: ADR-055
+
+- id: CR-FP4-20260109-07
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  change: UI/UX fixes - modal heights, loader, New Game page
+  description: |
+    5 fixes implemented:
+    1. Fixed AuthModal and Team info modal heights - changed from full screen to auto height, added explicit height: auto for these modals in Win95Modal
+    2. Fixed signed URL hostname issue - BuildUrlService now replaces internal Docker hostname (minio) with public URL hostname (localhost) in generated signed URLs
+    3. Added Windows 95 style hourglass loader (HourglassLoader component) to PlayModal - shows while game iframe is loading, animated sand falling effect
+    4. Fixed team info modal height - uses title.startsWith("Team:") check for proper sizing
+    5. Replaced "Edit" tab with "New Game" tab - changed all instances, fixed editor/games/new page to properly handle new game creation (resets form when routeGameId is "new", allows creating game before upload)
+  decision: ADR-056
+
+- id: CR-FP4-20260109-08
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  change: Fix team update and cover image loading issues
+  description: |
+    3 fixes implemented:
+    1. Fixed team not updating when editing game - added teamId to loadGame() to load and set teamId, added teamId to handleUpdateGame() request body, added reload of game after update to refresh team info
+    2. Fixed cover image not loading from MinIO - updated BuildUrlService to support any S3 URL path (not just builds), added signed URL generation for cover_url in GamesController.getGame(), returns teamId in response
+    3. Added hourglass loader for cover images - created CoverImageWithLoader component that shows HourglassLoader while image loads, handles loading and error states
+  decision: ADR-057
+
+- id: CR-FP4-20260109-09
+  fp: FP4
+  status: closed
+  owner: vydra
+  date: 2026-01-09
+  change: Cover image upload refactoring - S3 storage and file upload only
+  description: |
+    5 changes implemented:
+    1. Created POST /games/:id/cover endpoint for uploading cover images to S3 - validates file size (300 KB max), file type (image only), uploads to S3 with key "covers/{coverId}.{ext}", stores S3 key in game.cover_url instead of full URL
+    2. Updated GameDoc to store cover S3 key (e.g., "covers/{coverId}.jpg") instead of full URL - allows generating fresh signed URLs on each request
+    3. Updated BuildUrlService - added getSignedUrlFromKey() method to generate signed URLs directly from S3 keys, updated getGame() to detect S3 keys (starts with "covers/") and generate signed URLs
+    4. Removed cover URL input field from frontend - users can only upload files, no manual URL entry, added file size validation (300 KB) and file type validation on frontend
+    5. Updated frontend cover upload flow - handleCoverUpload validates file, creates preview, uploads to /games/:id/cover endpoint, reloads game after upload to get signed URL, handleCreateGame and handleUpdateGame handle cover upload for new/existing games
+  decision: ADR-058

@@ -5,4 +5,12 @@ module.exports = {
   verbose: true,
   coverageDirectory: "coverage",
   coverageReporters: ["json-summary", "lcov", "text"],
+  transform: {
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        tsconfig: "tsconfig.test.json",
+      },
+    ],
+  },
 };

@@ -54,6 +54,11 @@ button {
   flex-direction: column;
 }
 
+.win-window[style*="position: absolute"] {
+  width: calc(100% - 32px);
+  max-width: 1440px;
+}
+
 .win-titlebar {
   background: linear-gradient(90deg, var(--win-blue) 0%, var(--win-blue-light) 100%);
   color: var(--win-white);
@@ -207,6 +212,7 @@ button {
   flex-direction: column;
   gap: 8px;
   padding: 6px;
+  aspect-ratio: 1;
 }
 
 .game-thumb {
@@ -305,6 +311,28 @@ button {
   padding: 8px;
   color: #aa0000;
   font-weight: 700;
+}
+
+.win95-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.win95-modal {
+  position: absolute;
+  min-width: 400px;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (max-width: 960px) {

@@ -1,24 +1,138 @@
-# TBD in design-first
-# Define endpoints and contracts after UX_MAP and MODEL alignment.
+# API Contract (OpenAPI-style)
+# FP1 + FP4 endpoints
 
-# TODO (FP1 scope):
+# ===== FP1 Endpoints (existing) =====
+
 # Public
-# - GET /games?tag=...&sort=...
-# - GET /games/{id}
-# - GET /tags (optional; derived from games tags_user/tags_system)
+# GET /games?tag=...&sort=...&title=...&teamId=...
+#   Returns: { games: [{ id, title, cover_url, teamId, tags_user, tags_system, status }] }
+#   Filters: only published games for unauthenticated; all for authenticated
 #
-# Admin
-# - POST /admin/teams
-# - PATCH /admin/teams/{id}
-# - POST /admin/games
-# - PATCH /admin/games/{id}
-# - POST /admin/games/{id}/build (upload ZIP)
-# - POST /admin/games/{id}/publish (or /status)
-# - POST /admin/games/{id}/status (editing/published/archived + remark)
-# - POST/PATCH /admin/games/{id}/tags (restricted; tags_user/tags_system)
+# GET /games/{id}
+#   Returns: { id, title, description_md, repo_url, cover_url, teamId, team { name, members[] }, tags_user, tags_system, status, currentBuild { url }, adminRemark }
+#   Auth: public for published; authenticated for editing/archived if team member or super admin
 #
-# Constraints
+# GET /teams
+#   Returns: { teams: [{ id, name, leader, members[] }] }
+#   Auth: public
+#
+# GET /teams/{id}/games
+#   Returns: { games: [{ id, title, cover_url, ... }] } (filtered by teamId)
+#   Auth: public (only published)
+
+# ===== FP4: Authentication =====
+
+# POST /auth/register
+#   Body: { email, login, password }
+#   Returns: { user: { id, email, login }, token: "JWT..." }
+#   Validation: email unique, login unique, password min 6 chars
+#
+# POST /auth/login
+#   Body: { identifier (email or login), password }
+#   Returns: { user: { id, email, login, isSuperAdmin }, token: "JWT..." }
+#
+# POST /auth/recovery/request
+#   Body: { email }
+#   Returns: { message: "Code sent" }
+#   Notes: Generates code, invalidates previous code, sends email (ADR-031)
+#
+# POST /auth/recovery/verify
+#   Body: { email, code, newPassword }
+#   Returns: { message: "Password reset", token: "JWT..." }
+#   Notes: Validates code (only last sent code valid), updates password
+
+# ===== FP4: Teams (authenticated) =====
+
+# POST /teams
+#   Auth: JWT required
+#   Body: { name }
+#   Returns: { id, name, leader (current user), members: [current user] }
+#   Notes: Creator becomes leader (ADR-034)
+#
+# PATCH /teams/{id}
+#   Auth: JWT required (team leader only)
+#   Body: { name? }
+#   Returns: { id, name, leader, members[] }
+#
+# POST /teams/{id}/members
+#   Auth: JWT required (team leader only)
+#   Body: { userId }
+#   Returns: { id, name, leader, members[] }
+#   Notes: Only leader can add members (ADR-034)
+#
+# DELETE /teams/{id}/members/{userId}
+#   Auth: JWT required (team leader only)
+#   Returns: { id, name, leader, members[] }
+#
+# POST /teams/{id}/leader
+#   Auth: JWT required (current leader only)
+#   Body: { newLeaderId }
+#   Returns: { id, name, leader (new), members[] }
+#   Notes: Transfer leadership (ADR-034)
+
+# ===== FP4: Games (authenticated users) =====
+
+# POST /games
+#   Auth: JWT required
+#   Body: { teamId, title, description_md?, repo_url?, cover_url? }
+#   Returns: { id, teamId, title, status: "editing", ... }
+#   Notes: User must be team member or super admin
+#
+# PATCH /games/{id}
+#   Auth: JWT required (team member or super admin)
+#   Body: { title?, description_md?, repo_url?, cover_url? }
+#   Returns: { id, ... }
+#   Notes: Super admin can edit any game (FR-FP4-004)
+#
+# POST /games/{id}/build
+#   Auth: JWT required (team member or super admin)
+#   Body: FormData { file: ZIP }
+#   Returns: { buildId, buildUrl }
+#   Notes: Max 300 MB
+#
+# POST /games/{id}/publish
+#   Auth: JWT required (team member or super admin)
+#   Body: {}
+#   Returns: { id, status: "published" }
+#   Validation: requires cover_url + description_md + currentBuild
+#
+# POST /games/{id}/archive
+#   Auth: JWT required (team member or super admin)
+#   Body: {}
+#   Returns: { id, status: "archived" }
+#
+# POST /games/{id}/status
+#   Auth: JWT required (super admin only for forced changes)
+#   Body: { status: "editing"|"published"|"archived", remark?: string }
+#   Returns: { id, status, adminRemark? }
+#   Notes: Super admin can force status change; remark optional (ADR-038)
+
+# ===== FP4: Comments =====
+
+# GET /games/{id}/comments
+#   Auth: public (for published games)
+#   Returns: { comments: [{ id, text, userLogin, userId, createdAt }] }
+#   Notes: Comments visible to all on published games (Q-FP4-007)
+#
+# POST /games/{id}/comments
+#   Auth: JWT required
+#   Body: { text }
+#   Returns: { id, text, userLogin, userId, createdAt }
+#   Notes: Only authenticated users can post comments
+
+# ===== FP4: Tags (team members + super admin) =====
+
+# PATCH /games/{id}/tags
+#   Auth: JWT required (team member or super admin)
+#   Body: { tags_user?: string[], tags_system?: string[] }
+#   Returns: { id, tags_user, tags_system }
+#   Notes: Team members can set tags_user; super admin can set both
+
+# ===== Constraints =====
 # - Publish requires cover_url + description_md + build_url/build_id.
-# - Tag assignment allowed for team members + Super Admin (FP1: Super Admin only).
+# - Tag assignment allowed for team members + Super Admin.
 # - Max upload size 300 MB (configurable later).
-# - Build delivery uses signed build_url for iframe (or equivalent secure URL).
+# - Build delivery uses signed build_url for iframe.
+# - JWT tokens include: { userId, email, login, isSuperAdmin, exp }
+# - Password minimum 6 characters (ADR-030).
+# - Email service configurable (ADR-032).

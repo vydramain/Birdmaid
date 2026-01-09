@@ -165,8 +165,8 @@ export class AppController {
     }));
   }
 
-  @Get("/games/:id")
-  async getGame(@Param("id") id: string, @Query("admin") admin?: string) {
+  @Get("/games-legacy/:id")
+  async getGameLegacy(@Param("id") id: string, @Query("admin") admin?: string) {
     if (this.useMemory) {
       const game = this.memoryGames.find((item) => item.id === id);
       if (!game) {
@@ -212,7 +212,7 @@ export class AppController {
   }
 
   @Post("/admin/teams")
-  async createTeam(@Body() body: { name: string }) {
+  async createTeamLegacy(@Body() body: { name: string }) {
     if (this.useMemory) {
       const team = { id: randomUUID(), name: body.name, members: [] as string[] };
       this.memoryTeams.push(team);
@@ -334,7 +334,7 @@ export class AppController {
   }
 
   @Post("/admin/games/:id/publish")
-  async publishGame(@Param("id") id: string) {
+  async publishGameLegacy(@Param("id") id: string) {
     if (this.useMemory) {
       const game = this.memoryGames.find((item) => item.id === id);
       if (!game) {
@@ -359,8 +359,8 @@ export class AppController {
     return { status: "published" };
   }
 
-  @Post("/admin/games/:id/status")
-  async updateStatus(@Param("id") id: string, @Body() body: { status: string; remark?: string }) {
+  @Post("/admin/games/:id/status-legacy")
+  async updateStatusLegacy(@Param("id") id: string, @Body() body: { status: string; remark?: string }) {
     if (this.useMemory) {
       const game = this.memoryGames.find((item) => item.id === id);
       if (!game) {
@@ -382,8 +382,8 @@ export class AppController {
     return { status, remark };
   }
 
-  @Post("/admin/games/:id/tags")
-  async updateTags(
+  @Post("/admin/games/:id/tags-legacy")
+  async updateTagsLegacy(
     @Param("id") id: string,
     @Body() body: { tags_user?: string[]; tags_system?: string[] }
   ) {

@@ -112,3 +112,139 @@ fp:
 
     tests_phase: code
     gate_decision: TBD
+
+  - id: FP4
+    name: User Accounts & Windows 95 UI
+    scope:
+      - User account system: registration, login (by email or username), password recovery via email code.
+      - Super Admin accounts via MongoDB flag (isSuperAdmin).
+      - Unauthenticated visitors: catalog browsing, game playing, search, team viewing (no Editor/Settings).
+      - Authenticated users: all visitor capabilities + team creation, team membership, game creation for teams, Editor access, publish/archive, comments.
+      - Super Admin: all user capabilities + edit any game, force status changes with requirements.
+      - UI changes: remove Teams sidebar, remove ratings, add comments, login/username button in top-left with burger menu.
+      - Windows 95 styled modals: login/registration (draggable), game play modal (draggable).
+      - Game page redesign: description, team, members, repo, Play button (opens modal).
+      - Full Windows 95 styling across entire site (replace MUI Material 3).
+
+    status: implement
+    timebox: TBD
+
+    wip_limits:
+      max_parallel_cta: 2
+      max_open_questions: 0
+
+    exit_criteria:
+      discovery_ready:
+        - All FP4 requirements documented in docs/REQUIREMENTS.md
+        - Questions/Gaps logged in docs/QNA_DECISIONS.md
+        - Critical questions answered or assigned owners
+        - ack.discovery filled (by/at/scope)
+      design_ready:
+        - docs/UX_MAP.md: FP4 CTA table filled (CTA→Endpoint→State→Page→mock_status)
+        - docs/UX_MAP.md: System Design (per CTA) diagrams for FP4 CTAs
+        - docs/UX_MAP.md: System Interaction Overview (FP4) diagram
+        - docs/API.yaml and docs/MODEL.sql aligned for FP4 entities/endpoints
+        - docs/QNA_DECISIONS.md: ADRs for critical FP4 decisions
+        - ack.design_first filled (by/at/scope)
+      architecture_ready:
+        - ADRs for authentication stack, session management, email service integration
+        - docs/TESTS.md Planned Test Files aligned to chosen structure
+        - ack.architecture filled (by/at/scope)
+      tests_red_ready:
+        - docs/TESTS.md: UAT/BDD for FP4
+        - docs/TESTS.md: RTM block (requirement→tests)
+        - Red test runs executed; log paths in artifacts/.../logs/*
+        - ack.tests_red_spec filled (by/at/scope)
+
+    risks:
+      - Windows 95 styling may require significant UI refactoring from MUI Material 3.
+      - Authentication system adds complexity (password hashing, session management, email service).
+      - Team membership model needs clear permission rules.
+      - Draggable modals may have accessibility and mobile compatibility challenges.
+      - Email service integration requires external service configuration.
+
+    dependencies:
+      - docs/REQUIREMENTS.md (FP4 section)
+      - docs/UX_MAP.md (FP4 section)
+      - docs/QNA_DECISIONS.md (FP4 questions/ADRs)
+      - docs/API.yaml (FP4 endpoints)
+      - docs/MODEL.sql (users collection, teams.members update)
+      - docs/TESTS.md (FP4 test specs)
+      - artifacts/FP1/2026-01-08/evidence/stitch/**/* (Windows 95 style references)
+
+    blockers:
+      - None (all questions answered, design-first in progress).
+
+    repo_state:
+      front:
+        exists: true
+        package_scripts: [dev, build, test, test:watch, test:ci, coverage]
+        coverage_configured: false
+      back:
+        exists: true
+        package_scripts: [start, start:dev, build, test, test:ci, coverage]
+        coverage_configured: false
+      root_package_json: false
+      docker_compose_present: true
+
+    decisions_links:
+      adrs:
+        - "docs/QNA_DECISIONS.md#ADRs (FP4)"
+      ux_map:
+        - "docs/UX_MAP.md#FP4-User-Accounts--Windows-95-UI"
+      tests:
+        - "docs/TESTS.md#FP4-User-Accounts--Windows-95-UI"
+      requirements:
+        - "docs/REQUIREMENTS.md#FP4-User-Accounts--Windows-95-UI"
+
+    artifacts_paths:
+      root_pattern: "artifacts/${FP_ID}/${YYYY}-${MM}-${DD}/"
+      required:
+        - "logs/back-tests.log"
+        - "logs/front-tests.log"
+        - "coverage/coverage-back.json"
+        - "coverage/coverage-front.json"
+        - "evidence/demo-notes.txt"
+        - "evidence/links.md"
+      evidence:
+        - "evidence/stitch/windows95_style_references/**/* (if generated)"
+
+    reflection:
+      - what_went_well: All 14 questions answered; ADRs created for critical decisions (password policy, recovery codes, team leadership, JWT auth, Windows 95 styling, comments model). UX_MAP updated with 26 CTAs for FP4 including authentication, team management, game editing, comments, and play modal. API.yaml and MODEL.sql aligned with FP4 requirements (users collection, teams.leader/members, comments collection). Architecture decisions documented: @nestjs/jwt for JWT, bcrypt for password hashing, nodemailer for email, custom Windows 95 components replacing MUI, React Context for auth state, NestJS guards/decorators for permissions. TESTS.md updated with 21 planned test files for FP4. Red tests created: 12 backend tests (auth, teams, games, comments) and 11 frontend tests (auth flows, catalog visibility, teams, game editor, comments, play modal, Windows 95 UI). All tests are red (expected) as implementation not yet done.
+      - risks: Windows 95 styling replacement of MUI Material 3 will require significant refactoring (all components need rebuild). Email service configuration needs documentation and example setup. Draggable modals need custom implementation (no library). Team permission checks need careful testing. JWT token expiration (7 days) may require refresh mechanism later. Tests will fail until implementation is complete (expected red state).
+      - next_focus: Proceed to implement stage to make tests green. Start with backend auth module, then frontend auth context, then Windows 95 components, then remaining features.
+      - skills: testing-strategy used to structure red tests; testing applied to ensure comprehensive coverage; documentation-criteria ensured test alignment with UAT/BDD.
+      - implement_20260109: Implemented 12 UI/UX fixes from CR-FP4-20260109-03: (1) Hide "Add Member" button for unregistered users in team info modal, (2) Real-time filtering by game name in catalog, (3) "View Games" redirect with team filter and team name tag, (4) Fixed login/register modal height (not full screen), (5) Replaced login/register buttons with visual tabs in AuthModal, (6) Made team info modal smaller, (7) Display leader and members' logins instead of UUIDs (backend returns leaderLogin/memberLogins), (8) Fixed game creation page functionality (endpoint paths), (9) Removed visual highlighting from Settings tab, (10) Fixed CORS errors for local network IP access, (11) Added left margin to PlayModal game iframe, (12) Build URL expiration issue noted (uses public URLs, signed URLs may need backend changes). Backend: Updated TeamsController to return user logins, added getUserLogin to TeamsService, updated CORS config. Frontend: Updated team info modal, added team filtering in catalog, fixed endpoint paths, updated AuthModal with tabs, fixed modal sizing.
+      - implement_20260109_playmodal: Fixed PlayModal issues from CR-FP4-20260109-04: (1) Improved iframe loading with proper timeout (50ms) and console logging for debugging, (2) Fixed margins - added 8px margin on all sides, removed padding from modal content for Game title, adjusted container dimensions using calc() to prevent overflow. Games now load properly and iframe container has proper margins without overflow.
+      - implement_20260109_cors: Fixed CORS issues for local network access from CR-FP4-20260109-05: (1) Enhanced backend CORS config with explicit origin callback, all required headers, preflight handling, fallback middleware, (2) Backend listens on 0.0.0.0 for all network interfaces, (3) Frontend auto-detects API URL based on hostname (IP → IP:3000, localhost → localhost:3000), (4) Added credentials: 'include' to fetch, (5) Fixed FormData handling (no Content-Type header). Site now accessible from any machine in local network without CORS errors.
+      - implement_20260109_buildurl: Fixed build URL expiration issue from CR-FP4-20260109-06: Created BuildUrlService to generate signed S3 URLs dynamically on each game request (1-hour expiration), updated GamesController.getGame() to use BuildUrlService, installed @aws-sdk/s3-request-presigner. Build URLs are now always fresh, no more "AccessDeniedRequest has expired" errors in PlayModal. Fixed signed URL hostname replacement (minio → localhost) in CR-FP4-20260109-07.
+      - implement_20260109_ui_fixes: Fixed UI/UX issues from CR-FP4-20260109-07: (1) Fixed AuthModal and Team info modal heights (auto instead of full screen), (2) Fixed signed URL hostname in BuildUrlService (replaces internal Docker hostname with public URL), (3) Added Windows 95 hourglass loader to PlayModal (HourglassLoader component with animated sand), (4) Replaced "Edit" tab with "New Game" tab, (5) Fixed editor/games/new page to properly handle new game creation (form reset, create before upload).
+      - implement_20260109_team_cover: Fixed team update and cover image issues from CR-FP4-20260109-08: (1) Fixed team not updating - added teamId to loadGame() and handleUpdateGame(), reloads game after update, (2) Fixed cover image loading - updated BuildUrlService to support any S3 URL path, generates signed URLs for cover_url, (3) Added hourglass loader for cover images (CoverImageWithLoader component with HourglassLoader).
+      - implement_20260109_cover_upload: Refactored cover image upload from CR-FP4-20260109-09: (1) Created POST /games/:id/cover endpoint for S3 upload with 300 KB size limit and image type validation, (2) Changed GameDoc to store S3 key ("covers/{coverId}.{ext}") instead of full URL, (3) Added BuildUrlService.getSignedUrlFromKey() for generating signed URLs from S3 keys, (4) Removed cover URL input field - only file upload allowed, (5) Updated frontend to upload covers via new endpoint and reload game to get signed URL.
+
+    ack:
+      discovery:
+        by: TBD
+        at: TBD
+        scope: FP4 discovery
+      design_first:
+        by: TBD
+        at: TBD
+        scope: FP4 design-first (pending ACK)
+      architecture:
+        by: TBD
+        at: TBD
+        scope: FP4 architecture (pending ACK)
+      tests_red_spec:
+        by: TBD
+        at: TBD
+        scope: FP4 tests-red spec
+      gate:
+        by: TBD
+        at: TBD
+        scope: FP4 gate
+
+    ack_format: "Fill ack.<stage>.by/at/scope after each stage; required for discovery, plan, design-first, architecture, tests-red spec, gate."
+
+    tests_phase: code
+    gate_decision: TBD
