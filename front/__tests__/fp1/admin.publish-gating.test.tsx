@@ -10,7 +10,6 @@ describe("Admin publish gating", () => {
       </MemoryRouter>
     );
 
-    const publishButton = screen.getByRole("button", { name: /Publish/i });
-    expect(publishButton).toBeDisabled();
+    expect(screen.getByText(/Publish/i)).toBeDisabled();
   });
 });

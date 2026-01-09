@@ -8,23 +8,18 @@ describe("POST /admin/games/{id}/publish", () => {
   });
 
   it("publishes only with cover + description + build", async () => {
-    const adminHeaders = { "x-admin-token": "admin-token" };
-    const game = await controller.createGame(
-      {
-        teamId: "team-1",
-        title: "Publishable",
-        description_md: "Ready",
-        repo_url: "https://example.com/repo",
-        cover_url: "https://example.com/cover.png",
-      },
-      adminHeaders
-    );
+    const game = await controller.createGame({
+      teamId: "team-1",
+      title: "Publishable",
+      description_md: "Ready",
+      repo_url: "https://example.com/repo",
+      cover_url: "https://example.com/cover.png",
+    });
 
-    const gameId = "_id" in game ? game._id : game.id;
-    await expect(controller.publishGame(gameId, adminHeaders)).rejects.toThrow(/Missing required/);
+    await expect(controller.publishGame(game.id)).rejects.toThrow(/Missing required/);
 
-    await controller.uploadBuild(gameId, { originalname: "build.zip", buffer: Buffer.from("PK\x03\x04") }, adminHeaders);
-    const published = await controller.publishGame(gameId, adminHeaders);
+    await controller.uploadBuild(game.id, { originalname: "build.zip", buffer: Buffer.from("PK\x03\x04") });
+    const published = await controller.publishGame(game.id);
 
     expect(published.status).toBe("published");
   });

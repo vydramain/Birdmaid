@@ -8,11 +8,7 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
     "test:ci": "jest --ci --runInBand --verbose",
-    "coverage": "jest --coverage",
-    "test:fp1": "jest __tests__/fp1 --runInBand",
-    "coverage:fp1": "jest __tests__/fp1 --coverage --runInBand",
-    "test:fp2": "jest __tests__/fp2 --runInBand",
-    "coverage:fp2": "jest __tests__/fp2 --coverage --runInBand"
+    "coverage": "jest --coverage"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",

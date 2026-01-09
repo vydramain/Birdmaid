@@ -10,10 +10,6 @@
     "test:watch": "vitest",
     "test:ci": "vitest run",
     "coverage": "vitest run --coverage",
-    "test:fp1": "vitest run __tests__/fp1 --reporter=default",
-    "coverage:fp1": "vitest run __tests__/fp1 --coverage --reporter=default",
-    "test:fp2": "vitest run __tests__/fp2 --reporter=default",
-    "coverage:fp2": "vitest run __tests__/fp2 --coverage --reporter=default",
     "preview": "vite preview --host 0.0.0.0 --port 5173"
   },
   "dependencies": {
