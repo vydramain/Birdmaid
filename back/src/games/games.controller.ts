@@ -192,6 +192,9 @@ export class GamesController {
    * 
    * IMPORTANT: This route must be declared BEFORE :id route to avoid conflicts.
    * Uses a single route that extracts file path from URL for all files.
+   * 
+   * Note: OPTIONS preflight requests are handled by global middleware in main.ts
+   * which sets Access-Control-Allow-Origin: "null" for build asset routes with Origin: null.
    */
   @Get(":id/build/:file")
   @UseGuards(OptionalAuthGuard)
@@ -358,6 +361,7 @@ export class GamesController {
           // Cookie is scoped to /games/:id/build path and expires in 1 hour
           const isProduction = process.env.NODE_ENV === "production";
           const host = req.get("host") || req.headers.host || "api.birdmaid.su";
+          const origin = req.headers.origin;
           
           // Extract domain for cross-subdomain cookie sharing
           // For birdmaid.su and api.birdmaid.su, use .birdmaid.su as domain
@@ -366,10 +370,23 @@ export class GamesController {
             cookieDomain = ".birdmaid.su"; // Allows cookie sharing between birdmaid.su and api.birdmaid.su
           }
           
+          // CRITICAL: When Origin is "null" (opaque origin from sandboxed iframe),
+          // browsers treat this as a cross-site context. SameSite=Lax cookies are NOT sent
+          // in cross-site contexts. We MUST use SameSite=None; Secure for cookies to work
+          // with Origin: null requests.
+          // 
+          // Rationale:
+          // - SameSite=Lax: Only sent in same-site (top-level) navigations, NOT in cross-site iframes
+          // - SameSite=None; Secure: Sent in all contexts (same-site and cross-site), required for
+          //   opaque origins (Origin: null) from sandboxed iframes
+          // - Secure=true is required when SameSite=None (browser requirement)
+          const isOpaqueOrigin = !origin || origin === 'null';
+          const sameSiteValue = (isProduction && isOpaqueOrigin) ? "None" : "Lax";
+          
           const cookieOptions: any = {
             httpOnly: true,
-            secure: isProduction, // Only secure in production (HTTPS required)
-            sameSite: isProduction ? "Lax" : "Lax", // Lax works for same-site (birdmaid.su -> api.birdmaid.su)
+            secure: isProduction, // Required when SameSite=None, also good practice in production
+            sameSite: sameSiteValue as "Lax" | "None" | "Strict",
             path: `/games/${id}/build`,
             maxAge: 60 * 60 * 1000, // 1 hour
           };
@@ -379,8 +396,18 @@ export class GamesController {
           }
           
           res.cookie(`bm_build_auth_${id}`, tokenFromQuery, cookieOptions);
-          console.log(`[proxyBuildFile] Set build auth cookie for game ${id}, domain: ${cookieDomain || 'none'}, expires in 1 hour`);
-          console.log(`[proxyBuildFile] Cookie options:`, JSON.stringify(cookieOptions, null, 2));
+          
+          // Log cookie details (but not the token value)
+          console.log(`[proxyBuildFile] Set build auth cookie for game ${id}`);
+          console.log(`[proxyBuildFile] Cookie details: domain=${cookieDomain || 'none'}, sameSite=${sameSiteValue}, secure=${isProduction}, origin=${origin || 'null'}, expires in 1 hour`);
+          
+          // Verify Set-Cookie header is present in response (for debugging)
+          const setCookieHeader = res.getHeader('Set-Cookie');
+          if (setCookieHeader) {
+            console.log(`[proxyBuildFile] ✓ Set-Cookie header present in response (length: ${Array.isArray(setCookieHeader) ? setCookieHeader[0].length : String(setCookieHeader).length})`);
+          } else {
+            console.error(`[proxyBuildFile] ✗ WARNING: Set-Cookie header NOT present in response!`);
+          }
         } catch (error) {
           console.error(`[proxyBuildFile] Invalid token in query, not setting cookie:`, error instanceof Error ? error.message : String(error));
           console.error(`[proxyBuildFile] Token preview: ${tokenFromQuery?.substring(0, 50)}...`);
@@ -467,29 +494,37 @@ export class GamesController {
       res.setHeader("Content-Type", contentType);
       res.setHeader("Cache-Control", "public, max-age=3600");
       
-      // CORS headers for build files (important for iframe requests)
-      // Note: For same-origin requests (iframe on api.birdmaid.su loading from api.birdmaid.su),
-      // CORS is not needed and cookies work automatically.
-      // For cross-origin requests with Origin: null (sandboxed iframe), we need to handle CORS carefully.
+      // CORS headers for build files (critical for iframe requests with Origin: null)
+      // 
+      // CRITICAL: When Origin is "null" (opaque origin from sandboxed iframe),
+      // browsers require the server to respond with Access-Control-Allow-Origin: "null"
+      // (the literal string "null") for the response to be accepted. Without this,
+      // even if the server returns 200, the browser will block the response.
+      //
+      // This is required by the CORS specification for opaque origins.
       const origin = req.headers.origin;
       const corsOrigin = process.env.CORS_ORIGIN;
       const allowedOrigins = corsOrigin ? corsOrigin.split(',').map(o => o.trim()) : ['*'];
       
-      // Set CORS headers only if origin is present and not null
-      // For Origin: null requests, cookies work via same-origin (iframe src is on api.birdmaid.su)
-      if (origin && origin !== 'null') {
-        // For requests with origin, check if allowed
+      // Handle Origin: null (opaque origin from sandboxed iframe)
+      if (!origin || origin === 'null') {
+        // MUST respond with "null" (the string) for opaque origins
+        res.setHeader("Access-Control-Allow-Origin", "null");
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+        console.log(`[proxyBuildFile] Set CORS headers for opaque origin (Origin: null)`);
+      } else {
+        // For requests with explicit origin, check if allowed
         if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
           res.setHeader("Access-Control-Allow-Origin", origin);
           res.setHeader("Access-Control-Allow-Credentials", "true");
+          console.log(`[proxyBuildFile] Set CORS headers for origin: ${origin}`);
         }
-      } else {
-        // For Origin: null requests (sandboxed iframe), cookies work via domain sharing (.birdmaid.su)
-        // We don't set CORS headers here to avoid conflicts with credentials
-        // Cookie authentication will work automatically for same-origin requests
       }
+      
+      // Vary header is required when ACAO can change based on Origin
+      res.setHeader("Vary", "Origin");
       res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie");
       res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Type");
       
       // Send content
@@ -530,21 +565,23 @@ export class GamesController {
         errorMessage = 'Access denied to file in S3';
       }
       
-      // Set CORS headers even for errors (important for iframe requests)
+      // Set CORS headers even for errors (critical for iframe requests with Origin: null)
       const origin = req.headers.origin;
       const corsOrigin = process.env.CORS_ORIGIN;
       const allowedOrigins = corsOrigin ? corsOrigin.split(',').map(o => o.trim()) : ['*'];
       
-      // Set CORS headers only if origin is present and not null
-      if (origin && origin !== 'null') {
-        if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-          res.setHeader("Access-Control-Allow-Origin", origin);
-          res.setHeader("Access-Control-Allow-Credentials", "true");
-        }
+      // Handle Origin: null (opaque origin) - MUST respond with "null" string
+      if (!origin || origin === 'null') {
+        res.setHeader("Access-Control-Allow-Origin", "null");
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+      } else if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Access-Control-Allow-Credentials", "true");
       }
-      // For Origin: null requests, cookies work via domain sharing, no CORS headers needed
+      
+      res.setHeader("Vary", "Origin");
       res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie");
       
       res.status(statusCode).json({
         statusCode,

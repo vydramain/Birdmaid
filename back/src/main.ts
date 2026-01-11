@@ -59,6 +59,8 @@ async function bootstrap() {
   // Add global CORS headers manually as fallback (NestJS enableCors should handle this, but this ensures it works)
   app.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;
+    const isBuildAssetRoute = /\/games\/[^\/]+\/build\//.test(req.url || req.path || '');
+    
     // When credentials: true, we must use specific origin, not '*'
     // But for iframe requests (Origin: null), we need to allow them
     if (origin && origin !== 'null') {
@@ -72,22 +74,35 @@ async function bootstrap() {
         res.setHeader('Access-Control-Allow-Credentials', 'true');
       }
     } else {
-      // For requests without origin or with Origin: null (iframe requests)
-      // In production, use CORS_ORIGIN if set, otherwise allow all
-      if (process.env.NODE_ENV === 'production' && corsOrigin && !allowedOrigins.includes('*')) {
-        // Use first allowed origin or wildcard
-        const allowOrigin = allowedOrigins[0] || '*';
-        res.setHeader('Access-Control-Allow-Origin', allowOrigin);
+      // For requests without origin or with Origin: null (opaque origin from sandboxed iframe)
+      // CRITICAL: For build asset routes with Origin: null, we MUST respond with
+      // Access-Control-Allow-Origin: "null" (the literal string "null") for CORS to work.
+      // This is required by the CORS specification for opaque origins.
+      if (isBuildAssetRoute && (!origin || origin === 'null')) {
+        res.setHeader('Access-Control-Allow-Origin', 'null');
         res.setHeader('Access-Control-Allow-Credentials', 'true');
       } else {
-        // Development or wildcard: allow all
-        res.setHeader('Access-Control-Allow-Origin', '*');
+        // For other routes with Origin: null, use standard handling
+        if (process.env.NODE_ENV === 'production' && corsOrigin && !allowedOrigins.includes('*')) {
+          // Use first allowed origin or wildcard
+          const allowOrigin = allowedOrigins[0] || '*';
+          res.setHeader('Access-Control-Allow-Origin', allowOrigin);
+          res.setHeader('Access-Control-Allow-Credentials', 'true');
+        } else {
+          // Development or wildcard: allow all
+          res.setHeader('Access-Control-Allow-Origin', '*');
+        }
       }
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, PUT, OPTIONS, HEAD');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With, Access-Control-Request-Method, Access-Control-Request-Headers');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With, Access-Control-Request-Method, Access-Control-Request-Headers, Cookie');
     res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type');
     res.setHeader('Access-Control-Max-Age', '86400');
+    
+    // Vary header is required when ACAO can change based on Origin
+    if (isBuildAssetRoute) {
+      res.setHeader('Vary', 'Origin');
+    }
     
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
