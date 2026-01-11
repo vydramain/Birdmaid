@@ -3,7 +3,8 @@
 
 # Frontend domain
 # Note: ${DOMAIN} will be substituted by entrypoint script
-birdmaid.${DOMAIN} {
+# DOMAIN should be the full domain (e.g., birdmaid.su or example.com)
+${DOMAIN} {
     # Proxy to frontend container (serves static files)
     reverse_proxy front:80 {
         header_up Host {host}
@@ -49,7 +50,8 @@ birdmaid.${DOMAIN} {
 
 # Backend API domain
 # Note: ${DOMAIN} will be substituted by entrypoint script
-api.birdmaid.${DOMAIN} {
+# DOMAIN should be the full domain (e.g., birdmaid.su or example.com)
+api.${DOMAIN} {
     # Proxy to backend
     reverse_proxy back:3000 {
         header_up Host {host}
