@@ -88,9 +88,14 @@ api.${DOMAIN} {
         Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https:;"
     }
     
+    # Matcher for non-build-file requests (API endpoints)
+    @not_build_files {
+        not path /games/*/build/*
+    }
+    
     # Security and CORS headers for API endpoints (default, strict CSP)
     # Apply to all requests EXCEPT build files (which have their own CSP)
-    header !@build_files {
+    header @not_build_files {
         # Disable server tokens
         -Server
         
