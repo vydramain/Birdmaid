@@ -234,6 +234,8 @@ export class GamesController {
     console.log(`[proxyBuildFile] Request path: ${req.path}`);
     console.log(`[proxyBuildFile] Request query:`, req.query);
     console.log(`[proxyBuildFile] Request method: ${req.method}`);
+    console.log(`[proxyBuildFile] Has token in query: ${!!req.query.token}`);
+    console.log(`[proxyBuildFile] Is index.html: ${filePath === "index.html"}`);
 
     // Get game to find build_url
     // Access control:
@@ -340,6 +342,54 @@ export class GamesController {
     console.log(`[proxyBuildFile] build_url: ${game.build_url}`);
     console.log(`[proxyBuildFile] Extracted build_path: ${buildPath}, build_dir: ${buildDir}, filePath: ${filePath}, s3Key: ${s3Key}`);
 
+    // CRITICAL: Set cookie BEFORE any S3 operations (for index.html with token)
+    // This ensures cookie is set even if S3 request fails or times out
+    if (filePath === "index.html") {
+      const tokenFromQuery = req.query.token as string | undefined;
+      
+      // Cookie handshake: if token is provided in query, set HttpOnly cookie for subsequent requests
+      if (tokenFromQuery) {
+        try {
+          // Validate token before setting cookie
+          const secret = process.env.JWT_SECRET || "default-secret-change-in-production";
+          const payload = await this.jwtService.verifyAsync(tokenFromQuery, { secret });
+          
+          // Set HttpOnly Secure cookie for build asset authentication
+          // Cookie is scoped to /games/:id/build path and expires in 1 hour
+          const isProduction = process.env.NODE_ENV === "production";
+          const host = req.get("host") || req.headers.host || "api.birdmaid.su";
+          
+          // Extract domain for cross-subdomain cookie sharing
+          // For birdmaid.su and api.birdmaid.su, use .birdmaid.su as domain
+          let cookieDomain: string | undefined = undefined;
+          if (isProduction && host.includes("birdmaid.su")) {
+            cookieDomain = ".birdmaid.su"; // Allows cookie sharing between birdmaid.su and api.birdmaid.su
+          }
+          
+          const cookieOptions: any = {
+            httpOnly: true,
+            secure: isProduction, // Only secure in production (HTTPS required)
+            sameSite: isProduction ? "Lax" : "Lax", // Lax works for same-site (birdmaid.su -> api.birdmaid.su)
+            path: `/games/${id}/build`,
+            maxAge: 60 * 60 * 1000, // 1 hour
+          };
+          
+          if (cookieDomain) {
+            cookieOptions.domain = cookieDomain;
+          }
+          
+          res.cookie(`bm_build_auth_${id}`, tokenFromQuery, cookieOptions);
+          console.log(`[proxyBuildFile] Set build auth cookie for game ${id}, domain: ${cookieDomain || 'none'}, expires in 1 hour`);
+          console.log(`[proxyBuildFile] Cookie options:`, JSON.stringify(cookieOptions, null, 2));
+        } catch (error) {
+          console.error(`[proxyBuildFile] Invalid token in query, not setting cookie:`, error instanceof Error ? error.message : String(error));
+          console.error(`[proxyBuildFile] Token preview: ${tokenFromQuery?.substring(0, 50)}...`);
+        }
+      } else {
+        console.log(`[proxyBuildFile] No token in query for index.html, skipping cookie setup`);
+      }
+    }
+
     // Declare variables outside try block for use in catch
     let contentType: string | undefined;
     let content: string | Buffer | undefined;
@@ -389,51 +439,8 @@ export class GamesController {
         const buffer = Buffer.concat(chunks);
         content = buffer.toString('utf-8');
         
-        // If it's index.html, set HttpOnly cookie for build asset authentication
-        if (filePath === "index.html" && contentType.includes("text/html")) {
-          const tokenFromQuery = req.query.token as string | undefined;
-          
-          // Cookie handshake: if token is provided in query, set HttpOnly cookie for subsequent requests
-          if (tokenFromQuery) {
-            try {
-              // Validate token before setting cookie
-              const secret = process.env.JWT_SECRET || "default-secret-change-in-production";
-              const payload = await this.jwtService.verifyAsync(tokenFromQuery, { secret });
-              
-              // Set HttpOnly Secure cookie for build asset authentication
-              // Cookie is scoped to /games/:id/build path and expires in 1 hour
-              const isProduction = process.env.NODE_ENV === "production";
-              const host = req.get("host") || req.headers.host || "api.birdmaid.su";
-              
-              // Extract domain for cross-subdomain cookie sharing
-              // For birdmaid.su and api.birdmaid.su, use .birdmaid.su as domain
-              let cookieDomain: string | undefined = undefined;
-              if (isProduction && host.includes("birdmaid.su")) {
-                cookieDomain = ".birdmaid.su"; // Allows cookie sharing between birdmaid.su and api.birdmaid.su
-              }
-              
-              const cookieOptions: any = {
-                httpOnly: true,
-                secure: isProduction, // Only secure in production (HTTPS required)
-                sameSite: isProduction ? "Lax" : "Lax", // Lax works for same-site (birdmaid.su -> api.birdmaid.su)
-                path: `/games/${id}/build`,
-                maxAge: 60 * 60 * 1000, // 1 hour
-              };
-              
-              if (cookieDomain) {
-                cookieOptions.domain = cookieDomain;
-              }
-              
-              res.cookie(`bm_build_auth_${id}`, tokenFromQuery, cookieOptions);
-              console.log(`[proxyBuildFile] Set build auth cookie for game ${id}, domain: ${cookieDomain || 'none'}, expires in 1 hour`);
-            } catch (error) {
-              console.warn(`[proxyBuildFile] Invalid token in query, not setting cookie:`, error instanceof Error ? error.message : String(error));
-            }
-          }
-          
-          // Note: We no longer modify index.html content - Godot build files are served as-is
-          // Authentication is handled via HttpOnly cookie set above
-        }
+        // Note: We no longer modify index.html content - Godot build files are served as-is
+        // Authentication is handled via HttpOnly cookie set above
       } else {
         // For binary files (images, fonts, wasm, pck, etc.), convert stream to buffer
         console.log(`[proxyBuildFile] Processing binary file: ${filePath}, contentType: ${contentType}`);
