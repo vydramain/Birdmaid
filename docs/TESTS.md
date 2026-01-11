@@ -96,6 +96,151 @@ requirements:
 
 ---
 
+## FP5: UI/UX Fixes and Polish
+
+### UAT / BDD
+
+- Catalog card sizing: Given catalog displays games, when there are fewer than 5 cards, then cards maintain consistent size and do not become oversized.
+- Cover image display: Given catalog loads games, when cover images are requested, then backend returns signed URLs (not S3 keys) and images display correctly.
+- Team members display: Given user opens game page, when team members are shown, then member logins (usernames) are displayed, not user IDs.
+- Catalog title search: Given user types in catalog search input, when text is entered, then games are filtered by title in real-time (case-insensitive, partial match).
+- Catalog search input styling: Given catalog page loads, when search input is rendered, then it uses Windows 95 styling (Win95Input component).
+- Teams Create Team button: Given Teams page loads, when Create Team button is displayed, then text is in single line and button width is adaptive.
+- Teams search input styling: Given Teams page loads, when search input is rendered, then it uses Windows 95 styling (Win95Input component).
+- Teams name search: Given user types in Teams search input, when text is entered, then teams are filtered by name in real-time (case-insensitive, partial match).
+- Teams info modal sizing: Given user opens team info modal, when modal is displayed, then it has adaptive height (not full screen) and ends after "Add Member" section.
+- Teams info modal Make Leader: Given user opens team info modal, when current leader is displayed, then "Make Leader" button is not shown for the leader.
+- Teams info modal user search styling: Given user opens team info modal, when user search input is displayed, then it uses Windows 95 styling (Win95Input component).
+- Teams info modal user search: Given team leader types user login in search input, when valid login is entered and "Add Member" is clicked, then user is added to team via backend API and members list updates.
+- Edit button on game page: Given user opens game page for their team's game, when page loads, then "Edit" button is visible and navigates to editor page.
+- Tag filtering with teamId: Given user filters catalog by tag and teamId, when both filters are applied, then games matching both conditions are returned (AND logic).
+- New Game page help tooltips: Given user opens New Game page, when help icons are clicked, then Windows 95 styled tooltip windows explain game upload rules.
+- New Game page error modals: Given user performs operation on New Game page, when operation fails, then Windows 95 styled error modal is displayed with error message.
+
+### Acceptance Checklist (FP5)
+
+- ✅ Catalog card sizing is consistent regardless of count.
+- ✅ Cover images display correctly in catalog (signed URLs returned).
+- ✅ Team members show logins (usernames) on game page.
+- ✅ Catalog title search works in real-time.
+- ✅ All search inputs use Windows 95 styling.
+- ✅ Teams Create Team button is single line and adaptive width.
+- ✅ Teams name search works in real-time.
+- ✅ Teams info modal has adaptive height.
+- ✅ "Make Leader" button hidden for current leader.
+- ✅ User search in Teams modal works and adds users to team.
+- ✅ Edit button appears on game page for team members.
+- ✅ Tag filtering with teamId works correctly (AND logic).
+- ✅ Help tooltips display on New Game page (Windows 95 styled).
+- ✅ Error modals display on New Game page failures (Windows 95 styled).
+- ✅ Tags management: User tags with chips UI, system tags dropdown (Super Admin only), tags persist correctly.
+
+### RTM (YAML)
+
+```yaml
+fp: FP5
+requirements:
+  - id: FR-FP5-001
+    name: Catalog card sizing
+    tests:
+      - UAT-FP5-001
+    code_targets: [front/src/App.tsx, front/src/retro.css]
+  - id: FR-FP5-002
+    name: Cover image display in catalog
+    tests:
+      - UAT-FP5-002
+    code_targets: [back/src/games/games.controller.ts, back/src/build-url.service.ts]
+  - id: FR-FP5-003
+    name: Team members display on game page
+    tests:
+      - UAT-FP5-003
+    code_targets: [back/src/games/games.controller.ts, back/src/games/games.service.ts, front/src/App.tsx]
+  - id: FR-FP5-004
+    name: Catalog title search
+    tests:
+      - UAT-FP5-004
+    code_targets: [front/src/App.tsx, back/src/games/games.service.ts]
+  - id: FR-FP5-005
+    name: Catalog search input styling
+    tests:
+      - UAT-FP5-005
+    code_targets: [front/src/App.tsx, front/src/components/win95/Win95Input.tsx]
+  - id: FR-FP5-006
+    name: Teams Create Team button
+    tests:
+      - UAT-FP5-006
+    code_targets: [front/src/App.tsx]
+  - id: FR-FP5-007
+    name: Teams search input styling
+    tests:
+      - UAT-FP5-007
+    code_targets: [front/src/App.tsx, front/src/components/win95/Win95Input.tsx]
+  - id: FR-FP5-008
+    name: Teams name search
+    tests:
+      - UAT-FP5-008
+    code_targets: [front/src/App.tsx]
+  - id: FR-FP5-009
+    name: Teams info modal sizing
+    tests:
+      - UAT-FP5-009
+    code_targets: [front/src/components/win95/Win95Modal.tsx, front/src/App.tsx]
+  - id: FR-FP5-010
+    name: Teams info modal Make Leader button
+    tests:
+      - UAT-FP5-010
+    code_targets: [front/src/App.tsx]
+  - id: FR-FP5-011
+    name: Teams info modal user search styling
+    tests:
+      - UAT-FP5-011
+    code_targets: [front/src/App.tsx, front/src/components/win95/Win95Input.tsx]
+  - id: FR-FP5-012
+    name: Teams info modal user search functionality
+    tests:
+      - UAT-FP5-012
+    code_targets: [front/src/App.tsx, back/src/teams/teams.controller.ts, back/src/users/users.controller.ts]
+  - id: FR-FP5-013
+    name: Edit button on game page
+    tests:
+      - UAT-FP5-013
+    code_targets: [front/src/App.tsx]
+  - id: FR-FP5-014
+    name: Tag filtering with teamId
+    tests:
+      - UAT-FP5-014
+    code_targets: [back/src/games/games.service.ts]
+  - id: FR-FP5-015
+    name: New Game page help and errors
+    tests:
+      - UAT-FP5-015
+      - UAT-FP5-016
+    code_targets: [front/src/App.tsx, front/src/components/win95/Win95Modal.tsx]
+```
+
+### Planned Test Files
+
+- front/__tests__/fp5/catalog.card-sizing.test.tsx
+- front/__tests__/fp5/catalog.cover-images.test.tsx
+- front/__tests__/fp5/game.team-members.test.tsx
+- front/__tests__/fp5/catalog.title-search.test.tsx
+- front/__tests__/fp5/catalog.search-input-styling.test.tsx
+- front/__tests__/fp5/teams.create-button.test.tsx
+- front/__tests__/fp5/teams.search-styling.test.tsx
+- front/__tests__/fp5/teams.name-search.test.tsx
+- front/__tests__/fp5/teams.modal-sizing.test.tsx
+- front/__tests__/fp5/teams.modal-leader-button.test.tsx
+- front/__tests__/fp5/teams.modal-user-search.test.tsx
+- front/__tests__/fp5/game.edit-button.test.tsx
+- front/__tests__/fp5/editor.help-tooltips.test.tsx
+- front/__tests__/fp5/editor.error-modals.test.tsx
+- back/__tests__/fp5/games.cover-urls.test.ts
+- back/__tests__/fp5/games.tag-teamid-filter.test.ts
+- back/__tests__/fp5/teams.add-member.test.ts
+- back/__tests__/fp5/users.search.test.ts
+
+---
+
 ## FP4: User Accounts & Windows 95 UI
 
 ### UAT / BDD

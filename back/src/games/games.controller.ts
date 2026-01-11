@@ -6,6 +6,7 @@ import { JwtAuthGuard } from "../auth/auth.guard";
 import { OptionalAuthGuard } from "../auth/optional-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { TeamsRepository } from "../teams/teams.repository";
+import { TeamsService } from "../teams/teams.service";
 import { BuildUrlService } from "../build-url.service";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { lookup as lookupMime } from "mime-types";
@@ -20,6 +21,7 @@ export class GamesController {
   constructor(
     private gamesService: GamesService,
     private teamsRepo: TeamsRepository,
+    private teamsService: TeamsService,
     private buildUrlService: BuildUrlService
   ) {
     this.s3Client = new S3Client({
@@ -169,13 +171,19 @@ export class GamesController {
     const isSuperAdmin = user?.isSuperAdmin || false;
     const game = await this.gamesService.getGame(id, userId, isSuperAdmin);
     
-    // Load team info
+    // Load team info with member logins
     let team = null;
     if (game.teamId) {
       try {
         const teamData = await this.teamsRepo.findById(game.teamId);
         if (teamData) {
-          team = { name: teamData.name, members: teamData.members };
+          // Get member logins instead of IDs
+          const memberLogins = await Promise.all(
+            teamData.members.map((memberId) => 
+              this.teamsService.getUserLogin(memberId).then(login => login || memberId)
+            )
+          );
+          team = { name: teamData.name, members: memberLogins };
         }
       } catch {
         // Ignore errors

@@ -132,38 +132,7 @@ export class AppController {
     return { status: "ok" };
   }
 
-  @Get("/games")
-  async listGames(@Query("tag") tag?: string) {
-    if (this.useMemory) {
-      const published = this.memoryGames.filter((game) => game.status === "published");
-      const filtered = tag
-        ? published.filter((game) => game.tags_user.includes(tag) || game.tags_system.includes(tag))
-        : published;
-      return filtered.map((game) => ({
-        id: game.id,
-        title: game.title,
-        cover_url: game.cover_url,
-        tags_user: game.tags_user,
-        tags_system: game.tags_system,
-        status: game.status,
-      }));
-    }
-    const db = await this.getDb();
-    const games = db.collection<GameDoc>("games");
-    const query: Filter<GameDoc> = { status: "published" };
-    if (tag) {
-      query.$or = [{ tags_user: tag }, { tags_system: tag }];
-    }
-    const results = await games.find(query).toArray();
-    return results.map((game) => ({
-      id: game._id,
-      title: game.title,
-      cover_url: game.cover_url,
-      tags_user: game.tags_user ?? [],
-      tags_system: game.tags_system ?? [],
-      status: game.status,
-    }));
-  }
+  // Removed @Get("/games") - now handled by GamesController with signed URLs
 
   @Get("/games-legacy/:id")
   async getGameLegacy(@Param("id") id: string, @Query("admin") admin?: string) {

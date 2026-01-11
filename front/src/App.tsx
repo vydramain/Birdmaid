@@ -118,7 +118,7 @@ const WindowShell = ({ title, children, toolbar }: { title: string; children: Re
     <div className="app-root">
       <div
         ref={windowRef}
-        className="win-window"
+        className="win-window-base win-window"
         style={{
           position: "absolute",
           left: `${position.x}px`,
@@ -152,46 +152,68 @@ const CoverImageWithLoader = ({ src, alt }: { src: string | null | undefined; al
   // Don't render if src is empty
   if (!src) {
     return (
-      <div style={{ padding: "20px", textAlign: "center", color: "var(--win-gray-dark)" }}>
+      <div style={{ 
+        width: "100%", 
+        height: "100%", 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "center", 
+        padding: "20px", 
+        textAlign: "center", 
+        color: "var(--win-gray-dark)",
+        fontSize: "11px"
+      }}>
         No image available
       </div>
     );
   }
 
   return (
-    <>
+    <div style={{ width: "100%", height: "100%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
       {loading && (
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <HourglassLoader />
         </div>
       )}
-      <img
-        src={src}
-        alt={alt}
-        style={{
+      {error ? (
+        <div style={{ 
+          padding: "20px", 
+          textAlign: "center", 
+          color: "var(--win-gray-dark)",
+          fontSize: "11px",
           width: "100%",
-          height: "auto",
-          display: "block",
-          border: "2px solid var(--win-gray-dark)",
-          opacity: loading ? 0 : 1,
-          transition: "opacity 0.3s",
-        }}
-        onLoad={() => {
-          setLoading(false);
-          setError(false);
-        }}
-        onError={(e) => {
-          console.error("Failed to load cover image:", src, e);
-          setLoading(false);
-          setError(true);
-        }}
-      />
-      {error && (
-        <div style={{ padding: "20px", textAlign: "center", color: "var(--win-gray-dark)" }}>
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
           Failed to load image
         </div>
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+            border: "2px solid var(--win-gray-dark)",
+            opacity: loading ? 0 : 1,
+            transition: "opacity 0.3s",
+          }}
+          onLoad={() => {
+            setLoading(false);
+            setError(false);
+          }}
+          onError={(e) => {
+            console.error("Failed to load cover image:", src, e);
+            setLoading(false);
+            setError(true);
+          }}
+        />
       )}
-    </>
+    </div>
   );
 };
 
@@ -386,41 +408,45 @@ const CatalogPage = () => {
   return (
     <>
       <WindowShell title="Birdmaid - Catalog.exe" toolbar={toolbar}>
-        {allTags.length > 0 && (
-          <div className="tag-bar" style={{ padding: "8px 12px", borderBottom: "1px solid var(--win-gray-dark)" }}>
-            {allTags.slice(0, 10).map((tag) => (
-              <button
-                key={tag}
-                className={`tag-chip ${selectedTags.includes(tag) ? "selected" : ""}`}
-                onClick={() => toggleTag(tag)}
-                style={{
-                  backgroundColor: selectedTags.includes(tag) ? "var(--win-blue)" : "var(--win-gray)",
-                  color: selectedTags.includes(tag) ? "var(--win-white)" : "var(--win-black)",
-                }}
-              >
-                {tag}
-              </button>
-            ))}
-            {allTags.length > 10 && (
-              <select
-                className="win-inset"
-                value=""
-                onChange={(e) => {
-                  if (e.target.value) toggleTag(e.target.value);
-                  e.target.value = "";
-                }}
-                style={{ padding: "4px 6px", marginLeft: "8px" }}
-              >
-                <option value="">More tags...</option>
-                {allTags.slice(10).map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-        )}
+        <div className="tag-bar" style={{ padding: "8px 12px", borderBottom: "1px solid var(--win-gray-dark)", minHeight: "40px" }}>
+          {allTags.length > 0 ? (
+            <>
+              {allTags.slice(0, 10).map((tag) => (
+                <button
+                  key={tag}
+                  className={`tag-chip ${selectedTags.includes(tag) ? "selected" : ""}`}
+                  onClick={() => toggleTag(tag)}
+                  style={{
+                    backgroundColor: selectedTags.includes(tag) ? "var(--win-blue)" : "var(--win-gray)",
+                    color: selectedTags.includes(tag) ? "var(--win-white)" : "var(--win-black)",
+                  }}
+                >
+                  {tag}
+                </button>
+              ))}
+              {allTags.length > 10 && (
+                <select
+                  className="win-inset"
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) toggleTag(e.target.value);
+                    e.target.value = "";
+                  }}
+                  style={{ padding: "4px 6px", marginLeft: "8px" }}
+                >
+                  <option value="">More tags...</option>
+                  {allTags.slice(10).map((tag) => (
+                    <option key={tag} value={tag}>
+                      {tag}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </>
+          ) : (
+            <span style={{ fontSize: "11px", color: "var(--win-gray-dark)" }}>No tags available</span>
+          )}
+        </div>
         <main className="content">
         {loading && <p>Loading...</p>}
         {!loading && error && (
@@ -435,38 +461,11 @@ const CatalogPage = () => {
         {!loading && !error && games.length > 0 && (
           <div className="catalog-grid">
             {games.map((game) => (
-              <div key={game.id} className="win-outset game-card" style={{ aspectRatio: "1", display: "flex", flexDirection: "column" }}>
-                <div className="game-thumb" style={{ width: "100%", flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
-                  {game.cover_url && game.cover_url.startsWith('http') ? (
-                    <img
-                      src={game.cover_url}
-                      alt={game.title}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        display: "block",
-                      }}
-                      onError={(e) => {
-                        console.error("[CatalogPage] Failed to load cover image for game:", game.id, game.cover_url);
-                        // Hide image on error
-                        (e.target as HTMLImageElement).style.display = "none";
-                      }}
-                      onLoad={() => {
-                        console.log(`[CatalogPage] Successfully loaded cover for game ${game.id}`);
-                      }}
-                    />
-                  ) : game.cover_url && game.cover_url.startsWith('covers/') ? (
-                    <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #0c0c0c, #2b2b2b)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--win-red)", fontSize: "10px", padding: "4px" }}>
-                      Invalid cover URL (S3 key received)
-                    </div>
-                  ) : (
-                    <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #0c0c0c, #2b2b2b)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--win-gray-dark)", fontSize: "10px" }}>
-                      No cover
-                    </div>
-                  )}
+              <div key={game.id} className="win-outset game-card" style={{ aspectRatio: "1", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                <div className="game-thumb" style={{ width: "100%", flex: 1, minHeight: 0, position: "relative", overflow: "hidden", backgroundColor: "#0c0c0c" }}>
+                  <CoverImageWithLoader src={game.cover_url || null} alt={game.title} />
                 </div>
-                <div style={{ padding: "4px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div style={{ padding: "4px", display: "flex", flexDirection: "column", gap: "4px", flexShrink: 0 }}>
                   <strong style={{ fontSize: "12px" }}>{game.title}</strong>
                   <span style={{ fontSize: 10, color: "var(--win-gray-dark)" }}>
                     {(game.tags_user ?? []).concat(game.tags_system ?? []).slice(0, 2).join(", ")}
@@ -667,7 +666,7 @@ const GamePage = () => {
                     >
                       Play
                     </Win95Button>
-                    {auth.user?.isSuperAdmin && currentGameId && (
+                    {currentGameId && (auth.user?.isSuperAdmin || (game.team && game.team.members && auth.user && game.team.members.includes(auth.user.login))) && (
                       <Link to={`/editor/games/${currentGameId}`}>
                         <Win95Button type="button">
                           Edit
@@ -725,14 +724,18 @@ const GamePage = () => {
 };
 
 const TeamsPage = () => {
-  const [name, setName] = useState("");
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [searchName, setSearchName] = useState("");
   const [teams, setTeams] = useState<Team[]>([]);
+  const [filteredTeams, setFilteredTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [infoModalOpen, setInfoModalOpen] = useState<string | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [allUsers, setAllUsers] = useState<Array<{ id: string; login: string }>>([]);
   const [newMemberLogin, setNewMemberLogin] = useState("");
   const [filteredUsers, setFilteredUsers] = useState<Array<{ id: string; login: string }>>([]);
+  const [createError, setCreateError] = useState("");
   const auth = useAuth();
   const navigate = useNavigate();
 
@@ -746,12 +749,22 @@ const TeamsPage = () => {
     try {
       const data = await apiClient.json<{ teams: Team[] }>("/teams");
       setTeams(data.teams);
+      setFilteredTeams(data.teams);
     } catch (err) {
       // Ignore errors
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (searchName.trim()) {
+      const query = searchName.toLowerCase();
+      setFilteredTeams(teams.filter(team => team.name.toLowerCase().includes(query)));
+    } else {
+      setFilteredTeams(teams);
+    }
+  }, [searchName, teams]);
 
   const loadUsers = async () => {
     // TODO: Add endpoint to get all users
@@ -760,16 +773,21 @@ const TeamsPage = () => {
   };
 
   const handleCreate = async () => {
-    if (!name.trim() || !auth.user) return;
+    if (!newTeamName.trim() || !auth.user) {
+      setCreateError("Team name is required");
+      return;
+    }
     try {
       const team = await apiClient.json<Team>("/teams", {
         method: "POST",
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name: newTeamName.trim() }),
       });
-      setTeams((prev) => [...prev, team]);
-      setName("");
+      await loadTeams();
+      setNewTeamName("");
+      setCreateModalOpen(false);
+      setCreateError("");
     } catch (err) {
-      // Ignore errors
+      setCreateError(err instanceof Error ? err.message : "Failed to create team");
     }
   };
 
@@ -780,22 +798,80 @@ const TeamsPage = () => {
 
   const handleAddMember = async () => {
     if (!selectedTeam || !newMemberLogin.trim() || !auth.user) return;
-    // TODO: Implement add member via API
-    // For now, just close modal
-    setInfoModalOpen(null);
-    setNewMemberLogin("");
+    try {
+      await apiClient.json(`/teams/${selectedTeam.id}/members`, {
+        method: "POST",
+        body: JSON.stringify({ userLogin: newMemberLogin.trim() }),
+      });
+      await loadTeams();
+      // Update selectedTeam with new data
+      const updatedTeams = await apiClient.json<{ teams: Team[] }>("/teams");
+      const updatedTeam = updatedTeams.teams.find(t => t.id === selectedTeam.id);
+      if (updatedTeam) {
+        setSelectedTeam(updatedTeam);
+      }
+      setNewMemberLogin("");
+      setFilteredUsers([]);
+    } catch (err) {
+      console.error("Error adding member:", err);
+      // TODO: Show error modal
+    }
   };
+
+  const handleSearchUsers = async (loginQuery: string) => {
+    if (!loginQuery.trim() || !auth.user) {
+      setFilteredUsers([]);
+      return;
+    }
+    try {
+      const data = await apiClient.json<{ users: Array<{ id: string; login: string }> }>(`/users?login=${encodeURIComponent(loginQuery)}`);
+      setFilteredUsers(data.users);
+    } catch (err) {
+      console.error("Error searching users:", err);
+      setFilteredUsers([]);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void handleSearchUsers(newMemberLogin);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [newMemberLogin]);
 
   const handleRemoveMember = async (userId: string) => {
     if (!selectedTeam || !auth.user) return;
-    // TODO: Implement remove member via API
-    void loadTeams();
+    try {
+      await apiClient.json(`/teams/${selectedTeam.id}/members/${userId}`, {
+        method: "DELETE",
+      });
+      await loadTeams();
+      const updatedTeams = await apiClient.json<{ teams: Team[] }>("/teams");
+      const updatedTeam = updatedTeams.teams.find(t => t.id === selectedTeam.id);
+      if (updatedTeam) {
+        setSelectedTeam(updatedTeam);
+      }
+    } catch (err) {
+      console.error("Error removing member:", err);
+    }
   };
 
   const handleTransferLeadership = async (userId: string) => {
     if (!selectedTeam || !auth.user) return;
-    // TODO: Implement transfer leadership via API
-    void loadTeams();
+    try {
+      await apiClient.json(`/teams/${selectedTeam.id}/leader`, {
+        method: "POST",
+        body: JSON.stringify({ newLeaderId: userId }),
+      });
+      await loadTeams();
+      const updatedTeams = await apiClient.json<{ teams: Team[] }>("/teams");
+      const updatedTeam = updatedTeams.teams.find(t => t.id === selectedTeam.id);
+      if (updatedTeam) {
+        setSelectedTeam(updatedTeam);
+      }
+    } catch (err) {
+      console.error("Error transferring leadership:", err);
+    }
   };
 
   const [helpOpen, setHelpOpen] = useState(false);
@@ -886,19 +962,22 @@ const TeamsPage = () => {
           <h2 style={{ marginTop: 0 }}>Team Registry</h2>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <Win95Input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Team name"
+              value={searchName}
+              onChange={(event) => setSearchName(event.target.value)}
+              placeholder="Search teams by name..."
+              style={{ flex: 1 }}
             />
-            <Win95Button type="button" onClick={handleCreate}>
-              Create team
-            </Win95Button>
+            {auth.user && (
+              <Win95Button type="button" onClick={() => setCreateModalOpen(true)} style={{ whiteSpace: "nowrap" }}>
+                Create Team
+              </Win95Button>
+            )}
           </div>
         </div>
         {loading && <p>Loading...</p>}
         {!loading && (
           <div className="teams-cards">
-            {teams.map((team) => (
+            {filteredTeams.map((team) => (
               <div className="win-outset panel" key={team.id}>
                 <strong>{team.name}</strong>
                 <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
@@ -917,7 +996,7 @@ const TeamsPage = () => {
                 </div>
               </div>
             ))}
-            {teams.length === 0 && (
+            {filteredTeams.length === 0 && (
               <div className="win-outset panel">
                 <strong>New Team Object</strong>
                 <p>Use "Create team" to add a new entry.</p>
@@ -928,49 +1007,100 @@ const TeamsPage = () => {
       </main>
       {infoModalOpen && selectedTeam && (
         <Win95Modal title={`Team: ${selectedTeam.name}`} open={!!infoModalOpen} onClose={() => setInfoModalOpen(null)}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px", minWidth: "250px", maxWidth: "350px" }}>
-            <div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: "250px", maxWidth: "350px" }}>
+            <div style={{ fontSize: "12px" }}>
               <strong>Leader:</strong> {selectedTeam.leaderLogin || selectedTeam.leader}
             </div>
-            <div>
+            <div style={{ fontSize: "12px" }}>
               <strong>Members:</strong>
-              <ul style={{ margin: "4px 0", paddingLeft: "20px" }}>
-                {selectedTeam.members.map((memberId, idx) => (
-                  <li key={memberId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span>{selectedTeam.memberLogins?.[idx] || memberId}</span>
-                    {auth.user && auth.user.id === selectedTeam.leader && (
-                      <div style={{ display: "flex", gap: "4px" }}>
-                        <Win95Button type="button" onClick={() => handleTransferLeadership(memberId)} style={{ fontSize: "10px", padding: "2px 6px" }}>
-                          Make Leader
-                        </Win95Button>
-                        {memberId !== selectedTeam.leader && (
-                          <Win95Button type="button" onClick={() => handleRemoveMember(memberId)} style={{ fontSize: "10px", padding: "2px 6px" }}>
-                            Remove
-                          </Win95Button>
+              <ul style={{ margin: "2px 0", paddingLeft: "20px", fontSize: "12px" }}>
+                {selectedTeam.memberLogins && selectedTeam.memberLogins.length > 0 ? (
+                  selectedTeam.memberLogins.map((memberLogin, idx) => {
+                    const memberId = selectedTeam.members[idx];
+                    const isLeader = memberId === selectedTeam.leader;
+                    return (
+                      <li key={memberId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+                        <span>{memberLogin}</span>
+                        {auth.user && (auth.user.id === selectedTeam.leader || auth.user.login === selectedTeam.leaderLogin) && !isLeader && (
+                          <div style={{ display: "flex", gap: "4px" }}>
+                            <Win95Button type="button" onClick={() => handleTransferLeadership(memberId)} style={{ fontSize: "10px", padding: "2px 6px" }}>
+                              Make Leader
+                            </Win95Button>
+                            <Win95Button type="button" onClick={() => handleRemoveMember(memberId)} style={{ fontSize: "10px", padding: "2px 6px" }}>
+                              Remove
+                            </Win95Button>
+                          </div>
                         )}
-                      </div>
-                    )}
-                  </li>
-                ))}
+                      </li>
+                    );
+                  })
+                ) : (
+                  <li>No members</li>
+                )}
               </ul>
             </div>
-            {auth.user && auth.user.id === selectedTeam.leader && (
-              <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid var(--win-gray-dark)" }}>
+            {auth.user && (auth.user.id === selectedTeam.leader || auth.user.login === selectedTeam.leaderLogin) && (
+              <div style={{ marginTop: "4px", paddingTop: "6px", borderTop: "1px solid var(--win-gray-dark)" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   <Win95Input
                     placeholder="Search by login..."
                     value={newMemberLogin}
-                    onChange={(e) => {
-                      setNewMemberLogin(e.target.value);
-                      // TODO: Filter users by login
-                    }}
+                    onChange={(e) => setNewMemberLogin(e.target.value)}
                   />
-                  <Win95Button type="button" onClick={handleAddMember}>
+                  {filteredUsers.length > 0 && (
+                    <div className="win-outset" style={{ maxHeight: "150px", overflowY: "auto", padding: "4px" }}>
+                      {filteredUsers.map((user) => (
+                        <div
+                          key={user.id}
+                          className="win-btn"
+                          style={{ display: "block", width: "100%", textAlign: "left", padding: "4px 8px", marginBottom: "2px", cursor: "pointer" }}
+                          onClick={() => {
+                            setNewMemberLogin(user.login);
+                            setFilteredUsers([]);
+                          }}
+                        >
+                          {user.login}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Win95Button type="button" onClick={handleAddMember} disabled={!newMemberLogin.trim()} style={{ marginTop: "2px" }}>
                     Add Member
                   </Win95Button>
                 </div>
               </div>
             )}
+          </div>
+        </Win95Modal>
+      )}
+      {createModalOpen && (
+        <Win95Modal title="Create New Team" open={createModalOpen} onClose={() => { setCreateModalOpen(false); setNewTeamName(""); setCreateError(""); }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", minWidth: "300px", fontSize: "12px" }}>
+            <div className="form-field">
+              <label>Team Name</label>
+              <Win95Input
+                value={newTeamName}
+                onChange={(e) => {
+                  setNewTeamName(e.target.value);
+                  setCreateError("");
+                }}
+                placeholder="Enter team name..."
+                autoFocus
+              />
+            </div>
+            {createError && (
+              <div className="win-outset" style={{ padding: "8px", backgroundColor: "var(--win-red)", color: "var(--win-white)", fontSize: "11px" }}>
+                {createError}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "8px" }}>
+              <Win95Button type="button" onClick={() => { setCreateModalOpen(false); setNewTeamName(""); setCreateError(""); }}>
+                Cancel
+              </Win95Button>
+              <Win95Button type="button" onClick={handleCreate} disabled={!newTeamName.trim()}>
+                Create
+              </Win95Button>
+            </div>
           </div>
         </Win95Modal>
       )}
@@ -990,8 +1120,9 @@ const EditorPage = () => {
   const [buildUrl, setBuildUrl] = useState<string | null>(null);
   const [status, setStatus] = useState("editing");
   const [remark, setRemark] = useState("");
-  const [tagsUser, setTagsUser] = useState("");
-  const [tagsSystem, setTagsSystem] = useState("");
+  const [tagsUser, setTagsUser] = useState<string[]>([]);
+  const [tagsSystem, setTagsSystem] = useState<string[]>([]);
+  const [tagsUserInput, setTagsUserInput] = useState("");
   const [teams, setTeams] = useState<Team[]>([]);
   const auth = useAuth();
   const navigate = useNavigate();
@@ -1013,8 +1144,9 @@ const EditorPage = () => {
       setCoverUrl("");
       setBuildUrl(null);
       setStatus("editing");
-      setTagsUser("");
-      setTagsSystem("");
+      setTagsUser([]);
+      setTagsSystem([]);
+      setTagsUserInput("");
     }
   }, [auth.user, routeGameId]);
 
@@ -1035,8 +1167,9 @@ const EditorPage = () => {
       setRepoUrl(data.repo_url || "");
       setCoverUrl(data.cover_url || "");
       setStatus(data.status);
-      setTagsUser((data.tags_user || []).join(", "));
-      setTagsSystem((data.tags_system || []).join(", "));
+      setTagsUser(data.tags_user || []);
+      setTagsSystem(data.tags_system || []);
+      setTagsUserInput("");
       setBuildUrl(data.build_url || null);
       // Load teamId from the game data
       if (data.teamId) {
@@ -1053,7 +1186,17 @@ const EditorPage = () => {
   );
 
   const handleCreateGame = async () => {
-    if (!teamId || !title || !auth.user) return;
+    const errors: string[] = [];
+    if (!teamId) errors.push("Team is required");
+    if (!title || !title.trim()) errors.push("Game title is required");
+    if (!auth.user) errors.push("You must be logged in");
+    
+    if (errors.length > 0) {
+      setErrorMessage(errors.join(". "));
+      setErrorModalOpen(true);
+      return;
+    }
+    
     try {
       const game = await apiClient.json<{ id: string }>("/games", {
         method: "POST",
@@ -1078,13 +1221,31 @@ const EditorPage = () => {
           });
         } catch (err) {
           console.error("Error uploading cover:", err);
-          // Continue even if cover upload fails
+          setErrorMessage(err instanceof Error ? err.message : "Failed to upload cover image");
+          setErrorModalOpen(true);
+        }
+      }
+      
+      // Save tags if they were set
+      if (tagsUser.length > 0 || tagsSystem.length > 0) {
+        try {
+          await apiClient.json(`/games/${game.id}/tags`, {
+            method: "PATCH",
+            body: JSON.stringify({ 
+              tags_user: tagsUser,
+              tags_system: auth.user?.isSuperAdmin ? tagsSystem : undefined,
+            }),
+          });
+        } catch (err) {
+          console.error("Error saving tags:", err);
+          // Don't block navigation if tags fail
         }
       }
       
       navigate(`/editor/games/${game.id}`);
     } catch (err) {
-      // Ignore errors
+      setErrorMessage(err instanceof Error ? err.message : "Failed to create game");
+      setErrorModalOpen(true);
     }
   };
 
@@ -1114,10 +1275,21 @@ const EditorPage = () => {
           // cover_url is not sent here - it's managed via /cover endpoint
         }),
       });
-      // Reload game to get updated team info and cover URL
+      // Save tags if they were changed
+      if (tagsUser.length > 0 || tagsSystem.length > 0) {
+        await apiClient.json(`/games/${gameId}/tags`, {
+          method: "PATCH",
+          body: JSON.stringify({ 
+            tags_user: tagsUser,
+            tags_system: auth.user?.isSuperAdmin ? tagsSystem : undefined,
+          }),
+        });
+      }
+      // Reload game to get updated team info, cover URL, and tags
       void loadGame();
     } catch (err) {
-      // Ignore errors
+      setErrorMessage(err instanceof Error ? err.message : "Failed to update game");
+      setErrorModalOpen(true);
     }
   };
 
@@ -1200,25 +1372,58 @@ const EditorPage = () => {
 
   const handleTagsUpdate = async () => {
     if (!gameId) return;
-    const toArray = (value: string) =>
-      value
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean);
     try {
       await apiClient.json(`/games/${gameId}/tags`, {
         method: "PATCH",
-        body: JSON.stringify({ tags_user: toArray(tagsUser), tags_system: toArray(tagsSystem) }),
+        body: JSON.stringify({ 
+          tags_user: tagsUser,
+          tags_system: auth.user?.isSuperAdmin ? tagsSystem : undefined,
+        }),
       });
+      // Reload game to get updated tags
+      void loadGame();
     } catch (err) {
-      // Ignore errors
+      setErrorMessage(err instanceof Error ? err.message : "Failed to save tags");
+      setErrorModalOpen(true);
     }
   };
+
+  const handleAddUserTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      const value = tagsUserInput.trim();
+      if (value && !tagsUser.includes(value)) {
+        setTagsUser([...tagsUser, value]);
+        setTagsUserInput("");
+      }
+    }
+  };
+
+  const handleRemoveUserTag = (tagToRemove: string) => {
+    setTagsUser(tagsUser.filter((tag) => tag !== tagToRemove));
+  };
+
+  // Predefined system tags (hackathons and genres)
+  const systemTagsOptions = [
+    "omsk-hackathon-2024",
+    "omsk-hackathon-2025",
+    "global-game-jam",
+    "ludum-dare",
+    "action",
+    "puzzle",
+    "platformer",
+    "rpg",
+    "strategy",
+    "arcade",
+  ];
 
   const [helpOpen, setHelpOpen] = useState(false);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [helpTooltipOpen, setHelpTooltipOpen] = useState<string | null>(null);
 
   const handleCoverUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -1227,14 +1432,16 @@ const EditorPage = () => {
     // Validate file size (300 KB)
     const maxSize = 300 * 1024; // 300 KB
     if (file.size > maxSize) {
-      alert(`File size exceeds 300 KB limit. Current size: ${(file.size / 1024).toFixed(2)} KB`);
+      setErrorMessage(`File size exceeds 300 KB limit. Current size: ${(file.size / 1024).toFixed(2)} KB`);
+      setErrorModalOpen(true);
       event.target.value = ""; // Clear input
       return;
     }
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      alert("File must be an image");
+      setErrorMessage("File must be an image");
+      setErrorModalOpen(true);
       event.target.value = ""; // Clear input
       return;
     }
@@ -1257,7 +1464,8 @@ const EditorPage = () => {
         void loadGame();
       } catch (err) {
         console.error("Error uploading cover:", err);
-        alert(err instanceof Error ? err.message : "Failed to upload cover image");
+        setErrorMessage(err instanceof Error ? err.message : "Failed to upload cover image");
+        setErrorModalOpen(true);
         // Keep preview URL for now
       }
     }
@@ -1383,8 +1591,25 @@ const EditorPage = () => {
                 <label>Repository</label>
                 <Win95Input value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} />
               </div>
-              <div className="form-field">
-                <label>Cover Image (max 300 KB)</label>
+              <div className="form-field" style={{ position: "relative" }}>
+                <label>
+                  Cover Image (max 300 KB)
+                  <button
+                    type="button"
+                    onClick={() => setHelpTooltipOpen(helpTooltipOpen === "cover" ? null : "cover")}
+                    style={{
+                      marginLeft: "4px",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      color: "var(--win-blue)",
+                      textDecoration: "underline",
+                    }}
+                  >
+                    ?
+                  </button>
+                </label>
                 <input
                   type="file"
                   accept="image/*"
@@ -1417,8 +1642,25 @@ const EditorPage = () => {
             </section>
             {gameId && (
               <>
-                <section className="win-outset panel">
-                  <h3>Build Upload</h3>
+                <section className="win-outset panel" style={{ position: "relative" }}>
+                  <h3>
+                    Build Upload
+                    <button
+                      type="button"
+                      onClick={() => setHelpTooltipOpen(helpTooltipOpen === "build" ? null : "build")}
+                      style={{
+                        marginLeft: "4px",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        color: "var(--win-blue)",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      ?
+                    </button>
+                  </h3>
                   <div style={{ marginBottom: "8px" }}>
                     <input type="file" accept=".zip" onChange={handleUpload} />
                   </div>
@@ -1435,14 +1677,116 @@ const EditorPage = () => {
                 <section className="win-outset panel">
                   <h3>Tags</h3>
                   <div className="form-field">
-                    <label>User tags</label>
-                    <Win95Input value={tagsUser} onChange={(e) => setTagsUser(e.target.value)} />
+                    <label>User tags (comma-separated or press Enter)</label>
+                    <Win95Input 
+                      value={tagsUserInput} 
+                      onChange={(e) => setTagsUserInput(e.target.value)}
+                      onKeyDown={handleAddUserTag}
+                      placeholder="Type tag and press Enter or comma"
+                    />
+                    {tagsUser.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "8px" }}>
+                        {tagsUser.map((tag) => (
+                          <span
+                            key={tag}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              padding: "2px 6px",
+                              backgroundColor: "var(--win-gray)",
+                              border: "1px solid var(--win-gray-dark)",
+                              fontSize: "11px",
+                            }}
+                          >
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveUserTag(tag)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: 0,
+                                margin: 0,
+                                fontSize: "12px",
+                                lineHeight: 1,
+                                color: "var(--win-black)",
+                                fontWeight: "bold",
+                              }}
+                              title="Remove tag"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="form-field">
-                    <label>System tags</label>
-                    <Win95Input value={tagsSystem} onChange={(e) => setTagsSystem(e.target.value)} />
-                  </div>
-                  <Win95Button type="button" onClick={handleTagsUpdate}>
+                  {auth.user?.isSuperAdmin && (
+                    <div className="form-field">
+                      <label>System tags</label>
+                      <select
+                        className="win-inset"
+                        multiple
+                        value={tagsSystem}
+                        onChange={(e) => {
+                          const selected = Array.from(e.target.selectedOptions, (option) => option.value);
+                          setTagsSystem(selected);
+                        }}
+                        style={{ padding: "4px", width: "100%", minHeight: "80px" }}
+                      >
+                        {systemTagsOptions.map((tag) => (
+                          <option key={tag} value={tag}>
+                            {tag}
+                          </option>
+                        ))}
+                      </select>
+                      <div style={{ fontSize: "11px", color: "var(--win-gray-dark)", marginTop: "4px" }}>
+                        Hold Ctrl/Cmd to select multiple tags
+                      </div>
+                      {tagsSystem.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "8px" }}>
+                          {tagsSystem.map((tag) => (
+                            <span
+                              key={tag}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: "2px 6px",
+                                backgroundColor: "var(--win-blue)",
+                                color: "var(--win-white)",
+                                border: "1px solid var(--win-gray-dark)",
+                                fontSize: "11px",
+                              }}
+                            >
+                              {tag}
+                              <button
+                                type="button"
+                                onClick={() => setTagsSystem(tagsSystem.filter((t) => t !== tag))}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  padding: 0,
+                                  margin: 0,
+                                  fontSize: "12px",
+                                  lineHeight: 1,
+                                  color: "var(--win-white)",
+                                  fontWeight: "bold",
+                                }}
+                                title="Remove tag"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <Win95Button type="button" onClick={handleTagsUpdate} style={{ marginTop: "8px" }}>
                     Save tags
                   </Win95Button>
                 </section>
@@ -1490,6 +1834,36 @@ const EditorPage = () => {
       </main>
       </WindowShell>
       <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      {errorModalOpen && (
+        <Win95Modal title="Error" open={errorModalOpen} onClose={() => setErrorModalOpen(false)}>
+          <div>
+            <p style={{ margin: "0 0 8px 0", fontSize: "12px" }}>{errorMessage || "An error occurred"}</p>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <Win95Button type="button" onClick={() => setErrorModalOpen(false)}>
+                Close
+              </Win95Button>
+            </div>
+          </div>
+        </Win95Modal>
+      )}
+      {helpTooltipOpen === "cover" && (
+        <Win95Modal title="Help - Cover Image" open={true} onClose={() => setHelpTooltipOpen(null)}>
+          <div style={{ maxWidth: "400px" }}>
+            <p style={{ margin: 0, fontSize: "12px" }}>
+              Cover images must be image files (JPG, PNG, GIF, WebP) and cannot exceed 300 KB in size.
+            </p>
+          </div>
+        </Win95Modal>
+      )}
+      {helpTooltipOpen === "build" && (
+        <Win95Modal title="Help - Build Upload" open={true} onClose={() => setHelpTooltipOpen(null)}>
+          <div style={{ maxWidth: "400px" }}>
+            <p style={{ margin: 0, fontSize: "12px" }}>
+              Upload a ZIP file containing your game build. The ZIP should contain an index.html file at the root. Maximum size: 300 MB.
+            </p>
+          </div>
+        </Win95Modal>
+      )}
     </>
   );
 };

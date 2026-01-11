@@ -495,6 +495,31 @@
   - Decision: (1) Created POST /games/:id/cover endpoint in GamesController - validates file size (300 KB max), file type (image/*), uploads to S3 with key "covers/{coverId}.{ext}", stores S3 key in game.cover_url field. (2) Updated GameDoc schema - cover_url now stores S3 key (e.g., "covers/{coverId}.jpg") instead of full URL, allows generating fresh signed URLs. (3) Updated BuildUrlService - added getSignedUrlFromKey() method to generate signed URLs directly from S3 keys, updated getGame() to detect S3 keys (starts with "covers/") and use getSignedUrlFromKey(), updated listGames() to generate signed URLs for all cover images. (4) Removed cover URL input field - users can only upload files via file input, added file size validation (300 KB) and type validation on frontend, shows file name and size after selection. (5) Updated frontend upload flow - handleCoverUpload validates file, creates blob preview, uploads to endpoint if game exists, reloads game after upload to get signed URL, handleCreateGame uploads cover after game creation, handleUpdateGame uploads cover if new file selected.
   - Consequences: Cover images are now stored in S3 with proper access control, users can only upload files (no manual URLs), file size is limited to 300 KB, signed URLs are generated fresh on each request, better security and consistency.
 
+- ADR-059: Catalog card grid layout - fixed 5x4 grid with scroll (FP5)
+  - Context: Catalog cards currently use CSS grid with auto-fit and minmax, causing inconsistent card sizes. Need consistent card sizing for better UX.
+  - Decision: Implement fixed grid layout with 5 columns and 4 rows visible on screen (20 cards visible at once). Cards have fixed dimensions calculated based on viewport size. If more than 20 games exist, scrolling appears within the catalog pseudo-window container. Grid uses CSS Grid with explicit column count (5) and row template. Card dimensions are calculated to fit exactly 5 columns and 4 rows in the visible area.
+  - Consequences: Consistent card sizes regardless of game count, predictable layout, better visual consistency. Requires viewport size calculations and responsive adjustments for different screen sizes.
+
+- ADR-060: Cover URL signing in listGames() endpoint (FP5)
+  - Context: Cover images in catalog sometimes show S3 keys instead of signed URLs, causing "Invalid cover URL" errors. Need to ensure all cover URLs are signed before returning to frontend.
+  - Decision: Generate signed URLs dynamically in listGames() endpoint using the same approach as getGame() endpoint. For each game with cover_url starting with "covers/" (S3 key), call BuildUrlService.getSignedUrlFromKey() to generate fresh signed URL (expires in 1 hour). For legacy full URLs, use BuildUrlService.getSignedBuildUrl(). Never return S3 keys to frontend - always generate signed URLs or return undefined. This matches the existing implementation pattern in getGame() and is cost-effective (only generates URLs when games are requested, URLs expire after 1 hour).
+  - Consequences: All cover images in catalog will display correctly, consistent with game page behavior, no changes needed to storage model, signed URLs are fresh on each catalog load, works reliably with S3/MinIO.
+
+- ADR-061: User search endpoint for team member addition (FP5)
+  - Context: Teams page needs to search users by login to add them to teams. No existing endpoint provides user search functionality.
+  - Decision: Create new GET /users endpoint that accepts optional query parameter `login` for searching users by login (partial match, case-insensitive). Endpoint returns array of users with id and login fields. Endpoint is accessible to authenticated users only. Search supports partial matching (e.g., "john" matches "john_doe", "JohnSmith"). Returns maximum 20 results to prevent large responses.
+  - Consequences: Teams page can search and add users by login, new endpoint required, search is simple but sufficient for MVP, may need pagination or rate limiting if usage grows.
+
+- ADR-062: Help tooltips and error modals format for New Game page (FP5)
+  - Context: New Game page needs help tooltips and error modals, but format is unclear.
+  - Decision: (1) Help tooltips: Use Windows 95 styled tooltips that appear on hover/click of question mark icons. Tooltips are small popup windows in Windows 95 style (not modal dialogs), positioned near the help icon, show brief explanations of game upload rules and requirements. (2) Error modals: Use fake modal windows (Win95Modal component) styled as Windows 95 error dialogs. Modals are draggable, show error icon and message, have "Close" button and X button in top-right corner. Modals close on Close button click or X button click.
+  - Consequences: Consistent Windows 95 styling, tooltips provide inline help without blocking UI, error modals are clearly visible and user-friendly, requires implementing Windows 95 styled tooltip component.
+
+- ADR-063: Error modal behavior and styling for New Game page (FP5)
+  - Context: Error modals on New Game page need to match Windows 95 error dialog style and behavior.
+  - Decision: Error modals must be draggable Windows 95 styled modals (using Win95Modal component). Modals display Windows 95 error icon (red X or warning icon), error message text, and "Close" button at bottom. Modal has X button in top-right corner (standard Windows 95 window controls). Modal closes when user clicks "Close" button or X button. Modal title shows "Error" or specific error type. Modal is positioned centered on screen initially but can be dragged by title bar.
+  - Consequences: Consistent Windows 95 error experience, modals are user-friendly and match system expectations, requires Win95Modal component to support draggable behavior and close buttons.
+
 ## Questions / Gaps (FP4)
 
 - id: Q-FP4-001
@@ -776,3 +801,112 @@
     4. Removed cover URL input field from frontend - users can only upload files, no manual URL entry, added file size validation (300 KB) and file type validation on frontend
     5. Updated frontend cover upload flow - handleCoverUpload validates file, creates preview, uploads to /games/:id/cover endpoint, reloads game after upload to get signed URL, handleCreateGame and handleUpdateGame handle cover upload for new/existing games
   decision: ADR-058
+
+## Questions / Gaps (FP5)
+
+- id: Q-FP5-001
+  fp: FP5
+  status: closed
+  owner: vydra
+  date: 2026-01-10
+  question: How should catalog card sizing be implemented? Fixed pixel dimensions or CSS grid constraints?
+  answer: Сделай сетку с плитками. Желательно, чтобы экран был 5 плиток в ширину и 4 плитки в высоту. Если игр больше, то появляется скрол в псевдоокне.
+  decision: ADR-059
+
+- id: Q-FP5-002
+  fp: FP5
+  status: closed
+  owner: vydra
+  date: 2026-01-10
+  question: Should cover URL signing happen in listGames() endpoint or should we ensure all cover_urls are signed URLs before storing?
+  answer: Я не хочу заниматься кодом и разбираться, как он работает. Поэтому проведи исследование, которое максимально подойдёт к текущей реализации, будет дёшево для работы и не будет ломаться в случае работы с S3. Можешь ориентироваться на то, как реализован похожий процесс отображения обложки на странице игры.
+  decision: ADR-060
+
+- id: Q-FP5-003
+  fp: FP5
+  status: closed
+  owner: vydra
+  date: 2026-01-10
+  question: Do we need a new GET /users endpoint for user search, or can we modify existing endpoints?
+  answer: Добавь ещё один endpoint
+  decision: ADR-061
+
+- id: Q-FP5-004
+  fp: FP5
+  status: closed
+  owner: vydra
+  date: 2026-01-10
+  question: What should be the exact format for help tooltips on New Game page? Modal windows or inline tooltips?
+  answer: для ошибок используй fake modal windows. для подсказок должны появляться tooltips в стиле windows 95
+  decision: ADR-062
+
+- id: Q-FP5-005
+  fp: FP5
+  status: closed
+  owner: vydra
+  date: 2026-01-10
+  question: Should error modals on New Game page be draggable Windows 95 modals or simple alerts?
+  answer: да. Ошибки должны выглядеть как окна ошибки из windows 95. Быть перетаскиваемыми и закрываться должны по кнопке close или по крестику справа вверху
+  decision: ADR-063
+
+## ADRs (FP5)
+
+### ADR-064: Catalog Tags Display Fix
+date: 2026-01-10
+status: accepted
+context: Catalog page tag bar was conditionally rendered only when allTags.length > 0, causing it to disappear when no tags were available
+decision: Always render tag bar with minimum height, show "No tags available" message when empty. This ensures consistent UI layout and better UX.
+consequences: Tag bar is always visible, providing consistent visual structure even when no tags are available.
+
+### ADR-065: Catalog Cover Images Display Fix
+date: 2026-01-10
+status: accepted
+context: Catalog page cover images were not displaying correctly, using custom img tag instead of CoverImageWithLoader component
+decision: Use CoverImageWithLoader component (same as on game details page) for consistent cover image display with loading states and error handling.
+consequences: Consistent cover image display across catalog and game pages, better error handling and loading states.
+
+### ADR-066: Team Creation Modal Window
+date: 2026-01-10
+status: accepted
+context: Team creation used inline input field, creating two input rows on Teams page
+decision: Replace inline input field with draggable Windows 95 styled modal window. Modal opens on "Create Team" button click, contains team name input, validation errors, and Create/Cancel buttons.
+consequences: Cleaner Teams page UI, better UX with modal window, consistent with Windows 95 design system.
+
+### ADR-067: Team Creation Response Format
+date: 2026-01-10
+status: accepted
+context: TeamsController.createTeam() returned team without leaderLogin and memberLogins, causing frontend to display IDs instead of logins
+decision: Update TeamsController.createTeam() to return team with leaderLogin and memberLogins populated, same format as getAllTeams(). User creating team is automatically added as member (already implemented in TeamsRepository.create()).
+consequences: Consistent team data format across endpoints, proper login display instead of IDs.
+
+### ADR-068: Team Filter Games Display
+date: 2026-01-10
+status: accepted
+context: When filtering games by teamId, only published games were shown even for team members
+decision: Update GamesService.listGames() to show all team games (including editing/archived) for authenticated team members when filtering by teamId. Unauthenticated users and non-members still see only published games.
+consequences: Team members can see all their team's games when filtering by team, better team management workflow.
+
+### ADR-069: Editor Help Tooltips Implementation
+date: 2026-01-10
+status: accepted
+context: Help tooltips on Editor page were not displaying correctly
+decision: Use Win95Modal component for help tooltips instead of inline divs. Tooltips open as draggable modal windows when help icon (?) is clicked, consistent with Windows 95 design system.
+consequences: Better UX with draggable help windows, consistent with error modals and other Windows 95 styled components.
+
+### ADR-070: Editor Error Modals and Validation
+date: 2026-01-10
+status: accepted
+context: Error modals were not displaying, validation errors for empty fields were not shown
+decision: Add validation for required fields (team, title) before API call. Display detailed error messages in Windows 95 styled draggable modal windows. Replace all alert() calls with error modals.
+consequences: Better user feedback, detailed error messages help users understand what went wrong, consistent Windows 95 error handling.
+
+### ADR-071: Tags UI Implementation
+date: 2026-01-11
+status: accepted
+context: Tags were not saving correctly, system tags were visible to all users, and tag input UX was unclear
+decision: 
+  - User tags: Input field with Enter/comma support, tags displayed as removable chips (Windows 95 styled)
+  - System tags: Multiple select dropdown with predefined options (hackathons: omsk-hackathon-2024, omsk-hackathon-2025, global-game-jam, ludum-dare; genres: action, puzzle, platformer, rpg, strategy, arcade), displayed as removable chips (Super Admin only)
+  - Tags stored as arrays (not comma-separated strings), reload game after save to reflect changes
+  - System tags field hidden for non-super-admins (UI-level permission check)
+consequences: Clear tag management UX, proper permission enforcement, tags persist correctly, consistent Windows 95 styling with removable chips.

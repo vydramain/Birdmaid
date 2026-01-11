@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, ReactNode } from "react";
+import { useState, useRef, useEffect, ReactNode, CSSProperties } from "react";
 
 type Win95ModalProps = {
   title: string;
@@ -12,6 +12,33 @@ export function Win95Modal({ title, children, onClose, open }: Win95ModalProps) 
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Determine modal type for styling
+  const isGameModal = title === "Game";
+  const isAuthenticationModal = title === "Authentication";
+  const isTeamModal = title.startsWith("Team:");
+  const isHelpModal = title.startsWith("Help");
+  const isErrorModal = title === "Error";
+  const isCompactModal = isAuthenticationModal || isTeamModal || isHelpModal || isErrorModal;
+
+  // Calculate modal dimensions based on type
+  const modalStyles: CSSProperties = {
+    minWidth: isAuthenticationModal ? "280px" : isTeamModal ? "250px" : isGameModal ? "600px" : "400px",
+    maxWidth: isGameModal ? "90vw" : isAuthenticationModal ? "320px" : isTeamModal ? "350px" : "90vw",
+    maxHeight: isCompactModal ? "auto" : isGameModal ? "90vh" : "90vh",
+    width: isGameModal ? "90vw" : "auto",
+    height: isCompactModal ? "auto" : undefined,
+  };
+
+  // Calculate content styles
+  const contentStyles: CSSProperties = {
+    padding: isGameModal ? "0" : isCompactModal ? "8px" : "12px",
+    overflow: isGameModal ? "hidden" : "auto",
+    flex: "none",
+    display: "flex",
+    flexDirection: "column",
+    minHeight: isGameModal ? undefined : "120px",
+  };
 
   useEffect(() => {
     if (open && modalRef.current) {
@@ -84,18 +111,12 @@ export function Win95Modal({ title, children, onClose, open }: Win95ModalProps) 
     >
       <div
         ref={modalRef}
-        className="win95-modal win-window"
+        className="win-window-base win95-modal"
         style={{
           position: "absolute",
           left: `${position.x}px`,
           top: `${position.y}px`,
-          minWidth: title === "Authentication" ? "280px" : title.startsWith("Team:") ? "250px" : title === "Game" ? "600px" : "400px",
-          maxWidth: title === "Game" ? "90vw" : title === "Authentication" ? "320px" : title.startsWith("Team:") ? "350px" : "90vw",
-          maxHeight: title === "Authentication" ? "auto" : title.startsWith("Team:") ? "auto" : title === "Game" ? "90vh" : "90vh",
-          width: title === "Game" ? "90vw" : "auto",
-          height: title === "Authentication" || title.startsWith("Team:") ? "auto" : undefined,
-          display: "flex",
-          flexDirection: "column",
+          ...modalStyles,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -114,7 +135,7 @@ export function Win95Modal({ title, children, onClose, open }: Win95ModalProps) 
             </button>
           </div>
         </header>
-        <div className="content" style={{ padding: title === "Game" ? "0" : "12px", overflow: title === "Game" ? "hidden" : "auto" }}>
+        <div className="content" style={contentStyles}>
           {children}
         </div>
       </div>

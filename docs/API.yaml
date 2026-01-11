@@ -126,7 +126,20 @@
 #   Auth: JWT required (team member or super admin)
 #   Body: { tags_user?: string[], tags_system?: string[] }
 #   Returns: { id, tags_user, tags_system }
-#   Notes: Team members can set tags_user; super admin can set both
+#   Notes: 
+#     - Team members can set tags_user only (tags_system is rejected with 403)
+#     - Super admin can set both tags_user and tags_system
+#     - System tags are predefined (hackathons: omsk-hackathon-2024, omsk-hackathon-2025, global-game-jam, ludum-dare; genres: action, puzzle, platformer, rpg, strategy, arcade)
+#     - UI: User tags added via input field (Enter/comma), displayed as removable chips
+#     - UI: System tags selected from dropdown (multiple select), displayed as removable chips (Super Admin only)
+
+# ===== FP5: User Search =====
+
+# GET /users?login=...
+#   Auth: JWT required
+#   Query: login (optional, partial match, case-insensitive)
+#   Returns: { users: [{ id, login }] }
+#   Notes: Returns up to 20 results. Partial match (e.g., "john" matches "john_doe", "JohnSmith"). Used for team member search (ADR-061).
 
 # ===== Constraints =====
 # - Publish requires cover_url + description_md + build_url/build_id.

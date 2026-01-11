@@ -125,16 +125,18 @@ export class GamesService {
       allGames = allGames.filter(g => g.teamId === teamId);
       
       // For team catalog, show only published to unauthenticated users
-      // Authenticated team members can see all their team's games
+      // Authenticated team members can see all their team's games (including editing/archived)
       if (!userId) {
         allGames = allGames.filter(g => g.status === "published");
       } else {
         const team = await this.teamsRepo.findById(teamId);
-        if (!team || (!isSuperAdmin && !team.members.includes(userId))) {
+        if (team && (isSuperAdmin || team.members.includes(userId))) {
+          // Team member or super admin - show all statuses
+          // Don't filter by status
+        } else {
           // Not a member, show only published
           allGames = allGames.filter(g => g.status === "published");
         }
-        // Otherwise show all statuses
       }
     } else {
       // Public catalog: unauthenticated see only published
