@@ -89,7 +89,8 @@ api.${DOMAIN} {
     }
     
     # Security and CORS headers for API endpoints (default, strict CSP)
-    header {
+    # Apply to all requests EXCEPT build files (which have their own CSP)
+    header !@build_files {
         # Disable server tokens
         -Server
         
