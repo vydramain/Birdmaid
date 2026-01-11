@@ -11,31 +11,35 @@ export class BuildUrlService {
 
   constructor() {
     const s3Endpoint = process.env.S3_ENDPOINT ?? "http://localhost:9000";
-    const s3PublicUrl = process.env.S3_PUBLIC_URL ?? "http://localhost:9000";
+    const s3PublicUrl = process.env.S3_PUBLIC_URL ?? process.env.S3_PUBLIC_BASE_URL ?? "http://localhost:9000";
+    const s3Region = process.env.S3_REGION ?? "us-east-1";
+    const s3ForcePathStyle = process.env.S3_FORCE_PATH_STYLE === "true" || process.env.S3_FORCE_PATH_STYLE === undefined;
+    const s3AccessKey = process.env.S3_ACCESS_KEY_ID ?? process.env.S3_ACCESS_KEY ?? "minioadmin";
+    const s3SecretKey = process.env.S3_SECRET_ACCESS_KEY ?? process.env.S3_SECRET_KEY ?? "minioadmin";
     
     // Client for internal operations (uses internal endpoint)
     this.s3Client = new S3Client({
-      region: "us-east-1",
+      region: s3Region,
       endpoint: s3Endpoint,
       credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY ?? "minioadmin",
-        secretAccessKey: process.env.S3_SECRET_KEY ?? "minioadmin",
+        accessKeyId: s3AccessKey,
+        secretAccessKey: s3SecretKey,
       },
-      forcePathStyle: true,
+      forcePathStyle: s3ForcePathStyle,
     });
     
     // Client for signing URLs (uses public endpoint so signed URLs work from browser)
     this.s3SigningClient = new S3Client({
-      region: "us-east-1",
+      region: s3Region,
       endpoint: s3PublicUrl,
       credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY ?? "minioadmin",
-        secretAccessKey: process.env.S3_SECRET_KEY ?? "minioadmin",
+        accessKeyId: s3AccessKey,
+        secretAccessKey: s3SecretKey,
       },
-      forcePathStyle: true,
+      forcePathStyle: s3ForcePathStyle,
     });
     
-    this.s3Bucket = process.env.S3_BUCKET ?? "birdmaid-builds";
+    this.s3Bucket = process.env.S3_BUCKET_ASSETS ?? process.env.S3_BUCKET ?? "birdmaid-builds";
     this.s3PublicUrl = s3PublicUrl;
   }
 
@@ -83,14 +87,18 @@ export class BuildUrlService {
       // Create a signing client with the custom public URL if provided
       let signingClient = this.s3SigningClient;
       if (customPublicUrl && customPublicUrl !== this.s3PublicUrl) {
+        const s3Region = process.env.S3_REGION ?? "us-east-1";
+        const s3ForcePathStyle = process.env.S3_FORCE_PATH_STYLE === "true" || process.env.S3_FORCE_PATH_STYLE === undefined;
+        const s3AccessKey = process.env.S3_ACCESS_KEY_ID ?? process.env.S3_ACCESS_KEY ?? "minioadmin";
+        const s3SecretKey = process.env.S3_SECRET_ACCESS_KEY ?? process.env.S3_SECRET_KEY ?? "minioadmin";
         signingClient = new S3Client({
-          region: "us-east-1",
+          region: s3Region,
           endpoint: customPublicUrl,
           credentials: {
-            accessKeyId: process.env.S3_ACCESS_KEY ?? "minioadmin",
-            secretAccessKey: process.env.S3_SECRET_KEY ?? "minioadmin",
+            accessKeyId: s3AccessKey,
+            secretAccessKey: s3SecretKey,
           },
-          forcePathStyle: true,
+          forcePathStyle: s3ForcePathStyle,
         });
       }
 
@@ -127,14 +135,18 @@ export class BuildUrlService {
       let signingClient = this.s3SigningClient;
       if (customPublicUrl && customPublicUrl !== this.s3PublicUrl) {
         console.log(`Creating S3 signing client with custom endpoint: ${customPublicUrl}`);
+        const s3Region = process.env.S3_REGION ?? "us-east-1";
+        const s3ForcePathStyle = process.env.S3_FORCE_PATH_STYLE === "true" || process.env.S3_FORCE_PATH_STYLE === undefined;
+        const s3AccessKey = process.env.S3_ACCESS_KEY_ID ?? process.env.S3_ACCESS_KEY ?? "minioadmin";
+        const s3SecretKey = process.env.S3_SECRET_ACCESS_KEY ?? process.env.S3_SECRET_KEY ?? "minioadmin";
         signingClient = new S3Client({
-          region: "us-east-1",
+          region: s3Region,
           endpoint: customPublicUrl,
           credentials: {
-            accessKeyId: process.env.S3_ACCESS_KEY ?? "minioadmin",
-            secretAccessKey: process.env.S3_SECRET_KEY ?? "minioadmin",
+            accessKeyId: s3AccessKey,
+            secretAccessKey: s3SecretKey,
           },
-          forcePathStyle: true,
+          forcePathStyle: s3ForcePathStyle,
         });
       }
 

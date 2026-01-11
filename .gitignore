@@ -44,7 +44,35 @@ logs/
 .env.*
 !.env.example
 !env.example
+!env.prod.example
 !**/*.example
+
+## Secrets and credentials
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+*.crt
+*.cert
+secrets/
+credentials/
+*.secret
+*.password
 
 ## Artifacts (generated)
 artifacts/
+
+## Backup files
+*.backup
+*.bak
+*-COPY-*
+*-backup-*

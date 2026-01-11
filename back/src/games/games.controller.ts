@@ -24,17 +24,22 @@ export class GamesController {
     private teamsService: TeamsService,
     private buildUrlService: BuildUrlService
   ) {
+    const s3Region = process.env.S3_REGION ?? "us-east-1";
+    const s3ForcePathStyle = process.env.S3_FORCE_PATH_STYLE === "true" || process.env.S3_FORCE_PATH_STYLE === undefined;
+    const s3AccessKey = process.env.S3_ACCESS_KEY_ID ?? process.env.S3_ACCESS_KEY ?? "minioadmin";
+    const s3SecretKey = process.env.S3_SECRET_ACCESS_KEY ?? process.env.S3_SECRET_KEY ?? "minioadmin";
+    
     this.s3Client = new S3Client({
-      region: "us-east-1",
+      region: s3Region,
       endpoint: process.env.S3_ENDPOINT ?? "http://localhost:9000",
       credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY ?? "minioadmin",
-        secretAccessKey: process.env.S3_SECRET_KEY ?? "minioadmin",
+        accessKeyId: s3AccessKey,
+        secretAccessKey: s3SecretKey,
       },
-      forcePathStyle: true,
+      forcePathStyle: s3ForcePathStyle,
     });
-    this.s3Bucket = process.env.S3_BUCKET ?? "birdmaid-builds";
-    this.s3PublicUrl = process.env.S3_PUBLIC_URL ?? "http://localhost:9000";
+    this.s3Bucket = process.env.S3_BUCKET_ASSETS ?? process.env.S3_BUCKET ?? "birdmaid-builds";
+    this.s3PublicUrl = process.env.S3_PUBLIC_BASE_URL ?? process.env.S3_PUBLIC_URL ?? "http://localhost:9000";
   }
 
   @Get()

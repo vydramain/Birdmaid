@@ -6,16 +6,27 @@ import { Request, Response, NextFunction } from "express";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Enhanced CORS configuration for local network access
+  // CORS configuration
+  const corsOrigin = process.env.CORS_ORIGIN;
+  const allowedOrigins = corsOrigin ? corsOrigin.split(',').map(o => o.trim()) : ['*'];
+  
   app.enableCors({ 
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, Postman, or same-origin requests)
       if (!origin) {
         return callback(null, true);
       }
-      // Allow all origins for development (localhost, local IPs, etc.)
-      // In production, you should restrict this to specific domains
-      callback(null, true);
+      // In production, check against CORS_ORIGIN env var
+      if (process.env.NODE_ENV === 'production' && corsOrigin) {
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      } else {
+        // Development: allow all origins
+        callback(null, true);
+      }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT', 'OPTIONS', 'HEAD'],
@@ -39,11 +50,20 @@ async function bootstrap() {
     const origin = req.headers.origin;
     // When credentials: true, we must use specific origin, not '*'
     if (origin) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      if (process.env.NODE_ENV === 'production' && corsOrigin) {
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+          res.setHeader('Access-Control-Allow-Origin', origin);
+          res.setHeader('Access-Control-Allow-Credentials', 'true');
+        }
+      } else {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+      }
     } else {
-      // For requests without origin (like Postman), allow all
-      res.setHeader('Access-Control-Allow-Origin', '*');
+      // For requests without origin (like Postman), allow all in dev
+      if (process.env.NODE_ENV !== 'production') {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      }
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, PUT, OPTIONS, HEAD');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With, Access-Control-Request-Method, Access-Control-Request-Headers');

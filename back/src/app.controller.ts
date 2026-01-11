@@ -106,16 +106,16 @@ export class AppController {
   private mongoClient = new MongoClient(process.env.MONGO_URL ?? "mongodb://localhost:27017/birdmaid");
   private dbPromise: Promise<ReturnType<MongoClient["db"]>> | null = null;
   private s3Client = new S3Client({
-    region: "us-east-1",
+    region: process.env.S3_REGION ?? "us-east-1",
     endpoint: process.env.S3_ENDPOINT ?? "http://localhost:9000",
     credentials: {
-      accessKeyId: process.env.S3_ACCESS_KEY ?? "minioadmin",
-      secretAccessKey: process.env.S3_SECRET_KEY ?? "minioadmin",
+      accessKeyId: process.env.S3_ACCESS_KEY_ID ?? process.env.S3_ACCESS_KEY ?? "minioadmin",
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? process.env.S3_SECRET_KEY ?? "minioadmin",
     },
-    forcePathStyle: true,
+    forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true" || process.env.S3_FORCE_PATH_STYLE === undefined,
   });
-  private s3Bucket = process.env.S3_BUCKET ?? "birdmaid-builds";
-  private s3PublicUrl = process.env.S3_PUBLIC_URL ?? "http://localhost:9000";
+  private s3Bucket = process.env.S3_BUCKET_ASSETS ?? process.env.S3_BUCKET ?? "birdmaid-builds";
+  private s3PublicUrl = process.env.S3_PUBLIC_BASE_URL ?? process.env.S3_PUBLIC_URL ?? "http://localhost:9000";
 
   private async getDb() {
     if (this.useMemory) {

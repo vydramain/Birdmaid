@@ -1,0 +1,104 @@
+# Production Caddyfile for Birdmaid
+# This file is mounted into the Caddy container
+
+# Frontend domain
+birdmaid.{env.DOMAIN} {
+    # Proxy to frontend container (serves static files)
+    reverse_proxy front:80 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    # Enable compression
+    encode gzip zstd
+    
+    # Security headers
+    header {
+        # Disable server tokens (Caddy doesn't expose version by default, but explicit is better)
+        -Server
+        
+        # X-Frame-Options: Allow same-origin embedding (games are embedded in iframes)
+        X-Frame-Options "SAMEORIGIN"
+        
+        # X-Content-Type-Options: Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+        
+        # X-XSS-Protection: Enable XSS filtering (legacy, but still useful)
+        X-XSS-Protection "1; mode=block"
+        
+        # Referrer-Policy: Control referrer information
+        Referrer-Policy "strict-origin-when-cross-origin"
+        
+        # Permissions-Policy: Restrict browser features
+        Permissions-Policy "geolocation=(),midi=(),sync-xhr=(),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
+        
+        # Content-Security-Policy: Flexible CSP for game iframes
+        # Note: Games are embedded in iframes, so we need to allow frame-src from various sources
+        # Adjust this based on your S3/CDN domains
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; frame-src 'self' *; connect-src 'self' https:;"
+    }
+    
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+}
+
+# Backend API domain
+api.birdmaid.{env.DOMAIN} {
+    # Proxy to backend
+    reverse_proxy back:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    # Enable compression for API responses
+    encode gzip
+    
+    # Security and CORS headers
+    header {
+        # Disable server tokens
+        -Server
+        
+        # X-Content-Type-Options: Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+        
+        # X-XSS-Protection: Enable XSS filtering
+        X-XSS-Protection "1; mode=block"
+        
+        # Referrer-Policy: Control referrer information
+        Referrer-Policy "strict-origin-when-cross-origin"
+        
+        # Permissions-Policy: Restrict browser features
+        Permissions-Policy "geolocation=(),midi=(),sync-xhr=(),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(),payment=()"
+        
+        # Content-Security-Policy: Strict for API (no iframes needed)
+        Content-Security-Policy "default-src 'self'; script-src 'none'; style-src 'none'; img-src 'none'; font-src 'none'; frame-src 'none';"
+        
+        # CORS headers (backend handles CORS, but add here as well)
+        Access-Control-Allow-Origin "*"
+        Access-Control-Allow-Methods "GET, POST, PATCH, DELETE, PUT, OPTIONS, HEAD"
+        Access-Control-Allow-Headers "Content-Type, Authorization, Accept, Origin, X-Requested-With"
+        Access-Control-Allow-Credentials "true"
+    }
+    
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+}
+
+# Health check endpoint (optional, for monitoring)
+:8080 {
+    respond /health "OK" 200
+    log {
+        output stdout
+        format console
+    }
+}
