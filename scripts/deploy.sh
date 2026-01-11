@@ -30,13 +30,13 @@ fi
 
 # Pull updated images
 echo "2. Pulling updated Docker images..."
-docker compose -f "$COMPOSE_FILE" pull
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" pull
 echo ""
 
 # Build if --build flag or if code changed
 if [ "$1" == "--build" ] || [ -n "$(git diff HEAD@{1} HEAD --name-only 2>/dev/null | grep -E '\.(ts|tsx|js|jsx|json)$')" ]; then
     echo "3. Building Docker images..."
-    docker compose -f "$COMPOSE_FILE" build
+    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build
     echo ""
 else
     echo "3. Skipping build (use --build to force rebuild)"
@@ -45,7 +45,7 @@ fi
 
 # Start services
 echo "4. Starting services..."
-docker compose -f "$COMPOSE_FILE" up -d
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
 echo ""
 
 # Wait for services to be healthy
@@ -54,7 +54,7 @@ sleep 5
 
 # Check service status
 echo "6. Service status:"
-docker compose -f "$COMPOSE_FILE" ps
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps
 echo ""
 
 # Prune old images (optional, saves disk space)
@@ -64,5 +64,5 @@ echo ""
 
 echo "=== Deployment Complete ==="
 echo ""
-echo "View logs: docker compose -f $COMPOSE_FILE logs -f"
-echo "Check status: docker compose -f $COMPOSE_FILE ps"
+echo "View logs: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE logs -f"
+echo "Check status: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE ps"

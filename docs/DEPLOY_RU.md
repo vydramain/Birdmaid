@@ -225,19 +225,42 @@ sudo bash scripts/harden-server.sh
 
 ## Шаг 2: Настройка DNS (если есть домен)
 
-Если у вас есть домен (например, `birdmaid.ru` или `birdmaid.example.com`):
+Если у вас есть домен (например, `birdmaid.ru` или `birdmaid.su`):
 
-1. В панели управления DNS вашего домена создайте A-записи:
-   - `birdmaid` → `YOUR_SERVER_IP`
-   - `api.birdmaid` → `YOUR_SERVER_IP`
+1. **Узнайте IP вашего сервера:**
+   ```bash
+   curl -4 ifconfig.me
+   # Или:
+   hostname -I | awk '{print $1}'
+   ```
+
+2. **В панели управления DNS вашего домена создайте A-записи:**
+   - `birdmaid` → `YOUR_SERVER_IP` (для фронтенда)
+   - `api.birdmaid` → `YOUR_SERVER_IP` (для API)
    
-   **Пример**:
-   - `birdmaid` → `192.168.1.100`
-   - `api.birdmaid` → `192.168.1.100`
+   **Пример для домена `birdmaid.su`:**
+   - `birdmaid.su` → `79.141.78.164` (или ваш IP)
+   - `api.birdmaid.su` → `79.141.78.164` (или ваш IP)
 
-2. Подождите распространения DNS (обычно 5-15 минут)
+3. **Подождите распространения DNS (обычно 5-15 минут, иногда до часа)**
 
-**Если домена нет**, можно использовать IP напрямую, но TLS не будет работать автоматически. В этом случае нужно будет настроить Caddy вручную или использовать самоподписанный сертификат.
+4. **Проверьте DNS записи:**
+   ```bash
+   # Установите утилиты для проверки DNS (если нужно):
+   apt install -y dnsutils
+   
+   # Проверьте DNS записи:
+   nslookup birdmaid.su
+   nslookup api.birdmaid.su
+   
+   # Или используйте host:
+   host birdmaid.su
+   host api.birdmaid.su
+   
+   # Должны вернуть IP вашего сервера
+   ```
+
+**Если домена нет**, можно использовать IP напрямую, но TLS не будет работать автоматически. В этом случае нужно будет настроить Caddy вручную или использовать самоподписанный сертификат (см. Шаг 5).
 
 **ВАЖНО**: Замените `YOUR_SERVER_IP` на реальный IP вашего сервера во всех командах ниже!
 
@@ -255,7 +278,61 @@ sudo bash scripts/harden-server.sh
 
 Вам нужно настроить CORS для вашего S3 bucket (например, `my-birdmaid-bucket`), чтобы фронтенд мог загружать файлы.
 
-**Вариант 1: Через AWS CLI (если установлен)**
+**Вариант 1: Установить AWS CLI и настроить CORS**
+
+Если AWS CLI не установлен, установите его:
+
+```bash
+# Установка AWS CLI v2 для Debian
+cd /tmp
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+apt install -y unzip
+unzip awscliv2.zip
+./aws/install
+
+# Проверка установки
+aws --version
+```
+
+Затем настройте профиль AWS CLI:
+
+```bash
+# Настройте профиль (замените YOUR_ACCESS_KEY и YOUR_SECRET_KEY на реальные)
+aws configure --profile selectel
+# AWS Access Key ID: YOUR_ACCESS_KEY
+# AWS Secret Access Key: YOUR_SECRET_KEY
+# Default region name: ru-3
+# Default output format: json
+
+# Добавьте endpoint в конфиг
+mkdir -p ~/.aws
+cat >> ~/.aws/config << EOF
+[profile selectel]
+region = ru-3
+endpoint_url = https://s3.ru-3.storage.selcloud.ru
+EOF
+```
+
+**⚠️ ВАЖНО: Установка SSL сертификата для Selectel**
+
+AWS CLI использует Python и его SSL библиотеку, которая может не использовать системные сертификаты автоматически. Поэтому нужно указать путь к сертификату явно:
+
+```bash
+# 1. Установите SSL сертификат GlobalSign Root R6 (требуется для Selectel)
+mkdir -p /usr/local/share/ca-certificates
+wget https://secure.globalsign.net/cacert/root-r6.crt -O /tmp/root-r6.crt
+openssl x509 -inform der -in /tmp/root-r6.crt -out /usr/local/share/ca-certificates/selectel-root.crt
+update-ca-certificates
+rm /tmp/root-r6.crt
+
+# 2. Укажите путь к сертификату для AWS CLI через переменную окружения
+export AWS_CA_BUNDLE=/usr/local/share/ca-certificates/selectel-root.crt
+# Или для Python/boto3:
+export REQUESTS_CA_BUNDLE=/usr/local/share/ca-certificates/selectel-root.crt
+export SSL_CERT_FILE=/usr/local/share/ca-certificates/selectel-root.crt
+```
+
+Теперь создайте и примените CORS:
 
 ```bash
 # Создайте файл cors.json
@@ -266,38 +343,162 @@ cat > /tmp/cors.json << 'EOF'
       "AllowedOrigins": ["*"],
       "AllowedMethods": ["GET", "PUT", "POST", "HEAD"],
       "AllowedHeaders": ["*"],
-      "ExposedHeaders": ["ETag"],
+      "ExposeHeaders": ["ETag"],
       "MaxAgeSeconds": 3600
     }
   ]
 }
 EOF
 
-# Примените CORS (замените YOUR_BUCKET_NAME, YOUR_REGION, YOUR_ACCESS_KEY и YOUR_SECRET_KEY)
-aws s3api put-bucket-cors \
-  --bucket YOUR_BUCKET_NAME \
-  --cors-configuration file:///tmp/cors.json \
-  --endpoint-url https://s3.YOUR_REGION.storage.selcloud.ru \
-  --region YOUR_REGION \
-  --profile YOUR_PROFILE_NAME
+# Убедитесь, что переменная окружения установлена (из шага выше)
+export AWS_CA_BUNDLE=/usr/local/share/ca-certificates/selectel-root.crt
 
-# Пример для Selectel:
-# aws s3api put-bucket-cors \
-#   --bucket your-bucket-name \
-#   --cors-configuration file:///tmp/cors.json \
-#   --endpoint-url https://s3.ru-3.storage.selcloud.ru \
-#   --region ru-3 \
-#   --profile selectel
+# Примените CORS (замените birdmaid-s3 на имя вашего bucket)
+# ⚠️ ВАЖНО: Не показывайте ключи доступа в команде! Используйте переменные окружения или профиль.
+export AWS_ACCESS_KEY_ID="YOUR_ACCESS_KEY_ID"
+export AWS_SECRET_ACCESS_KEY="YOUR_SECRET_ACCESS_KEY"
+export AWS_DEFAULT_REGION="ru-3"
+
+aws s3api put-bucket-cors \
+  --bucket birdmaid-s3 \
+  --cors-configuration file:///tmp/cors.json \
+  --endpoint-url https://s3.ru-3.storage.selcloud.ru \
+  --region ru-3
+
+# Проверьте, что CORS применился
+aws s3api get-bucket-cors \
+  --bucket birdmaid-s3 \
+  --endpoint-url https://s3.ru-3.storage.selcloud.ru \
+  --region ru-3
+
+# После успешной настройки удалите переменные окружения с ключами из текущей сессии
+unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
 ```
 
-**Вариант 2: Через панель Selectel**
+**Если AWS CLI все еще выдает ошибку SSL**, используйте Python скрипт (см. Вариант 3 ниже) или временно отключите проверку SSL (только для одноразовой настройки CORS):
 
-Если в панели есть настройки CORS, используйте:
-- **Allowed Origins**: `*` (или конкретный домен, если есть)
-- **Allowed Methods**: `GET, PUT, POST, HEAD`
-- **Allowed Headers**: `*`
-- **Exposed Headers**: `ETag`
-- **Max Age**: `3600`
+```bash
+# ⚠️ ВРЕМЕННОЕ РЕШЕНИЕ: Отключение проверки SSL (небезопасно!)
+# Используйте ТОЛЬКО для одноразовой настройки CORS, затем удалите эту переменную
+export PYTHONHTTPSVERIFY=0
+
+aws s3api put-bucket-cors \
+  --bucket birdmaid-s3 \
+  --cors-configuration file:///tmp/cors.json \
+  --endpoint-url https://s3.ru-3.storage.selcloud.ru \
+  --region ru-3
+
+# После успешной настройки удалите переменную
+unset PYTHONHTTPSVERIFY
+```
+
+**Вариант 2: Через панель Selectel (если доступно)**
+
+1. Войдите в панель управления Selectel
+2. Перейдите в раздел Object Storage
+3. Выберите ваш bucket (`birdmaid-s3`)
+4. Найдите раздел "CORS" или "Настройки CORS"
+5. Добавьте следующие настройки:
+   - **Allowed Origins**: `*` (или конкретный домен, например `https://birdmaid.your-domain.com`)
+   - **Allowed Methods**: `GET, PUT, POST, HEAD`
+   - **Allowed Headers**: `*`
+   - **Exposed Headers**: `ETag`
+   - **Max Age**: `3600`
+
+**Вариант 3: Через Python с boto3 (если AWS CLI не работает)**
+
+```bash
+# Установите Python и pip (если еще не установлены)
+apt install -y python3 python3-pip
+
+# Установите boto3
+pip3 install boto3
+
+# Установите SSL сертификат Selectel (если еще не установлен)
+mkdir -p /usr/local/share/ca-certificates
+wget https://secure.globalsign.net/cacert/root-r6.crt -O /tmp/root-r6.crt
+openssl x509 -inform der -in /tmp/root-r6.crt -out /usr/local/share/ca-certificates/selectel-root.crt
+update-ca-certificates
+rm /tmp/root-r6.crt
+
+# Создайте скрипт для настройки CORS
+cat > /tmp/setup_cors.py << 'PYEOF'
+import boto3
+from botocore.client import Config
+import ssl
+import os
+
+# Замените на ваши реальные значения
+ACCESS_KEY = 'YOUR_ACCESS_KEY_ID'
+SECRET_KEY = 'YOUR_SECRET_ACCESS_KEY'
+BUCKET_NAME = 'birdmaid-s3'
+ENDPOINT_URL = 'https://s3.ru-3.storage.selcloud.ru'
+REGION = 'ru-3'
+CA_BUNDLE = '/usr/local/share/ca-certificates/selectel-root.crt'
+
+# Создайте клиент S3 с указанием сертификата
+# Используйте полный путь к bundle сертификатов системы или конкретный сертификат
+CA_BUNDLE_FULL = '/etc/ssl/certs/ca-certificates.crt'  # Системный bundle
+CA_SELECTEL = '/usr/local/share/ca-certificates/selectel-root.crt'  # Конкретный сертификат
+
+# Проверьте, какой файл существует
+if os.path.exists(CA_SELECTEL):
+    verify_cert = CA_SELECTEL
+elif os.path.exists(CA_BUNDLE_FULL):
+    verify_cert = CA_BUNDLE_FULL
+else:
+    verify_cert = True  # Использовать системные сертификаты по умолчанию
+
+s3_client = boto3.client(
+    's3',
+    endpoint_url=ENDPOINT_URL,
+    aws_access_key_id=ACCESS_KEY,
+    aws_secret_access_key=SECRET_KEY,
+    region_name=REGION,
+    config=Config(
+        signature_version='s3v4',
+        connect_timeout=60,
+        read_timeout=60
+    ),
+    verify=verify_cert
+)
+
+# CORS конфигурация
+cors_configuration = {
+    'CORSRules': [
+        {
+            'AllowedOrigins': ['*'],
+            'AllowedMethods': ['GET', 'PUT', 'POST', 'HEAD'],
+            'AllowedHeaders': ['*'],
+            'ExposeHeaders': ['ETag'],  # ⚠️ Selectel использует ExposeHeaders (не ExposedHeaders)
+            'MaxAgeSeconds': 3600
+        }
+    ]
+}
+
+# Примените CORS
+try:
+    s3_client.put_bucket_cors(
+        Bucket=BUCKET_NAME,
+        CORSConfiguration=cors_configuration
+    )
+    print(f"✅ CORS настроен для bucket {BUCKET_NAME}")
+    
+    # Проверьте настройки
+    response = s3_client.get_bucket_cors(Bucket=BUCKET_NAME)
+    print("\nТекущие настройки CORS:")
+    import json
+    print(json.dumps(response['CORSRules'], indent=2, ensure_ascii=False))
+except Exception as e:
+    print(f"❌ Ошибка: {e}")
+    import traceback
+    traceback.print_exc()
+PYEOF
+
+# Запустите скрипт (замените YOUR_ACCESS_KEY_ID и YOUR_SECRET_ACCESS_KEY)
+nano /tmp/setup_cors.py  # Отредактируйте ключи
+python3 /tmp/setup_cors.py
+```
 
 ## Шаг 4: Развертывание приложения
 
@@ -390,29 +591,56 @@ openssl rand -base64 32
 
 Скопируйте результат в `JWT_SECRET` в `.env.prod`.
 
-### 4.4 Сборка и запуск
+### 4.4 Проверка конфигурации перед запуском
+
+**Важно**: Убедитесь, что файл `.env.prod` существует и правильно заполнен:
 
 ```bash
-# Проверить конфигурацию перед запуском
-docker compose -f docker-compose.prod.yml config
+# Проверить наличие файла
+ls -la .env.prod
 
+# Проверить, что все обязательные переменные заполнены (не должно быть пустых значений)
+grep -E "^[A-Z_]+=" .env.prod | grep -v "^#" | grep "=$" && echo "⚠️  Найдены пустые переменные!" || echo "✅ Все переменные заполнены"
+
+# Проверить конфигурацию Docker Compose (должны быть видны все переменные из .env.prod)
+docker compose -f docker-compose.prod.yml --env-file .env.prod config
+
+# Если видите предупреждения "variable is not set", проверьте:
+# 1. Файл .env.prod существует в текущей директории
+# 2. Все переменные заполнены (нет пустых значений)
+# 3. Используете флаг --env-file .env.prod или env_file указан в docker-compose.prod.yml
+```
+
+### 4.5 Сборка и запуск
+
+```bash
 # Сборка образов (может занять несколько минут)
-docker compose -f docker-compose.prod.yml build
+docker compose -f docker-compose.prod.yml --env-file .env.prod build
 
 # Запуск сервисов
-docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+
+# Или используйте автоматический скрипт:
+# ./scripts/deploy.sh --build
+
+# ⚠️ ВАЖНО: Все команды docker compose требуют флаг --env-file .env.prod!
 
 # Проверка статуса всех сервисов
-docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml --env-file .env.prod ps
 
 # Просмотр логов (Ctrl+C для выхода)
-docker compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f
 
 # Просмотр логов конкретного сервиса
-docker compose -f docker-compose.prod.yml logs -f back
-docker compose -f docker-compose.prod.yml logs -f front
-docker compose -f docker-compose.prod.yml logs -f caddy
-docker compose -f docker-compose.prod.yml logs -f mongo
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f back
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f front
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f caddy
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f mongo
+
+# Или используйте удобный скрипт-обертку (рекомендуется):
+./scripts/docker-compose-prod.sh ps
+./scripts/docker-compose-prod.sh logs -f
+./scripts/docker-compose-prod.sh logs -f back
 ```
 
 **Примечание**: Первый запуск может занять время из-за:
@@ -420,29 +648,54 @@ docker compose -f docker-compose.prod.yml logs -f mongo
 - Сборки образов приложения
 - Генерации TLS сертификатов (если есть домен)
 
-### 4.5 Проверка работы
+### 4.6 Проверка работы
 
 ```bash
 # Подождать несколько секунд для запуска всех сервисов
 sleep 10
 
-# Проверка health endpoint backend (через Docker network)
-docker compose -f docker-compose.prod.yml exec back curl http://localhost:3000/health
+# 1. Проверка статуса контейнеров (все должны быть "Up" и "healthy")
+docker compose -f docker-compose.prod.yml --env-file .env.prod ps
+# Или: ./scripts/docker-compose-prod.sh ps
+
+# 2. Проверка health endpoint backend (через Docker network)
+# В alpine образе нет curl, используем node:
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec back node -e \
+  "require('http').get('http://localhost:3000/health', (r) => {let d='';r.on('data',c=>d+=c);r.on('end',()=>{console.log(d);process.exit(r.statusCode===200?0:1)})})"
 # Должно вернуть: {"status":"ok"}
 
-# Проверка через reverse proxy (если есть домен)
-curl https://api.birdmaid.your-domain.com/health
+# Альтернатива: проверить через healthcheck статус
+docker inspect birdmaid-back | grep -A 10 Health
 
-# Проверка фронтенда
+# 3. Проверка DNS (если используете домен)
+# Установите утилиты для проверки DNS (если нужно):
+apt install -y dnsutils
+
+# Проверьте DNS записи:
+nslookup api.birdmaid.su
+# Или:
+host api.birdmaid.su
+# Должен вернуть IP вашего сервера
+
+# 4. Проверка через reverse proxy (если DNS настроен)
+curl -k https://api.birdmaid.su/health
+# Или с проверкой сертификата:
+curl https://api.birdmaid.su/health
+
+# 5. Проверка фронтенда
 curl -I http://localhost
-# Или если есть домен:
-curl -I https://birdmaid.your-domain.com
+# Или если есть домен и DNS настроен:
+curl -I https://birdmaid.su
 
-# Проверка заголовков безопасности
-curl -I https://birdmaid.your-domain.com | grep -i "x-frame-options\|x-content-type-options\|content-security-policy"
+# 6. Проверка заголовков безопасности
+curl -I https://birdmaid.su | grep -i "x-frame-options\|x-content-type-options\|content-security-policy"
 
-# Проверка TLS сертификата (если есть домен)
-openssl s_client -connect birdmaid.your-domain.com:443 -servername birdmaid.your-domain.com < /dev/null
+# 7. Проверка TLS сертификата (если есть домен)
+openssl s_client -connect birdmaid.su:443 -servername birdmaid.su < /dev/null 2>/dev/null | grep -E "subject=|issuer=|Verify return code"
+
+# 8. Проверка логов (если что-то не работает)
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail=50 back
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail=50 caddy
 ```
 
 **Ожидаемые результаты**:
@@ -558,31 +811,38 @@ crontab -e
 ### Просмотр логов
 
 ```bash
+# ⚠️ ВАЖНО: Все команды требуют --env-file .env.prod!
+
 # Все сервисы (последние 100 строк)
-docker compose -f docker-compose.prod.yml logs --tail=100
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail=100
 
 # Все сервисы (в реальном времени, Ctrl+C для выхода)
-docker compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f
 
 # Конкретный сервис
-docker compose -f docker-compose.prod.yml logs -f back
-docker compose -f docker-compose.prod.yml logs -f front
-docker compose -f docker-compose.prod.yml logs -f mongo
-docker compose -f docker-compose.prod.yml logs -f caddy
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f back
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f front
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f mongo
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f caddy
 
 # Логи за определенный период
-docker compose -f docker-compose.prod.yml logs --since 1h
-docker compose -f docker-compose.prod.yml logs --since 2024-01-11T10:00:00
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs --since 1h
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs --since 2024-01-11T10:00:00
 
 # Логи с временными метками
-docker compose -f docker-compose.prod.yml logs -t
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -t
+
+# Или используйте удобный скрипт-обертку:
+./scripts/docker-compose-prod.sh logs -f
+./scripts/docker-compose-prod.sh logs -f back
 ```
 
 ### Проверка статуса сервисов
 
 ```bash
 # Статус всех сервисов
-docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml --env-file .env.prod ps
+# Или: ./scripts/docker-compose-prod.sh ps
 
 # Детальная информация о сервисе
 docker inspect birdmaid-back
@@ -644,7 +904,8 @@ watch -n 5 'df -h'
 watch -n 5 'free -h'
 
 # Статус сервисов
-watch -n 5 'docker compose -f docker-compose.prod.yml ps'
+watch -n 5 'docker compose -f docker-compose.prod.yml --env-file .env.prod ps'
+# Или: watch -n 5 './scripts/docker-compose-prod.sh ps'
 ```
 
 ## Шаг 8: Обновление приложения
@@ -674,19 +935,19 @@ cd /opt/birdmaid
 git pull
 
 # Обновить базовые образы (MongoDB, Caddy)
-docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml --env-file .env.prod pull
 
 # Пересобрать образы приложения (если код изменился)
-docker compose -f docker-compose.prod.yml build
+docker compose -f docker-compose.prod.yml --env-file .env.prod build
 
 # Перезапустить сервисы
-docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
 
 # Очистить старые образы (освободить место)
 docker image prune -f
 
 # Проверить статус
-docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml --env-file .env.prod ps
 ```
 
 ### Обновление с проверкой
@@ -704,9 +965,9 @@ git pull
 git log HEAD..origin/main --oneline
 
 # Если все хорошо, продолжить обновление
-docker compose -f docker-compose.prod.yml pull
-docker compose -f docker-compose.prod.yml build
-docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml --env-file .env.prod pull
+docker compose -f docker-compose.prod.yml --env-file .env.prod build
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
 
 # Проверить работоспособность
 curl https://api.birdmaid.your-domain.com/health
@@ -765,7 +1026,13 @@ sudo ufw status | grep -E "(80|443)"
 sudo ss -tulpn | grep -E ':(80|443)'
 
 # Проверьте логи Caddy
-docker compose -f docker-compose.prod.yml logs caddy | grep -i "acme\|certificate\|error"
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs caddy | grep -i "acme\|certificate\|error\|domain"
+
+# Если видите ошибку "subject does not qualify for certificate: 'api.birdmaid.{env.DOMAIN}'":
+# Это означает, что переменная DOMAIN не подставилась. Проверьте:
+# 1. Файл .env.prod содержит DOMAIN=your-domain.com
+# 2. Контейнер перезапущен после изменения .env.prod
+# 3. Entrypoint скрипт работает (проверьте логи caddy на наличие ошибок запуска)
 
 # Проверьте доступность портов извне
 # С другого компьютера:
@@ -795,12 +1062,12 @@ docker compose -f docker-compose.prod.yml logs mongo | tail -50
 docker inspect birdmaid-mongo | grep -A 10 Health
 
 # Проверьте подключение из backend
-docker compose -f docker-compose.prod.yml exec back sh -c \
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec back sh -c \
   "node -e \"const {MongoClient}=require('mongodb'); \
    MongoClient.connect(process.env.MONGO_URL || 'mongodb://mongo:27017/birdmaid').then(()=>console.log('OK')).catch(e=>console.error(e))\""
 
 # Проверьте переменные окружения
-docker compose -f docker-compose.prod.yml exec back env | grep MONGO
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec back env | grep MONGO
 
 # Проверьте сеть Docker
 docker network inspect birdmaid-network | grep -A 5 mongo
@@ -813,10 +1080,10 @@ docker network inspect birdmaid-network | grep -A 5 mongo
 **Решение**:
 ```bash
 # Проверьте логи backend
-docker compose -f docker-compose.prod.yml logs back | grep -i s3
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs back | grep -i s3
 
 # Проверьте переменные окружения
-docker compose -f docker-compose.prod.yml exec back env | grep S3_
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec back env | grep S3_
 
 # Проверьте формат переменных в .env.prod (НЕ показывайте секреты!)
 cat .env.prod | grep S3_ | sed 's/=.*/=***HIDDEN***/'
@@ -857,7 +1124,7 @@ swapon --show
 docker stats --no-stream
 
 # Проверьте логи на ошибки памяти
-docker compose -f docker-compose.prod.yml logs | grep -i "oom\|memory\|killed"
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs | grep -i "oom\|memory\|killed"
 
 # Очистите неиспользуемые Docker ресурсы
 docker system prune -a --volumes
@@ -912,19 +1179,20 @@ sudo ss -tulpn | grep -E ':(80|443|22)'
 docker compose -f docker-compose.prod.yml logs --since 1h
 
 # Перезапуск всех сервисов
-docker compose -f docker-compose.prod.yml restart
+docker compose -f docker-compose.prod.yml --env-file .env.prod restart
 
 # Остановка всех сервисов
-docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml --env-file .env.prod down
 
 # Остановка с удалением volumes (ОСТОРОЖНО: удалит данные!)
-docker compose -f docker-compose.prod.yml down -v
+docker compose -f docker-compose.prod.yml --env-file .env.prod down -v
 ```
 
 ## Контакты и поддержка
 
 Если возникли проблемы:
-1. Проверьте логи: `docker compose -f docker-compose.prod.yml logs`
+1. Проверьте логи: `docker compose -f docker-compose.prod.yml --env-file .env.prod logs`
+   Или: `./scripts/docker-compose-prod.sh logs`
 2. Проверьте документацию: 
    - `docs/DEPLOY.md` (English)
    - `docs/SECURITY.md` (безопасность)

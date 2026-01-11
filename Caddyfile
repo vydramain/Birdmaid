@@ -2,13 +2,13 @@
 # This file is mounted into the Caddy container
 
 # Frontend domain
-birdmaid.{env.DOMAIN} {
+# Note: ${DOMAIN} will be substituted by entrypoint script
+birdmaid.${DOMAIN} {
     # Proxy to frontend container (serves static files)
     reverse_proxy front:80 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
+        # Note: X-Forwarded-For and X-Forwarded-Proto are set automatically by Caddy
     }
     
     # Enable compression
@@ -48,13 +48,13 @@ birdmaid.{env.DOMAIN} {
 }
 
 # Backend API domain
-api.birdmaid.{env.DOMAIN} {
+# Note: ${DOMAIN} will be substituted by entrypoint script
+api.birdmaid.${DOMAIN} {
     # Proxy to backend
     reverse_proxy back:3000 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
+        # Note: X-Forwarded-For and X-Forwarded-Proto are set automatically by Caddy
     }
     
     # Enable compression for API responses

@@ -30,6 +30,8 @@ services:
       dockerfile: Dockerfile.prod
     container_name: birdmaid-back
     restart: unless-stopped
+    env_file:
+      - .env.prod
     environment:
       NODE_ENV: production
       MONGO_URL: ${MONGO_URI:-mongodb://mongo:27017/birdmaid}
@@ -75,6 +77,8 @@ services:
       dockerfile: Dockerfile.prod
     container_name: birdmaid-front
     restart: unless-stopped
+    env_file:
+      - .env.prod
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.birdmaid.${DOMAIN}}
     networks:
@@ -97,8 +101,12 @@ services:
       - "443:443/udp"  # HTTP/3
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./scripts/caddy-entrypoint.sh:/entrypoint.sh:ro
       - caddy-data:/data
       - caddy-config:/config
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    env_file:
+      - .env.prod
     environment:
       DOMAIN: ${DOMAIN}
     depends_on:
