@@ -44,12 +44,14 @@ fp:
     repo_state:
       front:
         exists: true
-        package_scripts: [dev, build, test, test:watch, test:ci, coverage]
-        coverage_configured: false
+        package_scripts: [dev, build, test, test:watch, test:ci, coverage, preview]
+        coverage_configured: true
+        stack: [React 18.2, Vite 5.1, TypeScript 5.4, Vitest 1.3]
       back:
         exists: true
         package_scripts: [start, start:dev, build, test, test:ci, coverage]
-        coverage_configured: false
+        coverage_configured: true
+        stack: [NestJS 10.3, TypeScript 5.4, Jest 29.7, MongoDB 6, MinIO]
       root_package_json: false
       docker_compose_present: true
 
@@ -178,12 +180,14 @@ fp:
     repo_state:
       front:
         exists: true
-        package_scripts: [dev, build, test, test:watch, test:ci, coverage]
-        coverage_configured: false
+        package_scripts: [dev, build, test, test:watch, test:ci, coverage, preview]
+        coverage_configured: true
+        stack: [React 18.2, Vite 5.1, TypeScript 5.4, Vitest 1.3]
       back:
         exists: true
         package_scripts: [start, start:dev, build, test, test:ci, coverage]
-        coverage_configured: false
+        coverage_configured: true
+        stack: [NestJS 10.3, TypeScript 5.4, Jest 29.7, MongoDB 6, MinIO]
       root_package_json: false
       docker_compose_present: true
 
@@ -315,12 +319,14 @@ fp:
     repo_state:
       front:
         exists: true
-        package_scripts: [dev, build, test, test:watch, test:ci, coverage]
-        coverage_configured: false
+        package_scripts: [dev, build, test, test:watch, test:ci, coverage, preview]
+        coverage_configured: true
+        stack: [React 18.2, Vite 5.1, TypeScript 5.4, Vitest 1.3]
       back:
         exists: true
         package_scripts: [start, start:dev, build, test, test:ci, coverage]
-        coverage_configured: false
+        coverage_configured: true
+        stack: [NestJS 10.3, TypeScript 5.4, Jest 29.7, MongoDB 6, MinIO]
       root_package_json: false
       docker_compose_present: true
 

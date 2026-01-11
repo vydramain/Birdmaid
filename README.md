@@ -1,11 +1,15 @@
 # Birdmaid
 
-## Agent workflow quickstart
+Birdmaid is an itch.io-at-home for the Omsk gamedev community: a small, hackathon-friendly catalog where teams can publish web builds and players can discover and play them in the browser.
 
-- Start FP1 discovery: `FP=FP1 mode=discovery — начать`
-- Provide ACK by updating `docs/WORKPLAN.yaml` (ack block)
-- Artifacts live under `artifacts/<FP>/<date>/`
-- Design-first includes Stitch reference generation and token capture (see UX baseline in `docs/REQUIREMENTS.md`).
+## Current Status
+
+- **FP1**: Browse & Play + Admin Authoring (status: implement)
+- **FP2**: Added team system and game editing (status: completed)
+- **FP3**: Added Windows 95 UI behavior (status: completed)
+- **FP4**: User Accounts & Windows 95 UI (status: completed)
+- **FP5**: UI/UX Fixes and Polish (status: gate, PASS - completed)
+
 
 ## Codex Skills
 
@@ -32,7 +36,7 @@ Skills live under `.codex/skills/**` and are opt-in: each role lists required sk
 - Verify install: list `.codex/skills/**` and confirm each skill folder has `SKILL.md`.
 - Update/reinstall: rerun the same install command.
 - Policy:
-  - Vendor skills live under `.codex/skills/vendor/**` (current vendor pack: `.codex/skills/agentic-code`).
+  - Vendor skills live under `.codex/skills/agentic-code/**` (current vendor pack).
   - Project-specific skills live under `.codex/skills/birdmaid-*/SKILL.md`.
 
 ## Runbook (scaffolds)
@@ -57,15 +61,69 @@ Skills live under `.codex/skills/**` and are opt-in: each role lists required sk
 
 ### Local MVP flow
 
-- Create a team (Admin Teams page).
-- Create a game (Admin Game Editor) and save.
-- Upload a ZIP build that contains `index.html` at the root.
-- Publish the game.
-- Open the catalog and game page to play in the iframe.
+1. **Authentication** (FP4):
+   - Register a new account or login
+   - Super Admin accounts can be created via MongoDB flag (`isSuperAdmin: true`)
+
+2. **Team Management** (FP4):
+   - Create a team (Teams page)
+   - Add team members by login (team leader only)
+   - Transfer team leadership
+
+3. **Game Creation** (FP1, FP4):
+   - Create a game (Editor page) for your team
+   - Upload cover image (300 KB max, image files only)
+   - Upload a ZIP build that contains `index.html` at the root
+   - Add user tags (Enter/comma separated) and system tags (Super Admin only)
+   - Publish the game
+
+4. **Playing Games**:
+   - Browse catalog with search and tag filtering
+   - Open game page and click "Play" to open in modal
+   - View team members, comments, and game details
+
+5. **Admin Features** (Super Admin):
+   - Edit any game
+   - Force status changes with remarks
+   - Manage system tags
 
 ### Test logs and artifacts
 
-- Create artifact folders: `mkdir -p artifacts/FP1/$(date +%F)/{logs,coverage,evidence}`
-- Capture front test log: `cd front && npm run test:ci | tee ../artifacts/FP1/$(date +%F)/logs/front-tests.log`
-- Capture back test log: `cd back && npm run test:ci | tee ../artifacts/FP1/$(date +%F)/logs/back-tests.log`
-- Copy coverage summary:\n  - `cp front/coverage/coverage-summary.json artifacts/FP1/$(date +%F)/coverage/coverage-front.json`\n  - `cp back/coverage/coverage-summary.json artifacts/FP1/$(date +%F)/coverage/coverage-back.json`
+- Create artifact folders: `mkdir -p artifacts/FP<N>/$(date +%F)/{logs,coverage,evidence}`
+- Capture front test log: `cd front && npm run test:ci | tee ../artifacts/FP<N>/$(date +%F)/logs/front-tests.log`
+- Capture back test log: `cd back && npm run test:ci | tee ../artifacts/FP<N>/$(date +%F)/logs/back-tests.log`
+- Copy coverage summary:
+  - `cp front/coverage/coverage-summary.json artifacts/FP<N>/$(date +%F)/coverage/coverage-front.json`
+  - `cp back/coverage/coverage-summary.json artifacts/FP<N>/$(date +%F)/coverage/coverage-back.json`
+
+## Project Structure
+
+- `front/` - React + Vite + TypeScript frontend (Windows 95 UI styling)
+- `back/` - NestJS backend (MongoDB + S3-compatible storage)
+- `docs/` - Project documentation (REQUIREMENTS.md, API.yaml, UX_MAP.md, TESTS.md, etc.)
+- `artifacts/` - Test logs, coverage, and evidence (not committed to git)
+- `.codex/skills/` - Codex skills (vendor and project-specific)
+
+## Technology Stack
+
+### Frontend
+- React 18.2.0
+- Vite 5.1.0
+- TypeScript 5.4.0
+- React Router 6.22.0
+- Vitest for testing
+- Windows 95 styled UI components (custom)
+
+### Backend
+- NestJS 10.3.0
+- MongoDB 6
+- S3-compatible storage (MinIO)
+- JWT authentication (@nestjs/jwt)
+- bcrypt for password hashing
+- nodemailer for email (password recovery)
+
+### Infrastructure
+- Docker Compose for local development
+- MongoDB for data storage
+- MinIO for S3-compatible object storage
+- Node.js runtime
