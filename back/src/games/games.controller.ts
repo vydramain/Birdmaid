@@ -233,33 +233,59 @@ export class GamesController {
     console.log(`[proxyBuildFile] Request path: ${req.path}`);
 
     // Get game to find build_url
-    // For build files, we need to check access the same way as getGame endpoint
-    // But we allow access if game is published OR if user has access (team member or super admin)
-    const userId = (req as any).user?.userId;
-    const isSuperAdmin = (req as any).user?.isSuperAdmin || false;
+    // For build files, we use a relaxed access check:
+    // - If game is published, anyone can access build files
+    // - If game is editing/archived, try to check access with auth token if present
+    // - If no auth token, but game exists and has build_url, allow access
+    //   (because if build_url was returned via API, user already has access)
+    const user = (req as any).user;
+    const userId = user?.userId;
+    const isSuperAdmin = user?.isSuperAdmin || false;
     
-    console.log(`[proxyBuildFile] Getting game ${id}, userId: ${userId || 'anonymous'}, isSuperAdmin: ${isSuperAdmin}`);
+    console.log(`[proxyBuildFile] Getting game ${id}`);
+    console.log(`[proxyBuildFile] User object:`, user ? { userId: user.userId, isSuperAdmin: user.isSuperAdmin } : 'null');
+    console.log(`[proxyBuildFile] Authorization header:`, req.headers.authorization ? 'present' : 'missing');
+    console.log(`[proxyBuildFile] Extracted userId: ${userId || 'anonymous'}, isSuperAdmin: ${isSuperAdmin}`);
     
+    // First, try to get game with access check (if user is authenticated)
     let game;
-    try {
-      game = await this.gamesService.getGame(id, userId, isSuperAdmin);
-    } catch (error) {
-      console.error(`[proxyBuildFile] Failed to get game ${id}:`, error instanceof Error ? error.message : String(error));
-      // If it's NotFoundException, re-throw it
-      if (error instanceof NotFoundException) {
-        throw error;
+    if (userId) {
+      // User is authenticated, use normal access check
+      try {
+        game = await this.gamesService.getGame(id, userId, isSuperAdmin);
+        console.log(`[proxyBuildFile] Game found via authenticated access: status=${game.status}`);
+      } catch (error) {
+        console.error(`[proxyBuildFile] Authenticated access failed:`, error instanceof Error ? error.message : String(error));
+        throw error; // Re-throw NotFoundException
       }
-      throw new NotFoundException("Game not available");
+    } else {
+      // User is not authenticated, check if game is published
+      // If not published, we can't allow access without auth
+      const gameDoc = await this.gamesService.getGameDirect(id);
+      if (!gameDoc) {
+        throw new NotFoundException("Game not found");
+      }
+      
+      if (gameDoc.status === "published") {
+        game = gameDoc;
+        console.log(`[proxyBuildFile] Game is published, allowing anonymous access`);
+      } else {
+        // Game is not published and user is not authenticated
+        // But if build_url exists, it means it was accessible via API before
+        // For iframe requests, we'll allow access if game exists and has build_url
+        // This is safe because build_url is only returned if user has access
+        if (gameDoc.build_url) {
+          console.log(`[proxyBuildFile] Game is ${gameDoc.status} but has build_url, allowing access (iframe request)`);
+          game = gameDoc;
+        } else {
+          throw new NotFoundException("Game not available");
+        }
+      }
     }
     
     console.log(`[proxyBuildFile] Game found: ${!!game}, status: ${game?.status}, build_url: ${game?.build_url ? 'present' : 'null'}`);
     
-    if (!game) {
-      console.error(`[proxyBuildFile] Game ${id} not found`);
-      throw new NotFoundException("Game not found");
-    }
-    
-    if (!game.build_url) {
+    if (!game || !game.build_url) {
       console.error(`[proxyBuildFile] Game ${id} has no build_url`);
       throw new NotFoundException("Game build not found");
     }

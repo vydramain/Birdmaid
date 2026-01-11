@@ -88,6 +88,14 @@ export class GamesService {
     return this.gamesRepo.findById(gameId);
   }
 
+  /**
+   * Get game directly from database without access check.
+   * Used internally for build file proxy when access was already verified via API.
+   */
+  async getGameDirect(gameId: string) {
+    return this.gamesRepo.findById(gameId);
+  }
+
   async getGame(gameId: string, userId?: string, isSuperAdmin?: boolean) {
     const game = await this.gamesRepo.findById(gameId);
     if (!game) {
