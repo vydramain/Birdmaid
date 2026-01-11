@@ -33,7 +33,19 @@ export class TeamsController {
   @UseGuards(JwtAuthGuard)
   async createTeam(@Body() body: { name: string }, @CurrentUser() user: any) {
     const team = await this.teamsService.createTeam(body.name, user.userId);
-    return { id: team._id, name: team.name, leader: team.leader, members: team.members };
+    // Return team with logins
+    const leaderLogin = await this.teamsService.getUserLogin(team.leader);
+    const memberLogins = await Promise.all(
+      team.members.map((memberId) => this.teamsService.getUserLogin(memberId))
+    );
+    return {
+      id: team._id,
+      name: team.name,
+      leader: team.leader,
+      leaderLogin: leaderLogin || team.leader,
+      members: team.members,
+      memberLogins: memberLogins.map((login, idx) => login || team.members[idx]),
+    };
   }
 
   @Patch(":id")
@@ -50,8 +62,13 @@ export class TeamsController {
 
   @Post(":id/members")
   @UseGuards(JwtAuthGuard)
-  async addMember(@Param("id") id: string, @Body() body: { userId: string }, @CurrentUser() user: any) {
-    const team = await this.teamsService.addMember(id, body.userId, user.userId);
+  async addMember(@Param("id") id: string, @Body() body: { userId?: string; userLogin?: string }, @CurrentUser() user: any) {
+    // Support both userId (backward compatibility) and userLogin (FP5)
+    const userIdOrLogin = body.userLogin || body.userId;
+    if (!userIdOrLogin) {
+      throw new Error("Either userId or userLogin must be provided");
+    }
+    const team = await this.teamsService.addMember(id, userIdOrLogin, user.userId);
     return { id: team._id, name: team.name, leader: team.leader, members: team.members };
   }
 

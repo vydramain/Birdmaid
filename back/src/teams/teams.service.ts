@@ -24,7 +24,7 @@ export class TeamsService {
     return this.teamsRepo.findAll();
   }
 
-  async addMember(teamId: string, userId: string, currentUserId: string) {
+  async addMember(teamId: string, userIdOrLogin: string, currentUserId: string) {
     const team = await this.teamsRepo.findById(teamId);
     if (!team) {
       throw new BadRequestException("Team not found");
@@ -32,6 +32,20 @@ export class TeamsService {
     if (team.leader !== currentUserId) {
       throw new ForbiddenException("Only team leader can add members");
     }
+    
+    // Check if userIdOrLogin is a userId (UUID format) or login (string)
+    // If it's not a UUID, treat it as a login and find the user
+    let userId = userIdOrLogin;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userIdOrLogin)) {
+      // It's a login, find user by login
+      const user = await this.usersRepo.findByLogin(userIdOrLogin);
+      if (!user) {
+        throw new BadRequestException(`User with login "${userIdOrLogin}" not found`);
+      }
+      userId = user._id;
+    }
+    
     return this.teamsRepo.addMember(teamId, userId);
   }
 

@@ -101,9 +101,17 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
 
   return (
     <Win95Modal title="Authentication" open={open} onClose={onClose}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "280px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "280px", borderTop: mode !== "recovery" ? "2px solid var(--win-black)" : "none" }}>
         {mode !== "recovery" && (
-          <div style={{ display: "flex", borderBottom: "2px solid var(--win-black)", marginBottom: "8px" }}>
+          <div style={{ 
+            display: "flex", 
+            marginBottom: "0",
+            marginTop: "-8px",
+            marginLeft: "-8px",
+            marginRight: "-8px",
+            position: "relative",
+            zIndex: 1
+          }}>
             <button
               type="button"
               onClick={() => {
@@ -112,14 +120,18 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
               }}
               style={{
                 flex: 1,
-                padding: "4px 8px",
-                border: "none",
-                borderRight: "1px solid var(--win-black)",
+                padding: "6px 12px",
+                border: mode === "login" ? "2px solid var(--win-black)" : "2px solid var(--win-gray-dark)",
+                borderBottom: mode === "login" ? "none" : "2px solid var(--win-black)",
                 background: mode === "login" ? "var(--win-gray)" : "var(--win-gray-light)",
                 cursor: "pointer",
                 fontFamily: "inherit",
                 fontSize: "12px",
                 textAlign: "center",
+                position: "relative",
+                marginBottom: mode === "login" ? "-2px" : "0",
+                zIndex: mode === "login" ? 2 : 1,
+                boxShadow: mode === "login" ? "none" : "inset 1px 1px 0 var(--win-white), inset -1px -1px 0 var(--win-gray-darker)",
               }}
             >
               Login
@@ -132,13 +144,19 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
               }}
               style={{
                 flex: 1,
-                padding: "4px 8px",
-                border: "none",
+                padding: "6px 12px",
+                border: mode === "register" ? "2px solid var(--win-black)" : "2px solid var(--win-gray-dark)",
+                borderBottom: mode === "register" ? "none" : "2px solid var(--win-black)",
+                borderLeft: mode === "register" ? "2px solid var(--win-black)" : "1px solid var(--win-gray-dark)",
                 background: mode === "register" ? "var(--win-gray)" : "var(--win-gray-light)",
                 cursor: "pointer",
                 fontFamily: "inherit",
                 fontSize: "12px",
                 textAlign: "center",
+                position: "relative",
+                marginBottom: mode === "register" ? "-2px" : "0",
+                zIndex: mode === "register" ? 2 : 1,
+                boxShadow: mode === "register" ? "none" : "inset 1px 1px 0 var(--win-white), inset -1px -1px 0 var(--win-gray-darker)",
               }}
             >
               Register
@@ -148,8 +166,8 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
 
         {mode === "login" && (
           <form onSubmit={handleLogin}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <label>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "4px" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px" }}>
                 Email or Username:
                 <Win95Input
                   type="text"
@@ -158,7 +176,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
                   required
                 />
               </label>
-              <label>
+              <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px" }}>
                 Password:
                 <Win95Input
                   type="password"
@@ -167,7 +185,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
                   required
                 />
               </label>
-              <div style={{ display: "flex", gap: "8px", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", gap: "8px", justifyContent: "space-between", marginTop: "4px" }}>
                 <Win95Button type="submit" disabled={loading}>
                   Login
                 </Win95Button>
@@ -188,16 +206,16 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
 
         {mode === "register" && (
           <form onSubmit={handleRegister}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <label>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "4px" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px" }}>
                 Email:
                 <Win95Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </label>
-              <label>
+              <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px" }}>
                 Username:
                 <Win95Input type="text" value={login} onChange={(e) => setLogin(e.target.value)} required />
               </label>
-              <label>
+              <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px" }}>
                 Password (min 6 chars):
                 <Win95Input
                   type="password"
@@ -207,7 +225,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
                   minLength={6}
                 />
               </label>
-              <Win95Button type="submit" disabled={loading}>
+              <Win95Button type="submit" disabled={loading} style={{ marginTop: "4px" }}>
                 Register
               </Win95Button>
             </div>
@@ -219,7 +237,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
             {!codeSent ? (
               <form onSubmit={handleRequestRecovery}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px" }}>
                     Email:
                     <Win95Input
                       type="email"
@@ -228,7 +246,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
                       required
                     />
                   </label>
-                  <div style={{ display: "flex", gap: "8px" }}>
+                  <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
                     <Win95Button type="submit" disabled={loading}>
                       Send Code
                     </Win95Button>
@@ -241,11 +259,11 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
             ) : (
               <form onSubmit={handleVerifyRecovery}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px" }}>
                     Recovery Code:
                     <Win95Input type="text" value={code} onChange={(e) => setCode(e.target.value)} required />
                   </label>
-                  <label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px" }}>
                     New Password (min 6 chars):
                     <Win95Input
                       type="password"
@@ -255,7 +273,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
                       minLength={6}
                     />
                   </label>
-                  <Win95Button type="submit" disabled={loading}>
+                  <Win95Button type="submit" disabled={loading} style={{ marginTop: "4px" }}>
                     Reset Password
                   </Win95Button>
                 </div>
@@ -265,7 +283,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
         )}
 
         {error && (
-          <div style={{ color: "red", fontSize: "12px", padding: "8px", backgroundColor: "#ffcccc" }}>{error}</div>
+          <div style={{ color: "red", fontSize: "12px", padding: "6px", backgroundColor: "#ffcccc", marginTop: "4px" }}>{error}</div>
         )}
       </div>
     </Win95Modal>

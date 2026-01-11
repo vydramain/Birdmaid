@@ -144,5 +144,23 @@ export class UsersRepository {
     const users = db.collection<UserDoc>("users");
     return users.findOne({ _id: id });
   }
+
+  async searchByLogin(loginQuery: string, limit: number = 20): Promise<UserDoc[]> {
+    if (this.useMemory) {
+      const queryLower = loginQuery.toLowerCase();
+      return this.memoryUsers
+        .filter((u) => u.login.toLowerCase().includes(queryLower))
+        .slice(0, limit);
+    }
+    const db = await this.getDb();
+    if (!db) return [];
+    const users = db.collection<UserDoc>("users");
+    return users
+      .find({
+        login: { $regex: loginQuery, $options: "i" },
+      })
+      .limit(limit)
+      .toArray();
+  }
 }
 

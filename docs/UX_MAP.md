@@ -346,7 +346,7 @@ flowchart LR
 | CTA-FP4-023 | Publish game | EditorPage (/editor/games/:gameId) | POST /games/{id}/publish | editor.game.status, editor.error | unknown |
 | CTA-FP4-024 | Archive game | EditorPage (/editor/games/:gameId) | POST /games/{id}/archive | editor.game.status, editor.error | unknown |
 | CTA-FP4-025 | Super admin force status change | EditorPage (/editor/games/:gameId) | POST /games/{id}/status | editor.game.status, editor.game.adminRemark, editor.error | unknown |
-| CTA-FP4-026 | Set game tags | EditorPage (/editor/games/:gameId) | PATCH /games/{id}/tags | editor.game.tags, editor.error | unknown |
+| CTA-FP4-026 | Set game tags | EditorPage (/editor/games/:gameId) | PATCH /games/{id}/tags | editor.game.tags, editor.error | real |
 
 ### System Design (per CTA)
 
@@ -682,6 +682,43 @@ sequenceDiagram
   P-->>A: render updated status and remark
 ```
 
+#### CTA-FP4-026 Set game tags
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User (Team Member or Super Admin)
+  participant P as PageComponent(EditorPage)
+  participant S as FrontStore
+  participant C as API Controller(/games/{id}/tags)
+  participant SV as GameService
+  participant TR as TeamRepo
+  participant R as GameRepo
+
+  U->>P: Add user tags (type + Enter/comma) or select system tags (Super Admin only)
+  P->>P: Display tags as chips with remove buttons
+  U->>P: Click "Save tags"
+  P->>S: dispatch(saveTags, {gameId, tags_user, tags_system?})
+  S->>C: PATCH /games/{id}/tags {tags_user, tags_system?} (JWT)
+  C->>SV: updateTags(gameId, userId, isSuperAdmin, tags_user, tags_system?)
+  SV->>R: findById(gameId)
+  R-->>SV: game {teamId}
+  alt Super Admin
+    SV->>SV: Allow both tags_user and tags_system
+  else Team Member
+    SV->>TR: findById(game.teamId)
+    TR-->>SV: team {members[]}
+    SV->>SV: validateMembership(userId, team.members)
+    SV->>SV: Reject tags_system if provided
+  end
+  SV->>R: update(gameId, {tags_user, tags_system?})
+  R-->>SV: updated game
+  SV-->>C: {id, tags_user, tags_system}
+  C-->>S: tags saved
+  S-->>P: update state, reload game
+  P-->>U: render updated tags as chips
+```
+
 ### System Interaction Overview (FP4)
 
 ```mermaid
@@ -825,3 +862,446 @@ flowchart TB
 | CR-20260109-09-03 | CTA-FP4-016 | [] | ["src/build-url.service.ts", "src/games/games.controller.ts"] | [] |
 | CR-20260109-09-04 | CTA-FP4-016 | ["src/App.tsx"] | [] | [] |
 | CR-20260109-09-05 | CTA-FP4-016 | ["src/App.tsx"] | [] | [] |
+
+---
+
+## FP5: UI/UX Fixes and Polish
+
+### CTA table
+
+| CTA_ID | CTA | Page | Endpoint(s) | State keys | mock_status |
+| --- | --- | --- | --- | --- | --- |
+| CTA-FP5-001 | View catalog with consistent card sizes | CatalogPage (/) | GET /games | games.list, ui.cardSize | real |
+| CTA-FP5-002 | View cover images in catalog | CatalogPage (/) | GET /games | games.list[].cover_url (signed URL) | real |
+| CTA-FP5-003 | View team members on game page | GamePage (/games/:gameId) | GET /games/{id} | game.team.members (logins) | real |
+| CTA-FP5-004 | Search games by title in catalog | CatalogPage (/) | GET /games?title=... | games.filters.title, games.list | real |
+| CTA-FP5-005 | Style catalog search input | CatalogPage (/) | - | ui.searchInput.styled | real |
+| CTA-FP5-006 | Create team via modal window | TeamsPage (/teams) | POST /teams | teams.createModal.open, teams.form, teams.error | real |
+| CTA-FP5-007 | Search teams by name | TeamsPage (/teams) | GET /teams | teams.filters.name, teams.list | real |
+| CTA-FP5-008 | Style Teams search input | TeamsPage (/teams) | - | ui.searchInput.styled | real |
+| CTA-FP5-009 | View team info in adaptive modal | TeamsPage (/teams) | GET /teams/{id} | teams.infoModal.open, teams.current | real |
+| CTA-FP5-010 | Manage team leadership (hide Make Leader for current leader) | TeamsPage (/teams) | POST /teams/{id}/leader | teams.current.leader, teams.infoModal | real |
+| CTA-FP5-011 | Search users to add to team | TeamsPage (/teams) | GET /users?login=... | teams.userSearch.query, teams.userSearch.results | unknown |
+| CTA-FP5-012 | Add user to team | TeamsPage (/teams) | POST /teams/{id}/members | teams.current.members, teams.error | real |
+| CTA-FP5-013 | Edit game from game page | GamePage (/games/:gameId) | - | game.editButton.visible, navigation | real |
+| CTA-FP5-014 | Filter games by tag and teamId | CatalogPage (/) | GET /games?tag=...&teamId=... | games.filters.tag, games.filters.teamId, games.list | real |
+| CTA-FP5-015 | View help tooltips on New Game page | EditorPage (/editor/games/new) | - | ui.helpTooltips.open, ui.helpTooltips.content | real |
+| CTA-FP5-016 | View error modal on New Game page | EditorPage (/editor/games/new) | - | ui.errorModal.open, ui.errorModal.message | real |
+
+### System Design (per CTA)
+
+#### CTA-FP5-002 View cover images in catalog
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(CatalogPage)
+  participant S as FrontStore
+  participant C as API Controller(/games)
+  participant SV as GameService
+  participant BU as BuildUrlService
+  participant R as GameRepo
+
+  U->>P: Open catalog
+  P->>S: dispatch(loadGames)
+  S->>C: GET /games
+  C->>SV: listGames()
+  SV->>R: find({status: "published"})
+  R-->>SV: games[] (with cover_url as S3 key)
+  SV-->>C: games[]
+  C->>BU: getSignedUrlFromKey(cover_url) for each game
+  BU-->>C: signed URLs
+  C-->>S: games[] (with cover_url as signed URL)
+  S-->>P: update state
+  P-->>U: render catalog with cover images
+```
+
+#### CTA-FP5-003 View team members on game page
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(GamePage)
+  participant S as FrontStore
+  participant C as API Controller(/games/{id})
+  participant SV as GameService
+  participant TR as TeamRepo
+  participant UR as UserRepo
+
+  U->>P: Open game page
+  P->>S: dispatch(loadGame, gameId)
+  S->>C: GET /games/{id}
+  C->>SV: getGame(gameId)
+  SV->>R: findGame(gameId)
+  R-->>SV: game {teamId, ...}
+  SV->>TR: findTeam(game.teamId)
+  TR-->>SV: team {leader, members[]}
+  SV->>UR: getUserLogins(team.members)
+  UR-->>SV: memberLogins[]
+  SV-->>C: {game, team: {members: memberLogins[]}}
+  C-->>S: game data with member logins
+  S-->>P: update state
+  P-->>U: render game page with member logins
+```
+
+#### CTA-FP5-011 Search users to add to team
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor L as Team Leader
+  participant P as PageComponent(TeamsPage)
+  participant S as FrontStore
+  participant C as API Controller(/users)
+  participant SV as UserService
+  participant R as UserRepo
+
+  L->>P: Type login in search input
+  P->>S: dispatch(searchUsers, login)
+  S->>C: GET /users?login=...
+  C->>SV: searchUsers(login)
+  SV->>R: findUsersByLogin(login)
+  R-->>SV: users[] {id, login}
+  SV-->>C: users[]
+  C-->>S: users list
+  S-->>P: update state (filteredUsers)
+  P-->>L: render filtered user list
+```
+
+#### CTA-FP5-012 Add user to team
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor L as Team Leader
+  participant P as PageComponent(TeamsPage)
+  participant S as FrontStore
+  participant C as API Controller(/teams/{id}/members)
+  participant SV as TeamService
+  participant TR as TeamRepo
+  participant UR as UserRepo
+
+  L->>P: Click "Add Member" with userLogin
+  P->>S: dispatch(addMember, {teamId, userLogin})
+  S->>C: POST /teams/{id}/members {userId or userLogin}
+  C->>SV: addMember(teamId, userId, currentUserId)
+  SV->>UR: findUserByLogin(userLogin)
+  UR-->>SV: user {id, login}
+  SV->>TR: findTeam(teamId)
+  TR-->>SV: team {leader}
+  SV->>SV: validateLeader(currentUserId, team.leader)
+  SV->>TR: addMemberToTeam(teamId, userId)
+  TR-->>SV: updated team
+  SV-->>C: {team}
+  C-->>S: updated team
+  S-->>P: update state
+  P-->>L: render updated team members
+```
+
+#### CTA-FP5-014 Filter games by tag and teamId
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(CatalogPage)
+  participant S as FrontStore
+  participant C as API Controller(/games)
+  participant SV as GameService
+  participant R as GameRepo
+
+  U->>P: Select tag and team filter
+  P->>S: dispatch(loadGames, {tag, teamId})
+  S->>C: GET /games?tag=...&teamId=...
+  C->>SV: listGames(tag, undefined, teamId)
+  SV->>R: find({})
+  R-->>SV: allGames[]
+  SV->>SV: filter by teamId (g.teamId === teamId)
+  SV->>SV: filter by tag (g.tags_user.includes(tag) || g.tags_system.includes(tag))
+  SV-->>C: filtered games[]
+  C-->>S: games list
+  S-->>P: update state
+  P-->>U: render filtered catalog
+```
+
+#### CTA-FP5-001 View catalog with consistent card sizes
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(CatalogPage)
+  participant S as FrontStore
+
+  U->>P: Open catalog
+  P->>S: dispatch(loadGames)
+  S-->>P: games list
+  P->>P: calculate cardSize based on viewport (5x4 grid)
+  P-->>U: render catalog with fixed card sizes
+```
+
+#### CTA-FP5-004 Search games by title in catalog
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(CatalogPage)
+  participant S as FrontStore
+  participant C as API Controller(/games)
+  participant SV as GameService
+  participant R as GameRepo
+
+  U->>P: Type in search input
+  P->>P: debounce(300ms)
+  P->>S: dispatch(loadGames, {title})
+  S->>C: GET /games?title=...
+  C->>SV: listGames(undefined, title)
+  SV->>R: find({title: {$regex: title, $options: 'i'}})
+  R-->>SV: filtered games[]
+  SV-->>C: games list
+  C-->>S: games list
+  S-->>P: update state
+  P-->>U: render filtered catalog
+```
+
+#### CTA-FP5-005 Style catalog search input
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(CatalogPage)
+  participant UI as Win95Input Component
+
+  U->>P: View catalog page
+  P->>UI: render Win95Input styled input
+  UI-->>U: display Windows 95 styled search input
+```
+
+#### CTA-FP5-006 Create team via modal window
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as Authenticated User
+  participant P as PageComponent(TeamsPage)
+  participant M as CreateTeamModal
+  participant S as FrontStore
+  participant C as API Controller(/teams)
+  participant SV as TeamService
+  participant R as TeamRepo
+
+  U->>P: Click "Create Team" button
+  P->>M: open modal window
+  M-->>U: display draggable Windows 95 modal
+  U->>M: Enter team name
+  U->>M: Click "Create" button
+  M->>S: dispatch(createTeam, {name})
+  S->>C: POST /teams {name} (JWT)
+  C->>SV: createTeam(name, userId)
+  SV->>R: createTeam({name, leader: userId, members: [userId]})
+  R-->>SV: team {id, name, leader, members}
+  SV-->>C: {team, leaderLogin, memberLogins}
+  C-->>S: new team with logins
+  S-->>P: update state (add to teams list)
+  P->>M: close modal
+  P-->>U: render new team in list
+```
+
+#### CTA-FP5-007 Search teams by name
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(TeamsPage)
+  participant S as FrontStore
+  participant C as API Controller(/teams)
+  participant SV as TeamService
+  participant R as TeamRepo
+
+  U->>P: Type in search input
+  P->>P: filter teams locally by name
+  P->>S: dispatch(filterTeams, {name})
+  S-->>P: filtered teams list
+  P-->>U: render filtered teams list
+```
+
+#### CTA-FP5-008 Style Teams search input
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(TeamsPage)
+  participant UI as Win95Input Component
+
+  U->>P: View teams page
+  P->>UI: render Win95Input styled search input
+  UI-->>U: display Windows 95 styled search input
+```
+
+#### CTA-FP5-009 View team info in adaptive modal
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(TeamsPage)
+  participant M as TeamInfoModal
+  participant S as FrontStore
+  participant C as API Controller(/teams/{id})
+  participant SV as TeamService
+  participant R as TeamRepo
+
+  U->>P: Click "Info" button on team card
+  P->>M: open modal with teamId
+  M->>S: dispatch(loadTeam, teamId)
+  S->>C: GET /teams/{id}
+  C->>SV: getTeam(teamId)
+  SV->>R: findTeam(teamId)
+  R-->>SV: team {id, name, leader, members[]}
+  SV-->>C: {team}
+  C-->>S: team data
+  S-->>M: update state
+  M-->>U: render adaptive modal (auto height) with team info
+```
+
+#### CTA-FP5-010 Manage team leadership (hide Make Leader for current leader)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor L as Team Leader
+  participant P as PageComponent(TeamsPage)
+  participant M as TeamInfoModal
+  participant S as FrontStore
+  participant C as API Controller(/teams/{id}/leader)
+  participant SV as TeamService
+  participant R as TeamRepo
+
+  L->>M: View team info modal
+  M->>M: check if memberId === team.leader
+  M->>M: hide "Make Leader" button if true
+  L->>M: Click "Make Leader" for non-leader member
+  M->>S: dispatch(transferLeadership, {teamId, newLeaderId})
+  S->>C: POST /teams/{id}/leader {newLeaderId} (JWT)
+  C->>SV: transferLeadership(teamId, newLeaderId, currentUserId)
+  SV->>R: findTeam(teamId)
+  R-->>SV: team {leader}
+  SV->>SV: validateLeader(currentUserId, team.leader)
+  SV->>R: updateTeamLeader(teamId, newLeaderId)
+  R-->>SV: updated team
+  SV-->>C: {team}
+  C-->>S: updated team
+  S-->>M: update state
+  M-->>L: render updated team (hide Make Leader for new leader)
+```
+
+#### CTA-FP5-013 Edit game from game page
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as Team Member
+  participant P as PageComponent(GamePage)
+  participant S as FrontStore
+
+  U->>P: View game page
+  P->>P: check if user is team member or super admin
+  P->>P: show "Edit" button if authorized
+  U->>P: Click "Edit" button
+  P->>S: dispatch(navigate, /editor/games/{gameId})
+  S-->>P: navigate to editor page
+  P-->>U: render editor page
+```
+
+#### CTA-FP5-015 View help tooltips on New Game page
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(EditorPage)
+  participant M as Win95Modal Component
+
+  U->>P: View New Game page
+  P->>P: render help icons (question marks)
+  U->>P: Click help icon (?)
+  P->>M: open modal window with help content
+  M-->>U: display draggable Windows 95 modal with help text
+  U->>M: Click "Close" or X button
+  M->>M: close modal
+  M-->>U: modal closed
+```
+
+#### CTA-FP5-016 View error modal on New Game page
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant P as PageComponent(EditorPage)
+  participant M as Win95Modal Component
+  participant S as FrontStore
+  participant C as API Controller
+
+  U->>P: Perform action (upload, create, update) or click "Create Game" with empty fields
+  P->>P: validate fields (team, title required)
+  alt Validation fails
+    P->>M: open error modal with validation errors
+    M-->>U: display Windows 95 styled error modal (draggable) with detailed error message
+  else Validation passes
+    P->>S: dispatch(action)
+    S->>C: API request
+    alt API error
+      C-->>S: error response
+      S-->>P: error state
+      P->>M: open error modal with error message
+      M-->>U: display Windows 95 styled error modal (draggable) with detailed error message
+    else Success
+      C-->>S: success response
+      S-->>P: success state
+      P-->>U: continue with action
+    end
+  end
+  U->>M: Click "Close" or X button
+  M->>M: close modal
+  M-->>U: modal closed
+```
+
+### System Interaction Overview (FP5)
+
+```mermaid
+flowchart TB
+  subgraph Frontend
+    CP[CatalogPage]
+    GP[GamePage]
+    TP[TeamsPage]
+    EP[EditorPage]
+    FS[FrontStore]
+  end
+  subgraph Backend
+    GC[Games Controller]
+    TC[Teams Controller]
+    UC[Users Controller]
+    GSVC[GameService]
+    TSVC[TeamService]
+    USVC[UserService]
+    BUSVC[BuildUrlService]
+    REPO[Repos: Game/Team/User]
+    MDB[(MongoDB)]
+  end
+  S3[S3 Storage]
+
+  CP --> FS --> GC --> GSVC --> REPO --> MDB
+  CP --> FS --> GC --> BUSVC --> S3
+  GP --> FS --> GC --> GSVC --> TSVC --> REPO --> MDB
+  TP --> FS --> TC --> TSVC --> REPO --> MDB
+  TP --> FS --> UC --> USVC --> REPO --> MDB
+  EP --> FS --> GC
+  GSVC --> BUSVC --> S3
+```

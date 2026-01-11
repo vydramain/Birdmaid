@@ -30,6 +30,10 @@ Birdmaid is an itch.io-at-home for the Omsk gamedev community: a small, hackatho
 - Super Admin can move a game from published to editing and leave remarks that must be addressed before republish.
 - Tag assignment is restricted to team members and Super Admin (FP1: Super Admin only).
 - Support user tags and optional system tags (assigned by Super Admin) for filtering/sorting by hackathons and genres.
+- User tags: Free-form text input, added via Enter key or comma separator, displayed as removable chips (Windows 95 styled).
+- System tags: Predefined list (hackathons: omsk-hackathon-2024, omsk-hackathon-2025, global-game-jam, ludum-dare; genres: action, puzzle, platformer, rpg, strategy, arcade), selected from multiple select dropdown, displayed as removable chips (Super Admin only).
+- System tags field is hidden for non-super-admins (UI-level permission check).
+- Tags are stored as arrays and persist correctly after save (game reloads to reflect changes).
 
 ## Non-functional requirements (NFR)
 
@@ -296,3 +300,209 @@ Design a modern, minimal game catalog and admin authoring UI for a web platform 
 - Team membership management is deferred until after FP1.
 - Public catalog only shows published games; editing/archived are hidden.
 - Detailed CSP and sandbox rules are defined in discovery and recorded in ADRs.
+
+---
+
+## FP5: UI/UX Fixes and Polish
+
+### Functional requirements (FR)
+
+#### FR-FP5-001: Catalog Card Sizing
+- Game cards in catalog must have consistent size regardless of the number of cards displayed.
+- Cards should use fixed dimensions or grid constraints that prevent size variation.
+- Minimum card size should be maintained even when fewer than 5 cards are displayed.
+
+#### FR-FP5-002: Cover Image Display in Catalog
+- Backend must always return signed URLs for cover images in GET /games endpoint, never S3 keys.
+- Frontend must display cover images correctly without showing "Invalid cover URL (S3 key received)" error.
+- Cover images should load properly in catalog grid.
+
+#### FR-FP5-003: Team Members Display on Game Page
+- Team members list on game page must display user logins (usernames), not user IDs.
+- Backend must return member logins in GET /games/{id} response.
+- Display format: comma-separated list of logins.
+
+#### FR-FP5-004: Catalog Title Search
+- Search input in catalog must filter games by title in real-time as user types.
+- Filtering should be case-insensitive and support partial matches.
+- Search should work correctly with other filters (tags, teamId).
+
+#### FR-FP5-005: Catalog Search Input Styling
+- Search input in catalog toolbar must be styled according to Windows 95 design system.
+- Input should use Win95Input component or equivalent Windows 95 styling.
+
+#### FR-FP5-006: Teams Page Create Team Button
+- "Create Team" button must display text in a single line.
+- Button width must be adaptive (fit content, not full width).
+- Button should follow Windows 95 button styling.
+
+#### FR-FP5-007: Teams Page Search Input
+- Search input for filtering teams by name must be styled according to Windows 95 design system.
+- Input should use Win95Input component or equivalent Windows 95 styling.
+
+#### FR-FP5-008: Teams Page Team Name Search
+- Search input on Teams page must filter teams by name in real-time as user types.
+- Filtering should be case-insensitive and support partial matches.
+- Teams list should update dynamically based on search input.
+
+#### FR-FP5-009: Teams Info Modal Sizing
+- Team info modal must have adaptive height (not full screen).
+- Modal should end immediately after "Add Member" button section.
+- Modal should not stretch to full viewport height.
+
+#### FR-FP5-010: Teams Info Modal "Make Leader" Button
+- "Make Leader" button must not be displayed for the current team leader.
+- Button should only appear for non-leader members when current user is the leader.
+- Logic: if memberId === team.leader, do not show "Make Leader" button.
+
+#### FR-FP5-011: Teams Info Modal User Search Input Styling
+- User search input in Teams info modal must be styled according to Windows 95 design system.
+- Input should use Win95Input component or equivalent Windows 95 styling.
+
+#### FR-FP5-012: Teams Info Modal User Search Functionality
+- User search input must allow searching for users by login.
+- When a valid user login is entered and "Add Member" is clicked, user must be added to the team.
+- Backend endpoint POST /teams/{id}/members must accept userId or userLogin.
+- Frontend must call backend API to add member, not just close modal.
+
+#### FR-FP5-013: Edit Button on Game Page
+- Game page must display "Edit" button for team members (users who are members of the game's team).
+- Button should navigate to /editor/games/{gameId} page.
+- Button should only be visible to authenticated users who are team members or super admin.
+- Button should be styled according to Windows 95 design system.
+
+#### FR-FP5-014: Tag Filtering with TeamId
+- When both tag and teamId parameters are provided to GET /games, both filters must work together.
+- Backend must return games that match both: belong to specified team AND have specified tag.
+- Filtering logic: teamId filter AND tag filter (both conditions must be satisfied).
+
+#### FR-FP5-015: New Game Page Help and Error Handling
+- New Game page must display help tooltips (question mark icons) styled for Windows 95.
+- Tooltips should explain rules for uploading games (file format, size limits, etc.).
+- Error modals must be displayed when operations fail (upload, create, update).
+- Error modals must be styled as Windows 95 windows (draggable, Windows 95 styling).
+- Help icons should be clickable and show tooltip windows with instructions.
+
+### Non-functional requirements (NFR)
+
+#### NFR-FP5-001: Windows 95 Styling Consistency
+- All new UI elements must follow Windows 95 design system.
+- Inputs, buttons, modals, and tooltips must match existing Windows 95 styling.
+- Reference artifacts from `artifacts/FP2/2026-01-09/evidence/stitch/**/*` for consistency.
+
+#### NFR-FP5-002: Backend API Compatibility
+- Backend changes must not break existing API contracts.
+- Cover URL signing must work correctly for all existing games.
+- Tag filtering with teamId must maintain backward compatibility.
+
+#### NFR-FP5-003: User Search Performance
+- User search in Teams info modal should support real-time filtering.
+- Backend endpoint for user search should be efficient (indexed queries).
+- Search should work with partial login matches.
+
+### Acceptance Criteria (FP5)
+
+#### AC-FP5-001: Catalog Card Sizing
+- ✅ Game cards have consistent size regardless of count (1-100+ cards).
+- ✅ Cards maintain minimum size when fewer than 5 cards displayed.
+- ✅ Grid layout prevents card size variation.
+
+#### AC-FP5-002: Cover Image Display
+- ✅ All cover images in catalog display correctly (no "Invalid cover URL" errors).
+- ✅ Backend returns signed URLs, not S3 keys, in GET /games response.
+- ✅ Cover images load and display properly in catalog grid.
+
+#### AC-FP5-003: Team Members Display
+- ✅ Game page shows team member logins (usernames), not IDs.
+- ✅ Backend returns member logins in GET /games/{id} response.
+- ✅ Display format is readable (comma-separated logins).
+
+#### AC-FP5-004: Catalog Title Search
+- ✅ Search input filters games by title in real-time.
+- ✅ Filtering is case-insensitive and supports partial matches.
+- ✅ Search works correctly with tag and teamId filters.
+
+#### AC-FP5-005: Catalog Search Input Styling
+- ✅ Search input uses Windows 95 styling (Win95Input component).
+- ✅ Input matches Windows 95 design system.
+
+#### AC-FP5-006: Teams Create Team Button
+- ✅ Button text displays in single line.
+- ✅ Button width is adaptive (fits content).
+- ✅ Button uses Windows 95 styling.
+
+#### AC-FP5-007: Teams Search Input Styling
+- ✅ Search input uses Windows 95 styling (Win95Input component).
+- ✅ Input matches Windows 95 design system.
+
+#### AC-FP5-008: Teams Name Search
+- ✅ Search input filters teams by name in real-time.
+- ✅ Filtering is case-insensitive and supports partial matches.
+- ✅ Teams list updates dynamically.
+
+#### AC-FP5-009: Teams Info Modal Sizing
+- ✅ Modal has adaptive height (not full screen).
+- ✅ Modal ends after "Add Member" section.
+- ✅ Modal does not stretch to full viewport height.
+
+#### AC-FP5-010: Teams Info Modal "Make Leader" Button
+- ✅ "Make Leader" button is hidden for current leader.
+- ✅ Button only appears for non-leader members when user is leader.
+- ✅ Logic correctly identifies current leader.
+
+#### AC-FP5-011: Teams Info Modal User Search Input Styling
+- ✅ User search input uses Windows 95 styling (Win95Input component).
+- ✅ Input matches Windows 95 design system.
+
+#### AC-FP5-012: Teams Info Modal User Search Functionality
+- ✅ User search allows searching by login.
+- ✅ "Add Member" button adds user to team via backend API.
+- ✅ Backend endpoint accepts userId or userLogin.
+- ✅ Team members list updates after adding member.
+
+#### AC-FP5-013: Edit Button on Game Page
+- ✅ "Edit" button appears for team members on game page.
+- ✅ Button navigates to /editor/games/{gameId}.
+- ✅ Button only visible to authenticated team members or super admin.
+- ✅ Button uses Windows 95 styling.
+
+#### AC-FP5-014: Tag Filtering with TeamId
+- ✅ GET /games?tag=X&teamId=Y returns games matching both conditions.
+- ✅ Backend correctly applies both filters (AND logic).
+- ✅ Empty results are returned correctly when no games match both conditions.
+
+#### AC-FP5-015: New Game Page Help and Errors
+- ✅ Help tooltips (question mark icons) display on New Game page.
+- ✅ Tooltips explain game upload rules (Windows 95 styled).
+- ✅ Error modals display on operation failures (Windows 95 styled, draggable).
+- ✅ Help icons are clickable and show tooltip windows.
+
+### Non-goals (FP5)
+
+- Major UI redesigns beyond Windows 95 styling fixes.
+- New features beyond fixing existing functionality.
+- Performance optimizations beyond basic query efficiency.
+- Accessibility improvements beyond existing baseline.
+
+### Assumptions (FP5)
+
+- Existing Windows 95 styling components (Win95Input, Win95Button, Win95Modal) are available.
+- Backend can be modified to return signed URLs for cover images.
+- User search endpoint can be added or existing endpoint modified.
+- Tag filtering logic can be updated without breaking existing functionality.
+
+### UX Baseline Tokens (FP5) - Reference Only
+
+FP5 focuses on UI/UX fixes and polish using existing Windows 95 design system. No new design tokens required. Reference existing Windows 95 styling from:
+- `artifacts/FP1/2026-01-08/evidence/stitch/**/*` (Windows 95 style references)
+- Existing `retro.css` and Windows 95 components (Win95Modal, Win95Input, Win95Button)
+
+**Component Tokens (Reference):**
+- Tooltip: Windows 95 styled popup window, appears on hover/click, positioned near help icon
+- Error Modal: Windows 95 styled draggable modal with error icon, message, and Close/X buttons
+- Search Input: Win95Input component styling (Windows 95 text input appearance)
+- Button: Win95Button component styling (Windows 95 button appearance)
+- Card Grid: Fixed 5 columns × 4 rows layout, card size calculated from viewport dimensions
+
+**Stitch References:**
+- No new Stitch outputs required for FP5 (uses existing Windows 95 artifacts from FP1/FP4)

@@ -40,23 +40,31 @@ button {
   justify-content: center;
 }
 
-.win-window {
+/* Common styles for all Windows 95 windows (borders, background, shadow) */
+.win-window-base {
   background: var(--win-gray);
   border-top: 2px solid var(--win-gray-light);
   border-left: 2px solid var(--win-gray-light);
   border-right: 2px solid var(--win-black);
   border-bottom: 2px solid var(--win-black);
   box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
-  width: 100%;
-  max-width: 1440px;
-  min-height: 90vh;
   display: flex;
   flex-direction: column;
 }
 
-.win-window[style*="position: absolute"] {
-  width: calc(100% - 32px);
+/* Main application windows (full-screen style) */
+.win-window {
+  width: 100%;
   max-width: 1440px;
+  min-height: 90vh;
+}
+
+/* Modal windows (compact, auto-sized) */
+.win95-modal {
+  position: absolute;
+  width: auto;
+  height: auto;
+  min-height: auto;
 }
 
 .win-titlebar {
@@ -203,8 +211,26 @@ button {
 
 .catalog-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
+}
+
+@media (max-width: 1200px) {
+  .catalog-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .catalog-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .catalog-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .game-card {
@@ -217,7 +243,6 @@ button {
 
 .game-thumb {
   background: linear-gradient(135deg, #0c0c0c, #2b2b2b);
-  height: 120px;
   border: 2px solid var(--win-gray-dark);
 }
 
@@ -326,14 +351,7 @@ button {
   justify-content: center;
 }
 
-.win95-modal {
-  position: absolute;
-  min-width: 400px;
-  max-width: 90vw;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-}
+/* Modal windows inherit base styles from .win-window-base */
 
 @media (max-width: 960px) {
   .featured {

@@ -4,9 +4,10 @@ import { AuthModule } from "./auth/auth.module";
 import { TeamsModule } from "./teams/teams.module";
 import { CommentsModule } from "./comments/comments.module";
 import { GamesModule } from "./games/games.module";
+import { UsersModule } from "./users/users.module";
 
 @Module({
-  imports: [AuthModule, TeamsModule, CommentsModule, GamesModule],
+  imports: [AuthModule, TeamsModule, CommentsModule, GamesModule, UsersModule],
   controllers: [AppController],
 })
 export class AppModule {}
