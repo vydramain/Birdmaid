@@ -184,27 +184,53 @@ export class GamesController {
   }
 
   /**
-   * Proxy endpoint for build files.
+   * Proxy endpoint for build files (index.html specifically).
+   * This allows relative paths in index.html to work with signed URLs.
+   */
+  @Get(":id/build/index.html")
+  @UseGuards(OptionalAuthGuard)
+  async proxyBuildIndex(
+    @Param("id") id: string,
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    return this.proxyBuildFile(id, "index.html", req, res);
+  }
+
+  /**
+   * Proxy endpoint for build files (catch-all for other files).
    * This allows relative paths in index.html to work with signed URLs.
    * Example: /games/:id/build/index.js -> proxies to S3 with signed URL
    * For index.html, modifies relative paths to use proxy endpoint.
    * 
    * IMPORTANT: This route must be declared BEFORE :id route to avoid conflicts.
+   * Uses catch-all route pattern to handle any file path.
    */
-  @Get(":id/build/*")
+  @Get(":id/build/:file(*)")
   @UseGuards(OptionalAuthGuard)
-  async proxyBuildFile(
+  async proxyBuildFileCatchAll(
     @Param("id") id: string,
+    @Param("file") file: string,
     @Req() req: Request,
     @Res() res: Response
   ) {
-    // Extract file path from request URL (everything after /build/)
-    // In NestJS, wildcard path is available via req.url or req.params['0']
-    const urlPath = req.url || "";
-    const buildMatch = urlPath.match(/\/build\/(.+)$/);
-    const filePath = buildMatch ? buildMatch[1] : "index.html";
+    return this.proxyBuildFile(id, file, req, res);
+  }
 
-    console.log(`[proxyBuildFile] Requested file for game ${id}: ${filePath}`);
+  /**
+   * Internal method to proxy build files from S3.
+   */
+  private async proxyBuildFile(
+    id: string,
+    filePath: string,
+    req: Request,
+    res: Response
+  ) {
+    console.log(`[proxyBuildFile] ===== ENTRY POINT CALLED =====`);
+    console.log(`[proxyBuildFile] Game ID: ${id}`);
+    console.log(`[proxyBuildFile] File path: ${filePath}`);
+    console.log(`[proxyBuildFile] Request URL: ${req.url}`);
+    console.log(`[proxyBuildFile] Request path: ${req.path}`);
 
     // Get game to find build_url
     const userId = (req as any).user?.userId;
@@ -252,9 +278,13 @@ export class GamesController {
         
         // If it's index.html, modify relative paths to use proxy endpoint
         if (filePath === "index.html" && contentType.includes("text/html")) {
-          const protocol = req.protocol || "https";
+          // Determine protocol from X-Forwarded-Proto (set by Caddy) or use https for production
+          const forwardedProto = req.get("x-forwarded-proto") || req.headers["x-forwarded-proto"];
+          const protocol = forwardedProto || (process.env.NODE_ENV === "production" ? "https" : "http");
           const host = req.get("host") || req.headers.host || "api.birdmaid.su";
           const proxyBase = `${protocol}://${host}/games/${id}/build/`;
+          
+          console.log(`[proxyBuildFile] Modifying index.html with proxy base: ${proxyBase}`);
           
           // Replace relative paths (src="file.js", href="file.css", etc.) with proxy URLs
           // Match: src="file.js", src='file.js', src=file.js, href="file.css", etc.
@@ -325,9 +355,14 @@ export class GamesController {
 
     // Use proxy endpoint for build instead of direct signed URL
     // This allows relative paths in index.html to work (they'll be proxied through /games/:id/build/*)
-    const protocol = req?.protocol || "https";
+    // Determine protocol from X-Forwarded-Proto (set by Caddy) or use https for production
+    const forwardedProto = req?.get("x-forwarded-proto") || req?.headers["x-forwarded-proto"];
+    const protocol = forwardedProto || (process.env.NODE_ENV === "production" ? "https" : "http");
     const host = req?.get("host") || req?.headers.host || "api.birdmaid.su";
     const buildUrl = `${protocol}://${host}/games/${id}/build/index.html`;
+    
+    console.log(`[getGame] Generated proxy build_url for game ${id}: ${buildUrl}`);
+    console.log(`[getGame] X-Forwarded-Proto: ${forwardedProto}, protocol: ${protocol}, host: ${host}`);
     
     // Generate fresh signed URL for cover image from coverId (S3 key)
     let coverUrl: string | null = null;
