@@ -239,9 +239,9 @@ export class GamesController {
     // - If game is published: anyone can access build files
     // - If game is editing: only team members can access (requires auth)
     // - If game is archived: only team members can access (requires auth)
-    const user = (req as any).user;
-    const userId = user?.userId;
-    const isSuperAdmin = user?.isSuperAdmin || false;
+    let user = (req as any).user;
+    let userId = user?.userId;
+    let isSuperAdmin = user?.isSuperAdmin || false;
     
     // Check for token in query parameter (for iframe requests)
     // This allows iframe to access build files for non-published games
@@ -253,10 +253,11 @@ export class GamesController {
         const payload = await this.jwtService.verifyAsync(tokenFromQuery, { secret });
         // Set user from token payload
         if (!user) {
-          (req as any).user = {};
+          user = {};
+          (req as any).user = user;
         }
-        (req as any).user.userId = payload.userId;
-        (req as any).user.isSuperAdmin = payload.isSuperAdmin || false;
+        user.userId = payload.userId;
+        user.isSuperAdmin = payload.isSuperAdmin || false;
         userId = payload.userId;
         isSuperAdmin = payload.isSuperAdmin || false;
         console.log(`[proxyBuildFile] Token from query verified: userId=${userId}, isSuperAdmin=${isSuperAdmin}`);
