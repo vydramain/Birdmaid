@@ -108,8 +108,6 @@ services:
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     env_file:
       - .env.prod
-    environment:
-      DOMAIN: ${DOMAIN}
     depends_on:
       - front
       - back
