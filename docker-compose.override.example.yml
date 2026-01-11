@@ -1,0 +1,16 @@
+# Example override file for local development/testing
+# Copy to docker-compose.override.yml to use
+# This file is gitignored and allows local customizations
+
+# Example: Override domain for local testing
+# services:
+#   caddy:
+#     environment:
+#       DOMAIN: localhost
+#   back:
+#     environment:
+#       APP_BASE_URL: http://api.birdmaid.localhost
+#       CORS_ORIGIN: http://birdmaid.localhost
+#   front:
+#     environment:
+#       VITE_API_BASE_URL: http://api.birdmaid.localhost

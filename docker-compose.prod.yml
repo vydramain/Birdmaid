@@ -1,0 +1,133 @@
+services:
+  # MongoDB database
+  mongo:
+    image: mongo:6
+    container_name: birdmaid-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: birdmaid
+    networks:
+      - birdmaid-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # No port mapping - only accessible via docker network
+
+  # Backend API
+  back:
+    build:
+      context: ./back
+      dockerfile: Dockerfile.prod
+    container_name: birdmaid-back
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      NODE_ENV: production
+      MONGO_URL: ${MONGO_URI:-mongodb://mongo:27017/birdmaid}
+      JWT_SECRET: ${JWT_SECRET}
+      APP_BASE_URL: ${APP_BASE_URL:-https://api.birdmaid.${DOMAIN}}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://birdmaid.${DOMAIN}}
+      # S3 Configuration (Selectel S3-compatible)
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_REGION: ${S3_REGION:-ru-1}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      S3_BUCKET: ${S3_BUCKET_ASSETS:-birdmaid-builds}
+      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:-${S3_ENDPOINT}}
+      S3_PUBLIC_URL: ${S3_PUBLIC_BASE_URL:-${S3_ENDPOINT}}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+      # SMTP (optional, for password recovery)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@birdmaid.${DOMAIN}}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - birdmaid-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # No port mapping - only accessible via reverse proxy
+
+  # Frontend (static files)
+  front:
+    build:
+      context: ./front
+      dockerfile: Dockerfile.prod
+    container_name: birdmaid-front
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.birdmaid.${DOMAIN}}
+    networks:
+      - birdmaid-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # No port mapping - only accessible via reverse proxy
+
+  # Reverse proxy (Caddy with automatic TLS)
+  caddy:
+    image: caddy:2-alpine
+    container_name: birdmaid-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./scripts/caddy-entrypoint.sh:/entrypoint.sh:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    env_file:
+      - .env.prod
+    depends_on:
+      - front
+      - back
+    networks:
+      - birdmaid-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mongo-data:
+    name: birdmaid-mongo-data
+  caddy-data:
+    name: birdmaid-caddy-data
+  caddy-config:
+    name: birdmaid-caddy-config
+
+networks:
+  birdmaid-network:
+    name: birdmaid-network
+    driver: bridge

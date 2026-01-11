@@ -1,0 +1,31 @@
+# Multi-stage build for production frontend
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+RUN npm ci --only=production=false
+
+# Copy source and build
+COPY . .
+RUN npm run build
+
+# Production stage: minimal static file server
+FROM node:20-alpine
+
+WORKDIR /srv
+
+# Copy built assets from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server.js ./server.js
+
+# Install only production dependencies for server.js (if any)
+# server.js uses built-in http module, so no deps needed
+
+EXPOSE 80
+
+ENV PORT=80
+ENV HOST=0.0.0.0
+
+CMD ["node", "server.js"]

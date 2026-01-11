@@ -125,5 +125,29 @@ Skills live under `.codex/skills/**` and are opt-in: each role lists required sk
 ### Infrastructure
 - Docker Compose for local development
 - MongoDB for data storage
-- MinIO for S3-compatible object storage
+- S3-compatible storage (MinIO locally, Selectel S3 in production)
 - Node.js runtime
+- Production deployment with Docker Compose, Caddy reverse proxy, automatic TLS
+
+## Production Deployment
+
+See `docs/DEPLOY.md` (English) or `docs/DEPLOY_RU.md` (Russian) for production deployment instructions.
+
+### Security Hardening
+
+After deploying to production, run the security hardening script:
+
+```bash
+sudo bash scripts/harden-server.sh
+```
+
+This will configure:
+- SSH hardening (disable root, modern algorithms)
+- Fail2ban (brute-force protection)
+- Automatic security updates
+- UFW firewall
+- Password requirements
+- NTP time synchronization
+- Log monitoring
+
+See `docs/SECURITY.md` for detailed security guide.

@@ -60,7 +60,14 @@ export function PlayModal({ open, onClose, buildUrl }: PlayModalProps) {
               display: loading ? "none" : "block",
             }}
             title="Game"
-            sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups"
+            // CRITICAL: allow-same-origin is required for cookies to work in sandboxed iframes.
+            // Without it, the iframe has an opaque origin (Origin: null), and cookies with
+            // SameSite=Lax won't be sent. With allow-same-origin, the iframe shares the same
+            // origin as the parent page, allowing cookies to work properly.
+            // However, even with allow-same-origin, some browsers may still send Origin: null
+            // for subresource requests, which is why the backend must handle Origin: null
+            // with SameSite=None; Secure cookies and ACAO: "null" CORS headers.
+            sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups"
             allow="fullscreen; autoplay; gamepad"
             onLoad={handleIframeLoad}
             onError={(e) => {

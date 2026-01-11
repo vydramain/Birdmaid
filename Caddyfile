@@ -1,0 +1,120 @@
+# Production Caddyfile for Birdmaid
+# This file is mounted into the Caddy container
+
+# Frontend domain
+# Note: ${DOMAIN} will be substituted by entrypoint script
+# DOMAIN should be the full domain (e.g., birdmaid.su or example.com)
+${DOMAIN} {
+    # Proxy to frontend container (serves static files)
+    reverse_proxy front:80 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        # Note: X-Forwarded-For and X-Forwarded-Proto are set automatically by Caddy
+    }
+    
+    # Enable compression
+    encode gzip zstd
+    
+    # Security headers
+    header {
+        # Disable server tokens (Caddy doesn't expose version by default, but explicit is better)
+        -Server
+        
+        # X-Frame-Options: Allow same-origin embedding (games are embedded in iframes)
+        X-Frame-Options "SAMEORIGIN"
+        
+        # X-Content-Type-Options: Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+        
+        # X-XSS-Protection: Enable XSS filtering (legacy, but still useful)
+        X-XSS-Protection "1; mode=block"
+        
+        # Referrer-Policy: Control referrer information
+        Referrer-Policy "strict-origin-when-cross-origin"
+        
+        # Permissions-Policy: Restrict browser features
+        Permissions-Policy "geolocation=(),midi=(),sync-xhr=(),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
+        
+        # Content-Security-Policy: Flexible CSP for game iframes
+        # Note: Games are embedded in iframes, so we need to allow frame-src from various sources
+        # Adjust this based on your S3/CDN domains
+        # font-src allows Google Fonts (fonts.googleapis.com for CSS, fonts.gstatic.com for font files)
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com; frame-src 'self' *; connect-src 'self' https:;"
+    }
+    
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+}
+
+# Backend API domain
+# Note: ${DOMAIN} will be substituted by entrypoint script
+# DOMAIN should be the full domain (e.g., birdmaid.su or example.com)
+api.${DOMAIN} {
+    # Special handling for build file requests (MUST come before general reverse_proxy)
+    # This prevents connection drops for large files and streaming responses
+    @build_files {
+        path /games/*/build/*
+    }
+    reverse_proxy @build_files back:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        
+        # Longer timeouts for build files (may be large or slow from S3)
+        transport http {
+            dial_timeout 10s
+            read_timeout 10m
+            write_timeout 10m
+            response_header_timeout 60s
+        }
+        
+        # Disable buffering to allow proper streaming
+        flush_interval -1
+        
+        # Try only once (no retries) to avoid duplicate requests
+        max_fails 1
+    }
+    
+    # General proxy to backend for all other API requests
+    reverse_proxy back:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        # Note: X-Forwarded-For and X-Forwarded-Proto are set automatically by Caddy
+        
+        # Timeouts for regular API requests
+        transport http {
+            dial_timeout 10s
+            read_timeout 5m
+            write_timeout 5m
+            response_header_timeout 30s
+        }
+        
+        # Health check settings
+        health_uri /health
+        health_interval 10s
+        health_timeout 5s
+        fail_duration 30s
+        max_fails 3
+        unhealthy_status 500 502 503 504
+        
+        # Buffer responses to prevent connection drops
+        flush_interval -1
+    }
+    
+    # Logging with detailed request info
+    log {
+        output stdout
+        format console
+    }
+}
+
+# Health check endpoint (optional, for monitoring)
+:8080 {
+    respond /health "OK" 200
+    log {
+        output stdout
+        format console
+    }
+}
