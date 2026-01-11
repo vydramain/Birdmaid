@@ -473,13 +473,41 @@ export class GamesController {
           // Also match Godot-specific patterns like "index.wasm", "index.pck" in script tags or as direct references
           let replacementCount = 0;
           
-          // CRITICAL: First, replace ALL relative paths that start with "/" (absolute paths relative to root)
+          // CRITICAL: Replace ALL file paths in strings (most aggressive pattern - catches everything)
+          // This includes JSON keys/values, JavaScript strings, HTML attributes, etc.
+          // Pattern: "filename.ext" or 'filename.ext' where filename.ext matches our file extensions
+          // This pattern catches both JSON keys ("index.pck":) and values ("file": "index.wasm")
+          content = content.replace(
+            /(["'])([a-zA-Z0-9_\-./]+\.(wasm|pck|js|png|jpg|jpeg|gif|svg|ico|json|css|html))(\?[^"']*)?\1/gi,
+            (match, quote, filename, ext, query) => {
+              // Skip if already absolute URL
+              if (/^(https?:|\/\/)/i.test(filename)) {
+                return match;
+              }
+              // Skip if already replaced
+              if (filename.startsWith(proxyBase)) {
+                return match;
+              }
+              // Remove leading ./ or ../
+              const cleanPath = filename.replace(/^\.\.?\//, '');
+              replacementCount++;
+              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
+              console.log(`[proxyBuildFile] Replaced ${replacementCount} (aggressive pattern): ${match} -> ${quote}${newUrl}${quote}`);
+              return `${quote}${newUrl}${quote}`;
+            }
+          );
+          
+          // CRITICAL: Also replace absolute paths that start with "/" (absolute paths relative to root)
           // These are resolved by browser relative to current origin, losing query params
           content = content.replace(
             /(["'])\/([^"'\s>]+\.(wasm|pck|js|png|jpg|jpeg|gif|svg|ico|json|css|html))(\?[^"']*)?\1/gi,
             (match, quote, path, ext, query) => {
               // Skip if already absolute URL
               if (/^(https?:|\/\/)/i.test(path)) {
+                return match;
+              }
+              // Skip if already replaced
+              if (path.startsWith(proxyBase)) {
                 return match;
               }
               // Remove leading / and any existing query params
@@ -512,7 +540,29 @@ export class GamesController {
             }
           );
           
-          // Pattern 2: Godot-specific - direct file references in JavaScript/TypeScript code
+          // Pattern 2: JSON object keys and values - catch paths in JSON like {"index.pck": 123} or {"file": "index.wasm"}
+          // This is critical for Godot's GODOT_CONFIG object
+          content = content.replace(
+            /(["'])([^"'\s:]+\.(wasm|pck|js|png|jpg|jpeg|gif|svg|ico|json|css|html))(\?[^"']*)?\1\s*[:=]/gi,
+            (match, quote, filename, ext, query) => {
+              // Skip if already absolute URL
+              if (/^(https?:|\/\/)/i.test(filename)) {
+                return match;
+              }
+              // Skip if already replaced
+              if (filename.startsWith(proxyBase)) {
+                return match;
+              }
+              // Remove leading ./ or ../
+              const cleanPath = filename.replace(/^\.\.?\//, '');
+              replacementCount++;
+              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
+              console.log(`[proxyBuildFile] Replaced ${replacementCount} (JSON key pattern): ${match} -> ${quote}${newUrl}${quote}:`);
+              return `${quote}${newUrl}${quote}:`;
+            }
+          );
+          
+          // Pattern 2b: Godot-specific - direct file references in JavaScript/TypeScript code
           // Match patterns like: "index.wasm", "./index.pck", "/index.wasm", etc.
           // This covers Godot's engine.js code that loads wasm/pck files
           content = content.replace(
