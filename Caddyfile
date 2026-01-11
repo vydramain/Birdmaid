@@ -38,7 +38,8 @@ ${DOMAIN} {
         # Content-Security-Policy: Flexible CSP for game iframes
         # Note: Games are embedded in iframes, so we need to allow frame-src from various sources
         # Adjust this based on your S3/CDN domains
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; frame-src 'self' *; connect-src 'self' https:;"
+        # font-src allows Google Fonts (fonts.googleapis.com for CSS, fonts.gstatic.com for font files)
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com; frame-src 'self' *; connect-src 'self' https:;"
     }
     
     # Logging
