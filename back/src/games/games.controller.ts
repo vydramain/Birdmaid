@@ -8,6 +8,7 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { TeamsRepository } from "../teams/teams.repository";
 import { TeamsService } from "../teams/teams.service";
 import { BuildUrlService } from "../build-url.service";
+import { JwtService } from "@nestjs/jwt";
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { lookup as lookupMime } from "mime-types";
 import { randomUUID } from "crypto";
@@ -22,7 +23,8 @@ export class GamesController {
     private gamesService: GamesService,
     private teamsRepo: TeamsRepository,
     private teamsService: TeamsService,
-    private buildUrlService: BuildUrlService
+    private buildUrlService: BuildUrlService,
+    private jwtService: JwtService
   ) {
     const s3Region = process.env.S3_REGION ?? "us-east-1";
     const s3ForcePathStyle = process.env.S3_FORCE_PATH_STYLE === "true" || process.env.S3_FORCE_PATH_STYLE === undefined;
@@ -233,54 +235,51 @@ export class GamesController {
     console.log(`[proxyBuildFile] Request path: ${req.path}`);
 
     // Get game to find build_url
-    // For build files, we use a relaxed access check:
-    // - If game is published, anyone can access build files
-    // - If game is editing/archived, try to check access with auth token if present
-    // - If no auth token, but game exists and has build_url, allow access
-    //   (because if build_url was returned via API, user already has access)
+    // Access control:
+    // - If game is published: anyone can access build files
+    // - If game is editing: only team members can access (requires auth)
+    // - If game is archived: only team members can access (requires auth)
     const user = (req as any).user;
     const userId = user?.userId;
     const isSuperAdmin = user?.isSuperAdmin || false;
     
+    // Check for token in query parameter (for iframe requests)
+    // This allows iframe to access build files for non-published games
+    const tokenFromQuery = req.query.token as string | undefined;
+    if (tokenFromQuery && !userId) {
+      // Try to verify token from query parameter
+      try {
+        const secret = process.env.JWT_SECRET || "default-secret-change-in-production";
+        const payload = await this.jwtService.verifyAsync(tokenFromQuery, { secret });
+        // Set user from token payload
+        if (!user) {
+          (req as any).user = {};
+        }
+        (req as any).user.userId = payload.userId;
+        (req as any).user.isSuperAdmin = payload.isSuperAdmin || false;
+        userId = payload.userId;
+        isSuperAdmin = payload.isSuperAdmin || false;
+        console.log(`[proxyBuildFile] Token from query verified: userId=${userId}, isSuperAdmin=${isSuperAdmin}`);
+      } catch (error) {
+        console.warn(`[proxyBuildFile] Invalid token in query:`, error instanceof Error ? error.message : String(error));
+        // Don't throw error here - let getGame handle access check
+      }
+    }
+    
     console.log(`[proxyBuildFile] Getting game ${id}`);
     console.log(`[proxyBuildFile] User object:`, user ? { userId: user.userId, isSuperAdmin: user.isSuperAdmin } : 'null');
     console.log(`[proxyBuildFile] Authorization header:`, req.headers.authorization ? 'present' : 'missing');
+    console.log(`[proxyBuildFile] Token in query:`, tokenFromQuery ? 'present' : 'missing');
     console.log(`[proxyBuildFile] Extracted userId: ${userId || 'anonymous'}, isSuperAdmin: ${isSuperAdmin}`);
     
-    // First, try to get game with access check (if user is authenticated)
+    // Get game with proper access check
     let game;
-    if (userId) {
-      // User is authenticated, use normal access check
-      try {
-        game = await this.gamesService.getGame(id, userId, isSuperAdmin);
-        console.log(`[proxyBuildFile] Game found via authenticated access: status=${game.status}`);
-      } catch (error) {
-        console.error(`[proxyBuildFile] Authenticated access failed:`, error instanceof Error ? error.message : String(error));
-        throw error; // Re-throw NotFoundException
-      }
-    } else {
-      // User is not authenticated, check if game is published
-      // If not published, we can't allow access without auth
-      const gameDoc = await this.gamesService.getGameDirect(id);
-      if (!gameDoc) {
-        throw new NotFoundException("Game not found");
-      }
-      
-      if (gameDoc.status === "published") {
-        game = gameDoc;
-        console.log(`[proxyBuildFile] Game is published, allowing anonymous access`);
-      } else {
-        // Game is not published and user is not authenticated
-        // But if build_url exists, it means it was accessible via API before
-        // For iframe requests, we'll allow access if game exists and has build_url
-        // This is safe because build_url is only returned if user has access
-        if (gameDoc.build_url) {
-          console.log(`[proxyBuildFile] Game is ${gameDoc.status} but has build_url, allowing access (iframe request)`);
-          game = gameDoc;
-        } else {
-          throw new NotFoundException("Game not available");
-        }
-      }
+    try {
+      game = await this.gamesService.getGame(id, userId, isSuperAdmin);
+      console.log(`[proxyBuildFile] Game found: status=${game.status}`);
+    } catch (error) {
+      console.error(`[proxyBuildFile] Failed to get game ${id}:`, error instanceof Error ? error.message : String(error));
+      throw error; // Re-throw NotFoundException
     }
     
     console.log(`[proxyBuildFile] Game found: ${!!game}, status: ${game?.status}, build_url: ${game?.build_url ? 'present' : 'null'}`);
@@ -331,9 +330,13 @@ export class GamesController {
           const forwardedProto = req.get("x-forwarded-proto") || req.headers["x-forwarded-proto"];
           const protocol = forwardedProto || (process.env.NODE_ENV === "production" ? "https" : "http");
           const host = req.get("host") || req.headers.host || "api.birdmaid.su";
+          
+          // Include token in proxy URLs if it was passed in query (for non-published games)
+          const tokenFromQuery = req.query.token as string | undefined;
+          const tokenSuffix = tokenFromQuery ? `?token=${encodeURIComponent(tokenFromQuery)}` : "";
           const proxyBase = `${protocol}://${host}/games/${id}/build/`;
           
-          console.log(`[proxyBuildFile] Modifying index.html with proxy base: ${proxyBase}`);
+          console.log(`[proxyBuildFile] Modifying index.html with proxy base: ${proxyBase}, token in query: ${tokenFromQuery ? 'yes' : 'no'}`);
           
           // Replace relative paths (src="file.js", href="file.css", etc.) with proxy URLs
           // Match: src="file.js", src='file.js', src=file.js, href="file.css", etc.
@@ -346,7 +349,7 @@ export class GamesController {
               }
               // Convert relative path to proxy URL
               const proxyPath = path.startsWith("/") ? path.substring(1) : path;
-              return `${attr}="${proxyBase}${proxyPath}"`;
+              return `${attr}="${proxyBase}${proxyPath}${tokenSuffix}"`;
             }
           );
           
@@ -408,10 +411,24 @@ export class GamesController {
     const forwardedProto = req?.get("x-forwarded-proto") || req?.headers["x-forwarded-proto"];
     const protocol = forwardedProto || (process.env.NODE_ENV === "production" ? "https" : "http");
     const host = req?.get("host") || req?.headers.host || "api.birdmaid.su";
-    const buildUrl = `${protocol}://${host}/games/${id}/build/index.html`;
+    
+    // For non-published games, include auth token in URL so iframe can access build files
+    // This is safe because:
+    // 1. Token is only included if user already has access (verified by getGame)
+    // 2. Token expires (JWT has expiration)
+    // 3. Token is only used for build file access, not for other operations
+    let buildUrl = `${protocol}://${host}/games/${id}/build/index.html`;
+    if (game.status !== "published" && user?.userId) {
+      // Include auth token for non-published games
+      const authHeader = req?.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.substring(7);
+        buildUrl += `?token=${encodeURIComponent(token)}`;
+      }
+    }
     
     console.log(`[getGame] Generated proxy build_url for game ${id}: ${buildUrl}`);
-    console.log(`[getGame] X-Forwarded-Proto: ${forwardedProto}, protocol: ${protocol}, host: ${host}`);
+    console.log(`[getGame] Game status: ${game.status}, X-Forwarded-Proto: ${forwardedProto}, protocol: ${protocol}, host: ${host}`);
     
     // Generate fresh signed URL for cover image from coverId (S3 key)
     let coverUrl: string | null = null;
