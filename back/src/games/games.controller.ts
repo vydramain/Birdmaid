@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards, Query, UploadedFile, UseInterceptors, BadRequestException, Req } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, UseGuards, Query, UploadedFile, UseInterceptors, BadRequestException, Req, Res, NotFoundException } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { Request } from "express";
+import { Request, Response } from "express";
 import { GamesService } from "./games.service";
 import { JwtAuthGuard } from "../auth/auth.guard";
 import { OptionalAuthGuard } from "../auth/optional-auth.guard";
@@ -8,7 +8,7 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { TeamsRepository } from "../teams/teams.repository";
 import { TeamsService } from "../teams/teams.service";
 import { BuildUrlService } from "../build-url.service";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { lookup as lookupMime } from "mime-types";
 import { randomUUID } from "crypto";
 
@@ -183,6 +183,117 @@ export class GamesController {
     return sanitizedGames;
   }
 
+  /**
+   * Proxy endpoint for build files.
+   * This allows relative paths in index.html to work with signed URLs.
+   * Example: /games/:id/build/index.js -> proxies to S3 with signed URL
+   * For index.html, modifies relative paths to use proxy endpoint.
+   * 
+   * IMPORTANT: This route must be declared BEFORE :id route to avoid conflicts.
+   */
+  @Get(":id/build/*")
+  @UseGuards(OptionalAuthGuard)
+  async proxyBuildFile(
+    @Param("id") id: string,
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    // Extract file path from request URL (everything after /build/)
+    // In NestJS, wildcard path is available via req.url or req.params['0']
+    const urlPath = req.url || "";
+    const buildMatch = urlPath.match(/\/build\/(.+)$/);
+    const filePath = buildMatch ? buildMatch[1] : "index.html";
+
+    console.log(`[proxyBuildFile] Requested file for game ${id}: ${filePath}`);
+
+    // Get game to find build_url
+    const userId = (req as any).user?.userId;
+    const isSuperAdmin = (req as any).user?.isSuperAdmin || false;
+    const game = await this.gamesService.getGame(id, userId, isSuperAdmin);
+    
+    if (!game || !game.build_url) {
+      throw new NotFoundException("Game or build not found");
+    }
+
+    // Extract buildId from build_url
+    // Format: https://s3.ru-3.storage.selcloud.ru/birdmaid-s3/builds/{buildId}/index.html
+    const buildUrlMatch = game.build_url.match(/builds\/([^\/]+)/);
+    if (!buildUrlMatch) {
+      throw new NotFoundException("Invalid build URL format");
+    }
+    const buildId = buildUrlMatch[1];
+    const s3Key = `builds/${buildId}/${filePath}`;
+
+    console.log(`[proxyBuildFile] Resolved S3 key: ${s3Key}`);
+
+    try {
+      // Generate signed URL for the file
+      const s3PublicUrl = this.getS3PublicUrlFromRequest(req);
+      const signedUrl = await this.buildUrlService.getSignedUrlFromKey(s3Key, 3600, s3PublicUrl);
+      
+      console.log(`[proxyBuildFile] Generated signed URL: ${signedUrl.substring(0, 100)}...`);
+
+      // Fetch file from S3 using signed URL
+      const response = await fetch(signedUrl);
+      if (!response.ok) {
+        console.error(`[proxyBuildFile] Failed to fetch from S3: ${response.status} ${response.statusText}`);
+        throw new NotFoundException(`File not found in S3: ${response.statusText}`);
+      }
+
+      // Get content type
+      const contentType = response.headers.get("content-type") || lookupMime(filePath) || "application/octet-stream";
+      const isTextFile = contentType.includes("text/html") || contentType.includes("text/css") || contentType.includes("application/javascript") || contentType.includes("text/javascript");
+
+      let content: string | Buffer;
+      
+      if (isTextFile) {
+        // For text files, get as text to allow modification
+        content = await response.text();
+        
+        // If it's index.html, modify relative paths to use proxy endpoint
+        if (filePath === "index.html" && contentType.includes("text/html")) {
+          const protocol = req.protocol || "https";
+          const host = req.get("host") || req.headers.host || "api.birdmaid.su";
+          const proxyBase = `${protocol}://${host}/games/${id}/build/`;
+          
+          // Replace relative paths (src="file.js", href="file.css", etc.) with proxy URLs
+          // Match: src="file.js", src='file.js', src=file.js, href="file.css", etc.
+          content = content.replace(
+            /(src|href)\s*=\s*["']?([^"'\s>]+)["']?/gi,
+            (match, attr, path) => {
+              // Skip absolute URLs (http://, https://, //, data:, etc.)
+              if (/^(https?:|\/\/|data:|blob:|#)/i.test(path)) {
+                return match;
+              }
+              // Convert relative path to proxy URL
+              const proxyPath = path.startsWith("/") ? path.substring(1) : path;
+              return `${attr}="${proxyBase}${proxyPath}"`;
+            }
+          );
+          
+          console.log(`[proxyBuildFile] Modified index.html to use proxy URLs`);
+        }
+      } else {
+        // For binary files (images, fonts, etc.), get as buffer
+        const arrayBuffer = await response.arrayBuffer();
+        content = Buffer.from(arrayBuffer);
+      }
+
+      // Set appropriate headers
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      
+      // Send content
+      res.send(content);
+    } catch (error) {
+      console.error(`[proxyBuildFile] Error proxying file:`, error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new NotFoundException(`Failed to proxy file: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   @Get(":id")
   @UseGuards(OptionalAuthGuard)
   async getGame(@Param("id") id: string, @CurrentUser() user?: any, @Req() req?: Request) {
@@ -212,8 +323,11 @@ export class GamesController {
     // Determine S3 public URL based on request hostname
     const s3PublicUrl = this.getS3PublicUrlFromRequest(req);
 
-    // Generate fresh signed URL for build (expires in 1 hour)
-    const buildUrl = await this.buildUrlService.getSignedBuildUrl(game.build_url, 3600, s3PublicUrl);
+    // Use proxy endpoint for build instead of direct signed URL
+    // This allows relative paths in index.html to work (they'll be proxied through /games/:id/build/*)
+    const protocol = req?.protocol || "https";
+    const host = req?.get("host") || req?.headers.host || "api.birdmaid.su";
+    const buildUrl = `${protocol}://${host}/games/${id}/build/index.html`;
     
     // Generate fresh signed URL for cover image from coverId (S3 key)
     let coverUrl: string | null = null;
