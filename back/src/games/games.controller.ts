@@ -378,18 +378,21 @@ export class GamesController {
             cookieDomain = ".birdmaid.su"; // Allows cookie sharing between birdmaid.su and api.birdmaid.su
           }
           
-          // CRITICAL: When Origin is "null" (opaque origin from sandboxed iframe),
-          // browsers treat this as a cross-site context. SameSite=Lax cookies are NOT sent
-          // in cross-site contexts. We MUST use SameSite=None; Secure for cookies to work
-          // with Origin: null requests.
+          // CRITICAL: For build asset routes, we need SameSite=None; Secure in production because:
+          // 1. Iframe may have opaque origin (Origin: null) - requires SameSite=None
+          // 2. Even with allow-same-origin, iframe on birdmaid.su loading from api.birdmaid.su
+          //    is cross-site for cookies (different subdomains) - requires SameSite=None
+          // 3. SameSite=Lax only works for same-site top-level navigations, NOT for cross-site iframes
           // 
           // Rationale:
           // - SameSite=Lax: Only sent in same-site (top-level) navigations, NOT in cross-site iframes
           // - SameSite=None; Secure: Sent in all contexts (same-site and cross-site), required for
-          //   opaque origins (Origin: null) from sandboxed iframes
+          //   opaque origins (Origin: null) and cross-subdomain iframes
           // - Secure=true is required when SameSite=None (browser requirement)
-          const isOpaqueOrigin = !origin || origin === 'null';
-          const sameSiteValue = (isProduction && isOpaqueOrigin) ? "None" : "Lax";
+          // 
+          // In production: Always use SameSite=None for build assets (cross-subdomain iframe context)
+          // In development: Use Lax (same-site, no HTTPS for Secure cookies)
+          const sameSiteValue = isProduction ? "None" : "Lax";
           
           const cookieOptions: any = {
             httpOnly: true,
