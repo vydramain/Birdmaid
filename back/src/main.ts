@@ -12,8 +12,9 @@ async function bootstrap() {
   
   app.enableCors({ 
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, Postman, or same-origin requests)
-      if (!origin) {
+      // Allow requests with no origin (like mobile apps, Postman, iframe requests with Origin: null)
+      // This is important for build file requests from iframes
+      if (!origin || origin === 'null') {
         return callback(null, true);
       }
       // In production, check against CORS_ORIGIN env var
@@ -55,7 +56,8 @@ async function bootstrap() {
   app.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;
     // When credentials: true, we must use specific origin, not '*'
-    if (origin) {
+    // But for iframe requests (Origin: null), we need to allow them
+    if (origin && origin !== 'null') {
       if (process.env.NODE_ENV === 'production' && corsOrigin) {
         if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
           res.setHeader('Access-Control-Allow-Origin', origin);
@@ -66,8 +68,15 @@ async function bootstrap() {
         res.setHeader('Access-Control-Allow-Credentials', 'true');
       }
     } else {
-      // For requests without origin (like Postman), allow all in dev
-      if (process.env.NODE_ENV !== 'production') {
+      // For requests without origin or with Origin: null (iframe requests)
+      // In production, use CORS_ORIGIN if set, otherwise allow all
+      if (process.env.NODE_ENV === 'production' && corsOrigin && !allowedOrigins.includes('*')) {
+        // Use first allowed origin or wildcard
+        const allowOrigin = allowedOrigins[0] || '*';
+        res.setHeader('Access-Control-Allow-Origin', allowOrigin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+      } else {
+        // Development or wildcard: allow all
         res.setHeader('Access-Control-Allow-Origin', '*');
       }
     }
