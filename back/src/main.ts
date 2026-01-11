@@ -45,6 +45,12 @@ async function bootstrap() {
     maxAge: 86400, // 24 hours
   });
   
+  // Global request logging middleware (for debugging)
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    console.log(`[GlobalMiddleware] ${req.method} ${req.url} - Path: ${req.path}, Query:`, req.query);
+    next();
+  });
+  
   // Add global CORS headers manually as fallback (NestJS enableCors should handle this, but this ensures it works)
   app.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;

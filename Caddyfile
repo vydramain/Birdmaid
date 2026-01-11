@@ -53,21 +53,40 @@ ${DOMAIN} {
 # Note: ${DOMAIN} will be substituted by entrypoint script
 # DOMAIN should be the full domain (e.g., birdmaid.su or example.com)
 api.${DOMAIN} {
-    # Minimal configuration to debug routing issue
-    # Proxy to backend - this should work without any additional directives
+    # Timeouts for large build files and slow responses
+    timeouts {
+        read 5m
+        read_header 30s
+        write 5m
+        idle 2m
+    }
+    
+    # Proxy to backend with explicit timeouts and error handling
     reverse_proxy back:3000 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
         # Note: X-Forwarded-For and X-Forwarded-Proto are set automatically by Caddy
+        
+        # Transport timeouts for upstream connection
+        transport http {
+            response_header_timeout 30s
+            dial_timeout 10s
+        }
+        
+        # Health check settings
+        health_uri /health
+        health_interval 10s
+        health_timeout 5s
+        fail_duration 30s
+        max_fails 3
+        unhealthy_status 500 502 503 504
     }
     
-    # Temporarily disabled all headers and compression to debug
-    # Will re-enable after confirming requests reach backend
-    
-    # Logging
+    # Logging with detailed request info
     log {
         output stdout
         format console
+        level DEBUG
     }
 }
 

@@ -295,40 +295,71 @@ export class GamesController {
       throw new NotFoundException("Game build not found");
     }
 
-    // Extract buildId from build_url
-    // Format: https://s3.ru-3.storage.selcloud.ru/birdmaid-s3/builds/{buildId}/index.html
-    const buildUrlMatch = game.build_url.match(/builds\/([^\/]+)/);
+    // Extract S3 key from build_url using BuildUrlService logic
+    // build_url format: http://localhost:9000/birdmaid-builds/builds/{buildId}/index.html
+    // We need to extract the path after bucket name: builds/{buildId}/index.html
+    const s3PublicUrl = this.getS3PublicUrlFromRequest(req);
+    const bucketName = this.s3Bucket;
+    
+    // Extract S3 key from build_url (path after bucket name)
+    // Match pattern: {s3PublicUrl}/{bucket}/{s3Key}
+    const escapedPublicUrl = s3PublicUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedBucket = bucketName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const buildUrlPattern = new RegExp(`^${escapedPublicUrl}/${escapedBucket}/(.+)$`);
+    const buildUrlMatch = game.build_url.match(buildUrlPattern);
+    
     if (!buildUrlMatch) {
+      console.error(`[proxyBuildFile] Invalid build_url format: ${game.build_url}`);
+      console.error(`[proxyBuildFile] Expected pattern: ${s3PublicUrl}/${bucketName}/builds/{buildId}/index.html`);
       throw new NotFoundException("Invalid build URL format");
     }
-    const buildId = buildUrlMatch[1];
-    const s3Key = `builds/${buildId}/${filePath}`;
+    
+    // Extract the directory path from build_url
+    // buildPath example: "builds/{buildId}/index.html"
+    const buildPath = buildUrlMatch[1];
+    
+    // Extract directory (everything before the last filename)
+    // For "builds/{buildId}/index.html", we want "builds/{buildId}/"
+    const lastSlashIndex = buildPath.lastIndexOf('/');
+    const buildDir = lastSlashIndex >= 0 ? buildPath.substring(0, lastSlashIndex + 1) : "builds/";
+    
+    // Construct S3 key: buildDir + filePath
+    // If filePath is "index.html" and buildDir is "builds/{buildId}/", result is "builds/{buildId}/index.html"
+    const s3Key = `${buildDir}${filePath}`;
 
-    console.log(`[proxyBuildFile] Resolved S3 key: ${s3Key}`);
+    console.log(`[proxyBuildFile] build_url: ${game.build_url}`);
+    console.log(`[proxyBuildFile] Extracted build_path: ${buildPath}, build_dir: ${buildDir}, filePath: ${filePath}, s3Key: ${s3Key}`);
 
     try {
-      // Generate signed URL for the file
-      const s3PublicUrl = this.getS3PublicUrlFromRequest(req);
-      const signedUrl = await this.buildUrlService.getSignedUrlFromKey(s3Key, 3600, s3PublicUrl);
+      // Use S3Client directly to get object (avoids signed URL signature issues)
+      // This uses internal Docker endpoint (S3_ENDPOINT) which is accessible from container
+      console.log(`[proxyBuildFile] Fetching file from S3 using S3Client, key: ${s3Key}`);
       
-      console.log(`[proxyBuildFile] Generated signed URL: ${signedUrl.substring(0, 100)}...`);
-
-      // Fetch file from S3 using signed URL
-      const response = await fetch(signedUrl);
-      if (!response.ok) {
-        console.error(`[proxyBuildFile] Failed to fetch from S3: ${response.status} ${response.statusText}`);
-        throw new NotFoundException(`File not found in S3: ${response.statusText}`);
+      const getObjectCommand = new GetObjectCommand({
+        Bucket: this.s3Bucket,
+        Key: s3Key,
+      });
+      
+      const s3Response = await this.s3Client.send(getObjectCommand);
+      
+      if (!s3Response.Body) {
+        throw new NotFoundException("File not found in S3: empty response");
       }
 
-      // Get content type
-      const contentType = response.headers.get("content-type") || lookupMime(filePath) || "application/octet-stream";
+      // Get content type from S3 metadata or infer from file extension
+      const contentType = s3Response.ContentType || lookupMime(filePath) || "application/octet-stream";
       const isTextFile = contentType.includes("text/html") || contentType.includes("text/css") || contentType.includes("application/javascript") || contentType.includes("text/javascript");
 
       let content: string | Buffer;
       
       if (isTextFile) {
-        // For text files, get as text to allow modification
-        content = await response.text();
+        // For text files, convert stream to text
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of s3Response.Body as any) {
+          chunks.push(chunk);
+        }
+        const buffer = Buffer.concat(chunks);
+        content = buffer.toString('utf-8');
         
         // If it's index.html, modify relative paths to use proxy endpoint
         if (filePath === "index.html" && contentType.includes("text/html")) {
@@ -367,9 +398,12 @@ export class GamesController {
           console.log(`[proxyBuildFile] Modified index.html: ${replacementCount} replacements made`);
         }
       } else {
-        // For binary files (images, fonts, etc.), get as buffer
-        const arrayBuffer = await response.arrayBuffer();
-        content = Buffer.from(arrayBuffer);
+        // For binary files (images, fonts, etc.), convert stream to buffer
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of s3Response.Body as any) {
+          chunks.push(chunk);
+        }
+        content = Buffer.concat(chunks);
       }
 
       // Set appropriate headers
@@ -379,12 +413,36 @@ export class GamesController {
       // Send content
       // Note: res.send() automatically ends the response when using @Res() decorator
       res.send(content);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`[proxyBuildFile] Error proxying file:`, error);
-      if (error instanceof NotFoundException) {
-        throw error;
+      
+      // When using @Res() decorator, we must manually send error response
+      // Otherwise NestJS exception filters won't work and connection will hang
+      if (res.headersSent) {
+        // If headers already sent, we can't send error response
+        console.error(`[proxyBuildFile] Headers already sent, closing connection`);
+        return res.end();
       }
-      throw new NotFoundException(`Failed to proxy file: ${error instanceof Error ? error.message : String(error)}`);
+      
+      // Handle AWS SDK errors (NoSuchKey, AccessDenied, etc.)
+      let statusCode = 500;
+      let errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (error instanceof NotFoundException) {
+        statusCode = 404;
+      } else if (error.name === 'NoSuchKey' || error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+        statusCode = 404;
+        errorMessage = 'File not found in S3';
+      } else if (error.name === 'AccessDenied' || error.$metadata?.httpStatusCode === 403) {
+        statusCode = 403;
+        errorMessage = 'Access denied to file in S3';
+      }
+      
+      res.status(statusCode).json({
+        statusCode,
+        message: statusCode === 404 ? errorMessage : `Failed to proxy file: ${errorMessage}`,
+        error: statusCode === 404 ? 'Not Found' : statusCode === 403 ? 'Forbidden' : 'Internal Server Error'
+      });
     }
   }
 
