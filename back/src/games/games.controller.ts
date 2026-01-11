@@ -358,24 +358,40 @@ export class GamesController {
     const extension = file.originalname.split(".").pop() || "jpg";
     const s3Key = `covers/${coverId}.${extension}`;
 
+    console.log(`[uploadCover] Starting upload for game ${id}:`);
+    console.log(`  S3 Bucket: ${this.s3Bucket}`);
+    console.log(`  S3 Key: ${s3Key}`);
+    console.log(`  S3 Endpoint: ${process.env.S3_ENDPOINT ?? 'not set'}`);
+    console.log(`  File size: ${file.size} bytes`);
+    console.log(`  File type: ${file.mimetype}`);
+
     // Upload to S3
     const contentType = lookupMime(file.originalname) || file.mimetype || "image/jpeg";
-    await this.s3Client.send(
-      new PutObjectCommand({
-        Bucket: this.s3Bucket,
-        Key: s3Key,
-        Body: file.buffer,
-        ContentType: contentType.toString(),
-      })
-    );
+    try {
+      const uploadResult = await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.s3Bucket,
+          Key: s3Key,
+          Body: file.buffer,
+          ContentType: contentType.toString(),
+        })
+      );
+      console.log(`[uploadCover] ✓ Successfully uploaded to S3: ${s3Key}`);
+      console.log(`[uploadCover] Upload result:`, JSON.stringify(uploadResult, null, 2));
+    } catch (error) {
+      console.error(`[uploadCover] ✗ Failed to upload to S3:`, error);
+      throw new BadRequestException(`Failed to upload cover image: ${error instanceof Error ? error.message : String(error)}`);
+    }
 
     // Update game with cover S3 key
     await this.gamesService.updateGame(id, user.userId, user.isSuperAdmin, {
       cover_url: s3Key, // Store S3 key instead of full URL
     });
 
+    console.log(`[uploadCover] ✓ Updated game ${id} with cover_url: ${s3Key}`);
+
     // Return the S3 key (frontend will use it to get signed URL)
-      return { cover_id: coverId, cover_key: s3Key };
+    return { cover_id: coverId, cover_key: s3Key };
   }
 
   /**
