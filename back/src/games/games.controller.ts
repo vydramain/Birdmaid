@@ -39,7 +39,21 @@ export class GamesController {
       forcePathStyle: s3ForcePathStyle,
     });
     this.s3Bucket = process.env.S3_BUCKET_ASSETS ?? process.env.S3_BUCKET ?? "birdmaid-builds";
-    this.s3PublicUrl = process.env.S3_PUBLIC_BASE_URL ?? process.env.S3_PUBLIC_URL ?? "http://localhost:9000";
+    
+    // Determine S3 public URL: prefer S3_PUBLIC_BASE_URL, fallback to S3_PUBLIC_URL, then S3_ENDPOINT, finally localhost
+    const s3Endpoint = process.env.S3_ENDPOINT;
+    this.s3PublicUrl = process.env.S3_PUBLIC_BASE_URL 
+      ?? process.env.S3_PUBLIC_URL 
+      ?? s3Endpoint 
+      ?? "http://localhost:9000";
+    
+    // Log S3 configuration for debugging
+    console.log(`[GamesController] S3 configuration:`);
+    console.log(`  S3_ENDPOINT: ${s3Endpoint ?? 'not set'}`);
+    console.log(`  S3_PUBLIC_BASE_URL: ${process.env.S3_PUBLIC_BASE_URL ?? 'not set'}`);
+    console.log(`  S3_PUBLIC_URL: ${process.env.S3_PUBLIC_URL ?? 'not set'}`);
+    console.log(`  Final s3PublicUrl: ${this.s3PublicUrl}`);
+    console.log(`  NODE_ENV: ${process.env.NODE_ENV ?? 'not set'}`);
   }
 
   @Get()
@@ -381,10 +395,16 @@ export class GamesController {
     const isLocalDev = this.s3PublicUrl.includes("localhost") || 
                        this.s3PublicUrl.includes("127.0.0.1");
     
+    console.log(`[getS3PublicUrlFromRequest] s3PublicUrl from env: ${this.s3PublicUrl}`);
+    console.log(`[getS3PublicUrlFromRequest] isLocalDev: ${isLocalDev}`);
+    
     if (!isLocalDev) {
       // Production: use configured S3_PUBLIC_BASE_URL
+      console.log(`[getS3PublicUrlFromRequest] Using production S3_PUBLIC_BASE_URL: ${this.s3PublicUrl}`);
       return this.s3PublicUrl;
     }
+    
+    console.log(`[getS3PublicUrlFromRequest] Detected local dev mode, inferring from request`);
     
     // Local dev: try to infer from request if available
     if (!req) {
