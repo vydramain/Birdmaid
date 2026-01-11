@@ -63,7 +63,32 @@ api.${DOMAIN} {
     # Enable compression for API responses
     encode gzip
     
-    # Security and CORS headers
+    # Security and CORS headers for build files (games/*/build/*)
+    # These files are loaded in iframes and need to load scripts, images, etc.
+    @build_files {
+        path /games/*/build/*
+    }
+    header @build_files {
+        # Disable server tokens
+        -Server
+        
+        # X-Content-Type-Options: Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+        
+        # X-XSS-Protection: Enable XSS filtering
+        X-XSS-Protection "1; mode=block"
+        
+        # Referrer-Policy: Control referrer information
+        Referrer-Policy "strict-origin-when-cross-origin"
+        
+        # Permissions-Policy: Restrict browser features
+        Permissions-Policy "geolocation=(),midi=(),sync-xhr=(),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
+        
+        # Content-Security-Policy: Permissive for build files (games need to load scripts, images, etc.)
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https:;"
+    }
+    
+    # Security and CORS headers for API endpoints (default, strict CSP)
     header {
         # Disable server tokens
         -Server

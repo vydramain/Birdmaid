@@ -186,47 +186,34 @@ export class GamesController {
   }
 
   /**
-   * Proxy endpoint for build files (index.html specifically).
-   * This allows relative paths in index.html to work with signed URLs.
-   */
-  @Get(":id/build/index.html")
-  @UseGuards(OptionalAuthGuard)
-  async proxyBuildIndex(
-    @Param("id") id: string,
-    @Req() req: Request,
-    @Res() res: Response
-  ) {
-    return this.proxyBuildFile(id, "index.html", req, res);
-  }
-
-  /**
-   * Proxy endpoint for build files (all other files).
+   * Proxy endpoint for ALL build files (including index.html and all other files).
    * This allows relative paths in index.html to work with signed URLs.
    * Example: /games/:id/build/index.js -> proxies to S3 with signed URL
    * 
    * IMPORTANT: This route must be declared BEFORE :id route to avoid conflicts.
-   * Uses explicit file parameter extraction from URL.
+   * Uses a single route that extracts file path from URL for all files.
    */
   @Get(":id/build/:file")
   @UseGuards(OptionalAuthGuard)
-  async proxyBuildFileExplicit(
+  async proxyBuildFileRoute(
     @Param("id") id: string,
     @Param("file") file: string,
     @Req() req: Request,
     @Res() res: Response
   ) {
-    console.log(`[proxyBuildFileExplicit] ===== EXPLICIT ROUTE CALLED =====`);
-    console.log(`[proxyBuildFileExplicit] Game ID: ${id}, File: ${file}`);
-    console.log(`[proxyBuildFileExplicit] Request URL: ${req.url}, Path: ${req.path}`);
+    console.log(`[proxyBuildFileRoute] ===== ROUTE CALLED =====`);
+    console.log(`[proxyBuildFileRoute] Game ID: ${id}, File param: ${file}`);
+    console.log(`[proxyBuildFileRoute] Request URL: ${req.url}`);
+    console.log(`[proxyBuildFileRoute] Request path: ${req.path}`);
+    console.log(`[proxyBuildFileRoute] Request params:`, req.params);
     
-    // Handle nested paths (e.g., "assets/image.png")
-    // If file doesn't contain extension, it might be a nested path
-    // Extract full path from URL
+    // Extract file path from URL (everything after /build/)
+    // This handles both simple files (index.js) and nested paths (assets/image.png)
     const urlPath = req.url || req.path || "";
     const buildMatch = urlPath.match(/\/build\/(.+?)(?:\?|$)/);
     const filePath = buildMatch ? buildMatch[1] : file;
     
-    console.log(`[proxyBuildFileExplicit] Resolved file path: ${filePath}`);
+    console.log(`[proxyBuildFileRoute] Resolved file path: ${filePath}`);
     
     return this.proxyBuildFile(id, filePath, req, res);
   }
