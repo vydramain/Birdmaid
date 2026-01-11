@@ -58,10 +58,18 @@ api.${DOMAIN} {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
         # Note: X-Forwarded-For and X-Forwarded-Proto are set automatically by Caddy
+        # Increase timeouts for large build files
+        transport http {
+            dial_timeout 30s
+            response_header_timeout 60s
+        }
     }
     
-    # Enable compression for API responses
-    encode gzip
+    # Enable compression for API responses (but not for build files which may already be compressed)
+    @not_build_files_compress {
+        not path /games/*/build/*
+    }
+    encode @not_build_files_compress gzip
     
     # Security and CORS headers for build files (games/*/build/*)
     # These files are loaded in iframes and need to load scripts, images, etc.

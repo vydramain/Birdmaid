@@ -377,6 +377,7 @@ export class GamesController {
       res.setHeader("Cache-Control", "public, max-age=3600");
       
       // Send content
+      // Note: res.send() automatically ends the response when using @Res() decorator
       res.send(content);
     } catch (error) {
       console.error(`[proxyBuildFile] Error proxying file:`, error);
