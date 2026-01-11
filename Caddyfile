@@ -53,13 +53,37 @@ ${DOMAIN} {
 # Note: ${DOMAIN} will be substituted by entrypoint script
 # DOMAIN should be the full domain (e.g., birdmaid.su or example.com)
 api.${DOMAIN} {
-    # Proxy to backend with explicit timeouts and error handling
+    # Special handling for build file requests (MUST come before general reverse_proxy)
+    # This prevents connection drops for large files and streaming responses
+    @build_files {
+        path /games/*/build/*
+    }
+    reverse_proxy @build_files back:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        
+        # Longer timeouts for build files (may be large or slow from S3)
+        transport http {
+            dial_timeout 10s
+            read_timeout 10m
+            write_timeout 10m
+            response_header_timeout 60s
+        }
+        
+        # Disable buffering to allow proper streaming
+        flush_interval -1
+        
+        # Try only once (no retries) to avoid duplicate requests
+        max_fails 1
+    }
+    
+    # General proxy to backend for all other API requests
     reverse_proxy back:3000 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
         # Note: X-Forwarded-For and X-Forwarded-Proto are set automatically by Caddy
         
-        # Timeouts for large build files and slow responses
+        # Timeouts for regular API requests
         transport http {
             dial_timeout 10s
             read_timeout 5m
@@ -74,6 +98,9 @@ api.${DOMAIN} {
         fail_duration 30s
         max_fails 3
         unhealthy_status 500 502 503 504
+        
+        # Buffer responses to prevent connection drops
+        flush_interval -1
     }
     
     # Logging with detailed request info
