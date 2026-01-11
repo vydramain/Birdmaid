@@ -82,11 +82,9 @@ api.${DOMAIN} {
         # Content-Security-Policy: Strict for API (no iframes needed)
         Content-Security-Policy "default-src 'self'; script-src 'none'; style-src 'none'; img-src 'none'; font-src 'none'; frame-src 'none';"
         
-        # CORS headers (backend handles CORS, but add here as well)
-        Access-Control-Allow-Origin "*"
-        Access-Control-Allow-Methods "GET, POST, PATCH, DELETE, PUT, OPTIONS, HEAD"
-        Access-Control-Allow-Headers "Content-Type, Authorization, Accept, Origin, X-Requested-With"
-        Access-Control-Allow-Credentials "true"
+        # CORS headers are handled by the backend (NestJS)
+        # Backend correctly sets Access-Control-Allow-Origin to specific origin (not "*")
+        # when credentials are required, which is required by CORS spec
     }
     
     # Logging

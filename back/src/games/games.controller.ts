@@ -365,11 +365,28 @@ export class GamesController {
   }
 
   /**
-   * Determines the S3 public URL based on the request hostname.
-   * If request comes from localhost, uses localhost:9000.
-   * If request comes from an IP address, uses that IP:9000.
+   * Get S3 public URL, preferring configured S3_PUBLIC_BASE_URL.
+   * Falls back to request-based URL only for local development.
+   * 
+   * In production, always uses S3_PUBLIC_BASE_URL from environment.
+   * In local dev (when S3_PUBLIC_BASE_URL points to localhost), 
+   * infers URL from request hostname for flexibility.
+   * 
+   * @param req Optional request object
+   * @returns S3 public base URL
    */
   private getS3PublicUrlFromRequest(req?: Request): string {
+    // Always prefer configured S3_PUBLIC_BASE_URL in production
+    // Only use request-based URL if configured URL is localhost (dev mode)
+    const isLocalDev = this.s3PublicUrl.includes("localhost") || 
+                       this.s3PublicUrl.includes("127.0.0.1");
+    
+    if (!isLocalDev) {
+      // Production: use configured S3_PUBLIC_BASE_URL
+      return this.s3PublicUrl;
+    }
+    
+    // Local dev: try to infer from request if available
     if (!req) {
       return this.s3PublicUrl;
     }
@@ -402,9 +419,9 @@ export class GamesController {
       return "http://localhost:9000";
     }
     
-    // Use the same hostname with port 9000 for S3
+    // For local dev with custom hostname, use the same hostname with port 9000
     const s3Url = `http://${hostname}:9000`;
-    console.log(`Using S3 public URL: ${s3Url} (from hostname: ${hostname})`);
+    console.log(`[Local Dev] Using S3 public URL: ${s3Url} (from hostname: ${hostname})`);
     return s3Url;
   }
 }
