@@ -12,11 +12,21 @@ export class OptionalAuthGuard {
     // Try Authorization header first
     let token = this.extractTokenFromHeader(request);
     
-    // If no token in header and this is a build asset route, try cookie
+    // If no token in header and this is a build asset route, try query string, then cookie
+    // CRITICAL: For index.html?token=..., we must check query string BEFORE cookie,
+    // because the cookie won't exist on the first request (it's set by the response).
     if (!token && this.isBuildAssetRoute(request.url)) {
-      token = this.extractTokenFromCookie(request);
+      token = this.extractTokenFromQuery(request);
       if (token) {
-        console.log(`[OptionalAuthGuard] Found token in cookie for build asset route`);
+        console.log(`[OptionalAuthGuard] Found token in query string for build asset route`);
+      }
+      
+      // If still no token, try cookie (for subsequent requests like index.wasm, index.pck)
+      if (!token) {
+        token = this.extractTokenFromCookie(request);
+        if (token) {
+          console.log(`[OptionalAuthGuard] Found token in cookie for build asset route`);
+        }
       }
     }
 
@@ -32,7 +42,7 @@ export class OptionalAuthGuard {
         console.log(`[OptionalAuthGuard] Token invalid or missing, continuing without user`);
       }
     } else {
-      console.log(`[OptionalAuthGuard] No token in header or cookie, continuing without user`);
+      console.log(`[OptionalAuthGuard] No token in header, query, or cookie, continuing without user`);
     }
 
     return true;
@@ -41,6 +51,13 @@ export class OptionalAuthGuard {
   private extractTokenFromHeader(request: any): string | undefined {
     const [type, token] = request.headers.authorization?.split(" ") ?? [];
     return type === "Bearer" ? token : undefined;
+  }
+
+  private extractTokenFromQuery(request: any): string | undefined {
+    // Extract token from query string (e.g., ?token=...)
+    // This is used for the initial index.html request where token is passed in URL
+    const token = request.query?.token;
+    return typeof token === 'string' ? token : undefined;
   }
 
   private extractTokenFromCookie(request: any): string | undefined {

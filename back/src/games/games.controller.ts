@@ -269,12 +269,17 @@ export class GamesController {
       console.error(`[proxyBuildFile] Access denied - userId: ${userId || 'anonymous'}, hasCookie: ${hasCookie ? 'yes' : 'no'}, game status: ${game?.status || 'unknown'}`);
       
       // Set CORS headers before sending error response
+      // CRITICAL: For build asset routes with Origin: null, we MUST respond with "null" (the string)
       const origin = req.headers.origin;
       const corsOrigin = process.env.CORS_ORIGIN;
       const allowedOrigins = corsOrigin ? corsOrigin.split(',').map(o => o.trim()) : ['*'];
+      const isBuildAssetRoute = /\/games\/[^\/]+\/build\//.test(req.url || req.path || '');
       
       if (!origin || origin === 'null') {
-        if (process.env.NODE_ENV === 'production' && corsOrigin) {
+        // For build asset routes with Origin: null, respond with "null" (required by CORS spec)
+        if (isBuildAssetRoute) {
+          res.setHeader("Access-Control-Allow-Origin", "null");
+        } else if (process.env.NODE_ENV === 'production' && corsOrigin) {
           const allowOrigin = allowedOrigins.includes('*') ? '*' : allowedOrigins[0];
           res.setHeader("Access-Control-Allow-Origin", allowOrigin);
         } else {
@@ -287,7 +292,10 @@ export class GamesController {
       }
       res.setHeader("Access-Control-Allow-Credentials", "true");
       res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie");
+      if (isBuildAssetRoute) {
+        res.setHeader("Vary", "Origin");
+      }
       
       // Convert NotFoundException to 403 Forbidden for access denied (more appropriate than 404)
       if (error instanceof NotFoundException && error.message.includes("not available")) {
