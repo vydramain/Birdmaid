@@ -1,16 +1,21 @@
 // Auto-detect API URL based on current host
 const getApiBaseUrl = (): string => {
   // Priority 1: Use explicit environment variable (set during build)
-  if (import.meta.env.VITE_API_BASE_URL) {
-    console.log('[API Client] Using VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
-    return import.meta.env.VITE_API_BASE_URL;
+  const envApiUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envApiUrl && envApiUrl.trim()) {
+    console.log('[API Client] Using VITE_API_BASE_URL:', envApiUrl);
+    return envApiUrl.trim();
   }
   
   const hostname = window.location.hostname;
   const protocol = window.location.protocol; // "https:" or "http:"
-  const port = window.location.port;
   
-  console.log('[API Client] Detecting API URL from location:', { hostname, protocol, port });
+  console.log('[API Client] Detecting API URL from location:', { 
+    hostname, 
+    protocol, 
+    port: window.location.port,
+    href: window.location.href 
+  });
   
   // For development (localhost), use port 3000
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
@@ -18,22 +23,38 @@ const getApiBaseUrl = (): string => {
     return 'http://localhost:3000';
   }
   
-  // For production domains (contains dot), always use api subdomain
-  // e.g., birdmaid.su -> https://api.birdmaid.su
-  // e.g., www.birdmaid.su -> https://api.birdmaid.su
-  if (hostname.includes('.')) {
+  // For ANY domain with dot (production), ALWAYS use api subdomain
+  // This includes: birdmaid.su, www.birdmaid.su, test.birdmaid.su, etc.
+  if (hostname && hostname.includes('.')) {
     // Extract base domain (e.g., "birdmaid.su" from "birdmaid.su" or "www.birdmaid.su")
     const parts = hostname.split('.');
-    const baseDomain = parts.length >= 2 
-      ? parts.slice(-2).join('.') // Take last two parts (e.g., "birdmaid.su")
-      : hostname;
-    const apiUrl = `${protocol}//api.${baseDomain}`;
-    console.log('[API Client] Using production domain fallback:', apiUrl);
+    let baseDomain: string;
+    
+    if (parts.length >= 2) {
+      // Take last two parts for most domains (e.g., "birdmaid.su", "example.com")
+      baseDomain = parts.slice(-2).join('.');
+    } else {
+      // Fallback (shouldn't happen if hostname contains dot)
+      baseDomain = hostname;
+    }
+    
+    // Ensure protocol ends with colon, then add double slash
+    const protocolPrefix = protocol.endsWith(':') ? protocol : `${protocol}:`;
+    const apiUrl = `${protocolPrefix}//api.${baseDomain}`;
+    
+    console.log('[API Client] Using production domain fallback:', {
+      hostname,
+      baseDomain,
+      protocol,
+      apiUrl
+    });
+    
     return apiUrl;
   }
   
-  // For IP access (development/testing), use same IP with port 3000
-  console.log('[API Client] Using IP fallback');
+  // For IP access ONLY (no dots in hostname) - development/testing
+  // This should rarely happen in production
+  console.warn('[API Client] Using IP fallback (unexpected for production):', hostname);
   return `http://${hostname}:3000`;
 };
 
