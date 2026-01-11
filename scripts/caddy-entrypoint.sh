@@ -10,11 +10,8 @@ if [ -z "$DOMAIN" ]; then
 fi
 
 # Use sed to substitute ${DOMAIN} in Caddyfile
-# Read from mounted Caddyfile, substitute variables, write to temp file
+# Read from mounted Caddyfile (read-only), substitute variables, write to temp file
 sed "s|\${DOMAIN}|${DOMAIN}|g" /etc/caddy/Caddyfile > /tmp/Caddyfile
 
-# Replace original Caddyfile with substituted version
-mv /tmp/Caddyfile /etc/caddy/Caddyfile
-
-# Execute Caddy with the substituted config
-exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+# Execute Caddy with the substituted config file (not the read-only mounted one)
+exec caddy run --config /tmp/Caddyfile --adapter caddyfile
