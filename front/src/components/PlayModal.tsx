@@ -60,7 +60,7 @@ export function PlayModal({ open, onClose, buildUrl }: PlayModalProps) {
               display: loading ? "none" : "block",
             }}
             title="Game"
-            sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups"
             allow="fullscreen; autoplay; gamepad"
             onLoad={handleIframeLoad}
             onError={(e) => {

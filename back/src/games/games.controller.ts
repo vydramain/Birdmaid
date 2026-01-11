@@ -240,82 +240,17 @@ export class GamesController {
     // - If game is published: anyone can access build files
     // - If game is editing: only team members can access (requires auth)
     // - If game is archived: only team members can access (requires auth)
-    let user = (req as any).user;
-    let userId = user?.userId;
-    let isSuperAdmin = user?.isSuperAdmin || false;
-    
-    // Check for token in query parameter (for iframe requests)
-    // This allows iframe to access build files for non-published games
-    const tokenFromQuery = req.query.token as string | undefined;
-    if (tokenFromQuery && !userId) {
-      // Try to verify token from query parameter
-      try {
-        const secret = process.env.JWT_SECRET || "default-secret-change-in-production";
-        console.log(`[proxyBuildFile] Verifying token from query, token length: ${tokenFromQuery.length}`);
-        const payload = await this.jwtService.verifyAsync(tokenFromQuery, { secret });
-        console.log(`[proxyBuildFile] Token payload:`, { userId: payload.userId, isSuperAdmin: payload.isSuperAdmin, exp: payload.exp });
-        // Set user from token payload
-        if (!user) {
-          user = {};
-          (req as any).user = user;
-        }
-        user.userId = payload.userId;
-        user.isSuperAdmin = payload.isSuperAdmin || false;
-        userId = payload.userId;
-        isSuperAdmin = payload.isSuperAdmin || false;
-        console.log(`[proxyBuildFile] Token from query verified: userId=${userId}, isSuperAdmin=${isSuperAdmin}`);
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        console.warn(`[proxyBuildFile] Invalid token in query: ${errorMsg}`);
-        console.warn(`[proxyBuildFile] Token preview: ${tokenFromQuery.substring(0, 50)}...`);
-        // Don't throw error here - let getGame handle access check
-      }
-    }
-    
-    // FALLBACK: If no token in query, try to extract from referer (for relative path requests from iframe)
-    // This handles cases where Godot loads files via relative paths (e.g., "index.wasm") 
-    // which browser resolves relative to current URL without preserving query params
-    if (!tokenFromQuery && !userId) {
-      const refererHeader = req.headers.referer || req.headers.referrer;
-      const referer = Array.isArray(refererHeader) ? refererHeader[0] : refererHeader;
-      if (referer && typeof referer === 'string') {
-        try {
-          const refererUrl = new URL(referer);
-          const refererToken = refererUrl.searchParams.get('token');
-          if (refererToken) {
-            console.log(`[proxyBuildFile] Found token in referer, extracting...`);
-            try {
-              const secret = process.env.JWT_SECRET || "default-secret-change-in-production";
-              const payload = await this.jwtService.verifyAsync(refererToken, { secret });
-              console.log(`[proxyBuildFile] Token from referer verified: userId=${payload.userId}, isSuperAdmin=${payload.isSuperAdmin}`);
-              // Set user from token payload
-              if (!user) {
-                user = {};
-                (req as any).user = user;
-              }
-              user.userId = payload.userId;
-              user.isSuperAdmin = payload.isSuperAdmin || false;
-              userId = payload.userId;
-              isSuperAdmin = payload.isSuperAdmin || false;
-              console.log(`[proxyBuildFile] Token from referer verified: userId=${userId}, isSuperAdmin=${isSuperAdmin}`);
-            } catch (error) {
-              const errorMsg = error instanceof Error ? error.message : String(error);
-              console.warn(`[proxyBuildFile] Invalid token in referer: ${errorMsg}`);
-            }
-          }
-        } catch (error) {
-          console.warn(`[proxyBuildFile] Failed to parse referer URL: ${referer}`);
-        }
-      }
-    }
+    // Authentication is handled by OptionalAuthGuard which checks:
+    // 1. Authorization header (Bearer token)
+    // 2. HttpOnly cookie (bm_build_auth_<gameId>) for build asset routes
+    const user = (req as any).user;
+    const userId = user?.userId;
+    const isSuperAdmin = user?.isSuperAdmin || false;
     
     console.log(`[proxyBuildFile] Getting game ${id}`);
     console.log(`[proxyBuildFile] User object:`, user ? { userId: user.userId, isSuperAdmin: user.isSuperAdmin } : 'null');
     console.log(`[proxyBuildFile] Authorization header:`, req.headers.authorization ? 'present' : 'missing');
-    console.log(`[proxyBuildFile] Token in query:`, tokenFromQuery ? 'present' : 'missing');
-    const refererForLog = req.headers.referer || req.headers.referrer;
-    const refererStr = Array.isArray(refererForLog) ? refererForLog[0] : refererForLog;
-    console.log(`[proxyBuildFile] Referer:`, refererStr || 'missing');
+    console.log(`[proxyBuildFile] Cookies:`, req.cookies ? Object.keys(req.cookies).filter(k => k.startsWith('bm_build_auth_')) : 'none');
     console.log(`[proxyBuildFile] Extracted userId: ${userId || 'anonymous'}, isSuperAdmin: ${isSuperAdmin}`);
     
     // Get game with proper access check
@@ -453,195 +388,50 @@ export class GamesController {
         const buffer = Buffer.concat(chunks);
         content = buffer.toString('utf-8');
         
-        // If it's index.html, modify relative paths to use proxy endpoint
+        // If it's index.html, set HttpOnly cookie for build asset authentication
         if (filePath === "index.html" && contentType.includes("text/html")) {
-          // Determine protocol from X-Forwarded-Proto (set by Caddy) or use https for production
-          const forwardedProto = req.get("x-forwarded-proto") || req.headers["x-forwarded-proto"];
-          const protocol = forwardedProto || (process.env.NODE_ENV === "production" ? "https" : "http");
-          const host = req.get("host") || req.headers.host || "api.birdmaid.su";
-          
-          // Include token in proxy URLs if it was passed in query (for non-published games)
           const tokenFromQuery = req.query.token as string | undefined;
-          const tokenSuffix = tokenFromQuery ? `?token=${encodeURIComponent(tokenFromQuery)}` : "";
-          const proxyBase = `${protocol}://${host}/games/${id}/build/`;
           
-          console.log(`[proxyBuildFile] Modifying index.html with proxy base: ${proxyBase}, token in query: ${tokenFromQuery ? 'yes' : 'no'}`);
-          console.log(`[proxyBuildFile] Token suffix: ${tokenSuffix}`);
-          
-          // Replace relative paths (src="file.js", href="file.css", etc.) with proxy URLs
-          // Match: src="file.js", src='file.js', src=file.js, href="file.css", etc.
-          // Also match Godot-specific patterns like "index.wasm", "index.pck" in script tags or as direct references
-          let replacementCount = 0;
-          
-          // CRITICAL: Replace ALL file paths in strings (most aggressive pattern - catches everything)
-          // This includes JSON keys/values, JavaScript strings, HTML attributes, etc.
-          // Pattern: "filename.ext" or 'filename.ext' where filename.ext matches our file extensions
-          // This pattern catches both JSON keys ("index.pck":) and values ("file": "index.wasm")
-          content = content.replace(
-            /(["'])([a-zA-Z0-9_\-./]+\.(wasm|pck|js|png|jpg|jpeg|gif|svg|ico|json|css|html))(\?[^"']*)?\1/gi,
-            (match, quote, filename, ext, query) => {
-              // Skip if already absolute URL
-              if (/^(https?:|\/\/)/i.test(filename)) {
-                return match;
+          // Cookie handshake: if token is provided in query, set HttpOnly cookie for subsequent requests
+          if (tokenFromQuery) {
+            try {
+              // Validate token before setting cookie
+              const secret = process.env.JWT_SECRET || "default-secret-change-in-production";
+              const payload = await this.jwtService.verifyAsync(tokenFromQuery, { secret });
+              
+              // Set HttpOnly Secure cookie for build asset authentication
+              // Cookie is scoped to /games/:id/build path and expires in 1 hour
+              const isProduction = process.env.NODE_ENV === "production";
+              const host = req.get("host") || req.headers.host || "api.birdmaid.su";
+              
+              // Extract domain for cross-subdomain cookie sharing
+              // For birdmaid.su and api.birdmaid.su, use .birdmaid.su as domain
+              let cookieDomain: string | undefined = undefined;
+              if (isProduction && host.includes("birdmaid.su")) {
+                cookieDomain = ".birdmaid.su"; // Allows cookie sharing between birdmaid.su and api.birdmaid.su
               }
-              // Skip if already replaced
-              if (filename.startsWith(proxyBase)) {
-                return match;
+              
+              const cookieOptions: any = {
+                httpOnly: true,
+                secure: isProduction, // Only secure in production (HTTPS required)
+                sameSite: isProduction ? "Lax" : "Lax", // Lax works for same-site (birdmaid.su -> api.birdmaid.su)
+                path: `/games/${id}/build`,
+                maxAge: 60 * 60 * 1000, // 1 hour
+              };
+              
+              if (cookieDomain) {
+                cookieOptions.domain = cookieDomain;
               }
-              // Remove leading ./ or ../
-              const cleanPath = filename.replace(/^\.\.?\//, '');
-              replacementCount++;
-              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
-              console.log(`[proxyBuildFile] Replaced ${replacementCount} (aggressive pattern): ${match} -> ${quote}${newUrl}${quote}`);
-              return `${quote}${newUrl}${quote}`;
+              
+              res.cookie(`bm_build_auth_${id}`, tokenFromQuery, cookieOptions);
+              console.log(`[proxyBuildFile] Set build auth cookie for game ${id}, domain: ${cookieDomain || 'none'}, expires in 1 hour`);
+            } catch (error) {
+              console.warn(`[proxyBuildFile] Invalid token in query, not setting cookie:`, error instanceof Error ? error.message : String(error));
             }
-          );
+          }
           
-          // CRITICAL: Also replace absolute paths that start with "/" (absolute paths relative to root)
-          // These are resolved by browser relative to current origin, losing query params
-          content = content.replace(
-            /(["'])\/([^"'\s>]+\.(wasm|pck|js|png|jpg|jpeg|gif|svg|ico|json|css|html))(\?[^"']*)?\1/gi,
-            (match, quote, path, ext, query) => {
-              // Skip if already absolute URL
-              if (/^(https?:|\/\/)/i.test(path)) {
-                return match;
-              }
-              // Skip if already replaced
-              if (path.startsWith(proxyBase)) {
-                return match;
-              }
-              // Remove leading / and any existing query params
-              const cleanPath = path.replace(/^\//, '');
-              replacementCount++;
-              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
-              console.log(`[proxyBuildFile] Replaced ${replacementCount} (absolute path): ${match} -> ${quote}${newUrl}${quote}`);
-              return `${quote}${newUrl}${quote}`;
-            }
-          );
-          
-          // Pattern 1: Standard HTML attributes (src, href) - improved to catch more cases
-          content = content.replace(
-            /(src|href)\s*=\s*["']([^"'\s>]+)["']/gi,
-            (match, attr, path) => {
-              // Skip absolute URLs (http://, https://, //, data:, blob:, etc.)
-              if (/^(https?:|\/\/|data:|blob:|#)/i.test(path)) {
-                return match;
-              }
-              // Skip if already replaced by previous pattern (starts with proxyBase)
-              if (path.startsWith(proxyBase)) {
-                return match;
-              }
-              // Convert relative path to proxy URL
-              const proxyPath = path.startsWith("/") ? path.substring(1) : path;
-              replacementCount++;
-              const newUrl = `${proxyBase}${proxyPath}${tokenSuffix}`;
-              console.log(`[proxyBuildFile] Replaced ${replacementCount}: ${path} -> ${newUrl}`);
-              return `${attr}="${newUrl}"`;
-            }
-          );
-          
-          // Pattern 2: JSON object keys and values - catch paths in JSON like {"index.pck": 123} or {"file": "index.wasm"}
-          // This is critical for Godot's GODOT_CONFIG object
-          content = content.replace(
-            /(["'])([^"'\s:]+\.(wasm|pck|js|png|jpg|jpeg|gif|svg|ico|json|css|html))(\?[^"']*)?\1\s*[:=]/gi,
-            (match, quote, filename, ext, query) => {
-              // Skip if already absolute URL
-              if (/^(https?:|\/\/)/i.test(filename)) {
-                return match;
-              }
-              // Skip if already replaced
-              if (filename.startsWith(proxyBase)) {
-                return match;
-              }
-              // Remove leading ./ or ../
-              const cleanPath = filename.replace(/^\.\.?\//, '');
-              replacementCount++;
-              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
-              console.log(`[proxyBuildFile] Replaced ${replacementCount} (JSON key pattern): ${match} -> ${quote}${newUrl}${quote}:`);
-              return `${quote}${newUrl}${quote}:`;
-            }
-          );
-          
-          // Pattern 2b: Godot-specific - direct file references in JavaScript/TypeScript code
-          // Match patterns like: "index.wasm", "./index.pck", "/index.wasm", etc.
-          // This covers Godot's engine.js code that loads wasm/pck files
-          content = content.replace(
-            /(["'])(\.\/|\.\.\/|\.\/)?([^"'\s]+\.(wasm|pck|js|png|jpg|jpeg|gif|svg|ico|json|css|html))(\?[^"']*)?\1/gi,
-            (match, quote, prefix, filename, ext, query) => {
-              // Skip if already absolute URL
-              if (/^(https?:|\/\/)/i.test(filename)) {
-                return match;
-              }
-              // Skip if already replaced
-              if (filename.startsWith(proxyBase)) {
-                return match;
-              }
-              // Remove leading ./ or ../
-              const cleanPath = filename.replace(/^\.\.?\//, '');
-              replacementCount++;
-              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
-              console.log(`[proxyBuildFile] Replaced ${replacementCount} (Godot pattern): ${match} -> ${quote}${newUrl}${quote}`);
-              return `${quote}${newUrl}${quote}`;
-            }
-          );
-          
-          // Pattern 3: Fetch/XMLHttpRequest patterns - "index.wasm" or "./index.wasm" in strings
-          content = content.replace(
-            /(fetch|XMLHttpRequest|open)\s*\(\s*["']([^"']+\.(wasm|pck))["']/gi,
-            (match, method, path) => {
-              if (/^(https?:|\/\/)/i.test(path)) {
-                return match;
-              }
-              if (path.startsWith(proxyBase)) {
-                return match;
-              }
-              const cleanPath = path.replace(/^\.\.?\//, '');
-              replacementCount++;
-              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
-              console.log(`[proxyBuildFile] Replaced ${replacementCount} (fetch pattern): ${match} -> ${method}("${newUrl}"`);
-              return `${method}("${newUrl}"`;
-            }
-          );
-          
-          // Pattern 4: Godot engine.js specific - module paths and wasm/pck loading
-          // Match: ENGINE.load_wasm("index.wasm") or similar patterns
-          content = content.replace(
-            /(load_wasm|load_pck|\.wasm|\.pck)\s*[=:]\s*["']([^"']+\.(wasm|pck))["']/gi,
-            (match, method, path) => {
-              if (/^(https?:|\/\/)/i.test(path)) {
-                return match;
-              }
-              if (path.startsWith(proxyBase)) {
-                return match;
-              }
-              const cleanPath = path.replace(/^\.\.?\//, '');
-              replacementCount++;
-              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
-              console.log(`[proxyBuildFile] Replaced ${replacementCount} (Godot engine pattern): ${match} -> ${method}="${newUrl}"`);
-              return `${method}="${newUrl}"`;
-            }
-          );
-          
-          // Pattern 5: Template literals and concatenated paths
-          // Match: `index.wasm` or './' + 'index.wasm' or similar
-          content = content.replace(
-            /`([^`]+\.(wasm|pck|js|png|jpg|jpeg|gif|svg|ico|json|css|html))`/gi,
-            (match, path) => {
-              if (/^(https?:|\/\/)/i.test(path)) {
-                return match;
-              }
-              if (path.startsWith(proxyBase)) {
-                return match;
-              }
-              const cleanPath = path.replace(/^\.\.?\//, '');
-              replacementCount++;
-              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
-              console.log(`[proxyBuildFile] Replaced ${replacementCount} (template literal): ${match} -> \`${newUrl}\``);
-              return `\`${newUrl}\``;
-            }
-          );
-          
-          console.log(`[proxyBuildFile] Modified index.html: ${replacementCount} total replacements made`);
+          // Note: We no longer modify index.html content - Godot build files are served as-is
+          // Authentication is handled via HttpOnly cookie set above
         }
       } else {
         // For binary files (images, fonts, wasm, pck, etc.), convert stream to buffer
@@ -670,28 +460,26 @@ export class GamesController {
       res.setHeader("Cache-Control", "public, max-age=3600");
       
       // CORS headers for build files (important for iframe requests)
+      // Note: For same-origin requests (iframe on api.birdmaid.su loading from api.birdmaid.su),
+      // CORS is not needed and cookies work automatically.
+      // For cross-origin requests with Origin: null (sandboxed iframe), we need to handle CORS carefully.
       const origin = req.headers.origin;
       const corsOrigin = process.env.CORS_ORIGIN;
       const allowedOrigins = corsOrigin ? corsOrigin.split(',').map(o => o.trim()) : ['*'];
       
-      // Allow requests from iframe (Origin: null) or from allowed origins
-      if (!origin || origin === 'null') {
-        // For iframe requests (Origin: null), allow if in production with CORS_ORIGIN set
-        if (process.env.NODE_ENV === 'production' && corsOrigin) {
-          // Set CORS origin to the first allowed origin or use wildcard
-          const allowOrigin = allowedOrigins.includes('*') ? '*' : allowedOrigins[0];
-          res.setHeader("Access-Control-Allow-Origin", allowOrigin);
-        } else {
-          // Development: allow all
-          res.setHeader("Access-Control-Allow-Origin", "*");
-        }
-      } else {
+      // Set CORS headers only if origin is present and not null
+      // For Origin: null requests, cookies work via same-origin (iframe src is on api.birdmaid.su)
+      if (origin && origin !== 'null') {
         // For requests with origin, check if allowed
         if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
           res.setHeader("Access-Control-Allow-Origin", origin);
+          res.setHeader("Access-Control-Allow-Credentials", "true");
         }
+      } else {
+        // For Origin: null requests (sandboxed iframe), cookies work via domain sharing (.birdmaid.su)
+        // We don't set CORS headers here to avoid conflicts with credentials
+        // Cookie authentication will work automatically for same-origin requests
       }
-      res.setHeader("Access-Control-Allow-Credentials", "true");
       res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
       res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Type");
@@ -739,19 +527,14 @@ export class GamesController {
       const corsOrigin = process.env.CORS_ORIGIN;
       const allowedOrigins = corsOrigin ? corsOrigin.split(',').map(o => o.trim()) : ['*'];
       
-      if (!origin || origin === 'null') {
-        if (process.env.NODE_ENV === 'production' && corsOrigin) {
-          const allowOrigin = allowedOrigins.includes('*') ? '*' : allowedOrigins[0];
-          res.setHeader("Access-Control-Allow-Origin", allowOrigin);
-        } else {
-          res.setHeader("Access-Control-Allow-Origin", "*");
-        }
-      } else {
+      // Set CORS headers only if origin is present and not null
+      if (origin && origin !== 'null') {
         if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
           res.setHeader("Access-Control-Allow-Origin", origin);
+          res.setHeader("Access-Control-Allow-Credentials", "true");
         }
       }
-      res.setHeader("Access-Control-Allow-Credentials", "true");
+      // For Origin: null requests, cookies work via domain sharing, no CORS headers needed
       res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
       

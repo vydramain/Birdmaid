@@ -8,7 +8,17 @@ export class OptionalAuthGuard {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     console.log(`[OptionalAuthGuard] Request to: ${request.url}, method: ${request.method}`);
-    const token = this.extractTokenFromHeader(request);
+    
+    // Try Authorization header first
+    let token = this.extractTokenFromHeader(request);
+    
+    // If no token in header and this is a build asset route, try cookie
+    if (!token && this.isBuildAssetRoute(request.url)) {
+      token = this.extractTokenFromCookie(request);
+      if (token) {
+        console.log(`[OptionalAuthGuard] Found token in cookie for build asset route`);
+      }
+    }
 
     if (token) {
       try {
@@ -22,7 +32,7 @@ export class OptionalAuthGuard {
         console.log(`[OptionalAuthGuard] Token invalid or missing, continuing without user`);
       }
     } else {
-      console.log(`[OptionalAuthGuard] No token in header, continuing without user`);
+      console.log(`[OptionalAuthGuard] No token in header or cookie, continuing without user`);
     }
 
     return true;
@@ -31,6 +41,31 @@ export class OptionalAuthGuard {
   private extractTokenFromHeader(request: any): string | undefined {
     const [type, token] = request.headers.authorization?.split(" ") ?? [];
     return type === "Bearer" ? token : undefined;
+  }
+
+  private extractTokenFromCookie(request: any): string | undefined {
+    // Extract game ID from URL to find the right cookie
+    // Cookie name format: bm_build_auth_<gameId>
+    const buildMatch = request.url?.match(/\/games\/([^\/]+)\/build\//);
+    if (!buildMatch) {
+      return undefined;
+    }
+    
+    const gameId = buildMatch[1];
+    const cookieName = `bm_build_auth_${gameId}`;
+    const cookies = request.cookies || {};
+    const token = cookies[cookieName];
+    
+    if (token) {
+      console.log(`[OptionalAuthGuard] Found build auth cookie for game ${gameId}`);
+    }
+    
+    return token;
+  }
+
+  private isBuildAssetRoute(url: string | undefined): boolean {
+    if (!url) return false;
+    return /\/games\/[^\/]+\/build\//.test(url);
   }
 }
 

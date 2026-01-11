@@ -2,9 +2,13 @@ import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { Request, Response, NextFunction } from "express";
+const cookieParser = require("cookie-parser");
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // Enable cookie parser for HttpOnly cookie support
+  app.use(cookieParser());
   
   // CORS configuration
   const corsOrigin = process.env.CORS_ORIGIN;
