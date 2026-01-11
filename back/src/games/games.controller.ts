@@ -233,6 +233,8 @@ export class GamesController {
     console.log(`[proxyBuildFile] File path: ${filePath}`);
     console.log(`[proxyBuildFile] Request URL: ${req.url}`);
     console.log(`[proxyBuildFile] Request path: ${req.path}`);
+    console.log(`[proxyBuildFile] Request query:`, req.query);
+    console.log(`[proxyBuildFile] Request method: ${req.method}`);
 
     // Get game to find build_url
     // Access control:
@@ -338,9 +340,11 @@ export class GamesController {
           const proxyBase = `${protocol}://${host}/games/${id}/build/`;
           
           console.log(`[proxyBuildFile] Modifying index.html with proxy base: ${proxyBase}, token in query: ${tokenFromQuery ? 'yes' : 'no'}`);
+          console.log(`[proxyBuildFile] Token suffix: ${tokenSuffix}`);
           
           // Replace relative paths (src="file.js", href="file.css", etc.) with proxy URLs
           // Match: src="file.js", src='file.js', src=file.js, href="file.css", etc.
+          let replacementCount = 0;
           content = content.replace(
             /(src|href)\s*=\s*["']?([^"'\s>]+)["']?/gi,
             (match, attr, path) => {
@@ -350,11 +354,14 @@ export class GamesController {
               }
               // Convert relative path to proxy URL
               const proxyPath = path.startsWith("/") ? path.substring(1) : path;
-              return `${attr}="${proxyBase}${proxyPath}${tokenSuffix}"`;
+              replacementCount++;
+              const newUrl = `${proxyBase}${proxyPath}${tokenSuffix}`;
+              console.log(`[proxyBuildFile] Replaced ${replacementCount}: ${path} -> ${newUrl}`);
+              return `${attr}="${newUrl}"`;
             }
           );
           
-          console.log(`[proxyBuildFile] Modified index.html to use proxy URLs`);
+          console.log(`[proxyBuildFile] Modified index.html: ${replacementCount} replacements made`);
         }
       } else {
         // For binary files (images, fonts, etc.), get as buffer
