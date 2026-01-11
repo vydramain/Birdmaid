@@ -326,6 +326,44 @@ dig api.birdmaid.example.com
 docker volume inspect birdmaid-caddy-data
 ```
 
+### Caddy Configuration Validation
+
+**Before restarting Caddy, always validate the configuration:**
+
+```bash
+# Validate Caddyfile with your production domain
+./scripts/validate_caddy.sh .env.prod
+
+# Or manually:
+# 1. Load environment
+source .env.prod
+# 2. Generate substituted config
+sed "s|\${DOMAIN}|${DOMAIN}|g" Caddyfile > /tmp/Caddyfile.prod
+# 3. Validate
+docker run --rm -v /tmp/Caddyfile.prod:/tmp/Caddyfile:ro \
+  caddy:2-alpine caddy validate --config /tmp/Caddyfile --adapter caddyfile
+```
+
+**If Caddy container is restarting:**
+
+```bash
+# 1. Check full logs (last 200 lines)
+docker compose -f docker-compose.prod.yml logs caddy --tail=200
+
+# 2. Inspect container configuration
+docker inspect birdmaid-caddy | jq '.[0].Config'
+
+# 3. Check if DOMAIN is set correctly
+docker compose -f docker-compose.prod.yml exec caddy env | grep DOMAIN
+
+# 4. Test entrypoint script manually
+docker compose -f docker-compose.prod.yml run --rm caddy /bin/sh /entrypoint.sh
+
+# 5. Validate config inside container (if it starts)
+docker compose -f docker-compose.prod.yml exec caddy \
+  caddy validate --config /tmp/Caddyfile --adapter caddyfile
+```
+
 ### MongoDB Connection Issues
 
 ```bash

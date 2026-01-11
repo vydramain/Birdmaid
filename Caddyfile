@@ -60,10 +60,12 @@ api.${DOMAIN} {
         # Note: X-Forwarded-For and X-Forwarded-Proto are set automatically by Caddy
         
         # Timeouts for large build files and slow responses
-        dial_timeout 10s
-        read_timeout 5m
-        write_timeout 5m
-        response_header_timeout 30s
+        transport http {
+            dial_timeout 10s
+            read_timeout 5m
+            write_timeout 5m
+            response_header_timeout 30s
+        }
         
         # Health check settings
         health_uri /health
@@ -78,7 +80,6 @@ api.${DOMAIN} {
     log {
         output stdout
         format console
-        level DEBUG
     }
 }
 
