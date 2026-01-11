@@ -260,7 +260,8 @@ export class GamesController {
       console.log(`[proxyBuildFile] Game found: status=${game.status}`);
     } catch (error) {
       console.error(`[proxyBuildFile] Failed to get game ${id}:`, error instanceof Error ? error.message : String(error));
-      console.error(`[proxyBuildFile] Access denied - userId: ${userId || 'anonymous'}, tokenFromQuery: ${tokenFromQuery ? 'present' : 'missing'}, game status: ${game?.status || 'unknown'}`);
+      const hasCookie = req.cookies && req.cookies[`bm_build_auth_${id}`];
+      console.error(`[proxyBuildFile] Access denied - userId: ${userId || 'anonymous'}, hasCookie: ${hasCookie ? 'yes' : 'no'}, game status: ${game?.status || 'unknown'}`);
       
       // Set CORS headers before sending error response
       const origin = req.headers.origin;
