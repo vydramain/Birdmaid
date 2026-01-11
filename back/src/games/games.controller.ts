@@ -285,7 +285,41 @@ export class GamesController {
       console.log(`[proxyBuildFile] Game found: status=${game.status}`);
     } catch (error) {
       console.error(`[proxyBuildFile] Failed to get game ${id}:`, error instanceof Error ? error.message : String(error));
-      throw error; // Re-throw NotFoundException
+      console.error(`[proxyBuildFile] Access denied - userId: ${userId || 'anonymous'}, tokenFromQuery: ${tokenFromQuery ? 'present' : 'missing'}, game status: ${game?.status || 'unknown'}`);
+      
+      // Set CORS headers before sending error response
+      const origin = req.headers.origin;
+      const corsOrigin = process.env.CORS_ORIGIN;
+      const allowedOrigins = corsOrigin ? corsOrigin.split(',').map(o => o.trim()) : ['*'];
+      
+      if (!origin || origin === 'null') {
+        if (process.env.NODE_ENV === 'production' && corsOrigin) {
+          const allowOrigin = allowedOrigins.includes('*') ? '*' : allowedOrigins[0];
+          res.setHeader("Access-Control-Allow-Origin", allowOrigin);
+        } else {
+          res.setHeader("Access-Control-Allow-Origin", "*");
+        }
+      } else {
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+          res.setHeader("Access-Control-Allow-Origin", origin);
+        }
+      }
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      
+      // Convert NotFoundException to 403 Forbidden for access denied (more appropriate than 404)
+      if (error instanceof NotFoundException && error.message.includes("not available")) {
+        res.status(403).json({
+          statusCode: 403,
+          message: "Access denied: Game is not published and requires authentication",
+          error: "Forbidden"
+        });
+        return;
+      }
+      
+      // Re-throw to be caught by outer catch block
+      throw error;
     }
     
     console.log(`[proxyBuildFile] Game found: ${!!game}, status: ${game?.status}, build_url: ${game?.build_url ? 'present' : 'null'}`);
@@ -330,6 +364,10 @@ export class GamesController {
     console.log(`[proxyBuildFile] build_url: ${game.build_url}`);
     console.log(`[proxyBuildFile] Extracted build_path: ${buildPath}, build_dir: ${buildDir}, filePath: ${filePath}, s3Key: ${s3Key}`);
 
+    // Declare variables outside try block for use in catch
+    let contentType: string | undefined;
+    let content: string | Buffer | undefined;
+
     try {
       // Use S3Client directly to get object (avoids signed URL signature issues)
       // This uses internal Docker endpoint (S3_ENDPOINT) which is accessible from container
@@ -347,10 +385,24 @@ export class GamesController {
       }
 
       // Get content type from S3 metadata or infer from file extension
-      const contentType = s3Response.ContentType || lookupMime(filePath) || "application/octet-stream";
-      const isTextFile = contentType.includes("text/html") || contentType.includes("text/css") || contentType.includes("application/javascript") || contentType.includes("text/javascript");
-
-      let content: string | Buffer;
+      // Explicit handling for Godot build files
+      contentType = s3Response.ContentType;
+      if (!contentType) {
+        if (filePath.endsWith('.wasm')) {
+          contentType = 'application/wasm';
+        } else if (filePath.endsWith('.pck')) {
+          contentType = 'application/octet-stream'; // Godot .pck files are binary
+        } else {
+          contentType = lookupMime(filePath) || "application/octet-stream";
+        }
+      }
+      
+      const isTextFile = contentType.includes("text/html") || 
+                        contentType.includes("text/css") || 
+                        contentType.includes("application/javascript") || 
+                        contentType.includes("text/javascript");
+      
+      console.log(`[proxyBuildFile] Content-Type: ${contentType}, isTextFile: ${isTextFile}, filePath: ${filePath}`);
       
       if (isTextFile) {
         // For text files, convert stream to text
@@ -378,11 +430,14 @@ export class GamesController {
           
           // Replace relative paths (src="file.js", href="file.css", etc.) with proxy URLs
           // Match: src="file.js", src='file.js', src=file.js, href="file.css", etc.
+          // Also match Godot-specific patterns like "index.wasm", "index.pck" in script tags or as direct references
           let replacementCount = 0;
+          
+          // Pattern 1: Standard HTML attributes (src, href)
           content = content.replace(
             /(src|href)\s*=\s*["']?([^"'\s>]+)["']?/gi,
             (match, attr, path) => {
-              // Skip absolute URLs (http://, https://, //, data:, etc.)
+              // Skip absolute URLs (http://, https://, //, data:, blob:, etc.)
               if (/^(https?:|\/\/|data:|blob:|#)/i.test(path)) {
                 return match;
               }
@@ -395,26 +450,141 @@ export class GamesController {
             }
           );
           
-          console.log(`[proxyBuildFile] Modified index.html: ${replacementCount} replacements made`);
+          // Pattern 2: Godot-specific - direct file references in JavaScript/TypeScript code
+          // Match patterns like: "index.wasm", "./index.pck", "/index.wasm", etc.
+          // This covers Godot's engine.js code that loads wasm/pck files
+          content = content.replace(
+            /(["'])(\.\/|\.\.\/|\.\/)?([^"'\s]+\.(wasm|pck|js|png|jpg|jpeg|gif|svg|ico|json|css|html))(\?[^"']*)?\1/gi,
+            (match, quote, prefix, filename, ext, query) => {
+              // Skip if already absolute URL
+              if (/^(https?:|\/\/)/i.test(filename)) {
+                return match;
+              }
+              // Remove leading ./ or ../
+              const cleanPath = filename.replace(/^\.\.?\//, '');
+              replacementCount++;
+              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
+              console.log(`[proxyBuildFile] Replaced ${replacementCount} (Godot pattern): ${match} -> ${quote}${newUrl}${quote}`);
+              return `${quote}${newUrl}${quote}`;
+            }
+          );
+          
+          // Pattern 3: Fetch/XMLHttpRequest patterns - "index.wasm" or "./index.wasm" in strings
+          content = content.replace(
+            /(fetch|XMLHttpRequest|open)\s*\(\s*["']([^"']+\.(wasm|pck))["']/gi,
+            (match, method, path) => {
+              if (/^(https?:|\/\/)/i.test(path)) {
+                return match;
+              }
+              const cleanPath = path.replace(/^\.\.?\//, '');
+              replacementCount++;
+              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
+              console.log(`[proxyBuildFile] Replaced ${replacementCount} (fetch pattern): ${match} -> ${method}("${newUrl}"`);
+              return `${method}("${newUrl}"`;
+            }
+          );
+          
+          // Pattern 4: Godot engine.js specific - module paths and wasm/pck loading
+          // Match: ENGINE.load_wasm("index.wasm") or similar patterns
+          content = content.replace(
+            /(load_wasm|load_pck|\.wasm|\.pck)\s*[=:]\s*["']([^"']+\.(wasm|pck))["']/gi,
+            (match, method, path) => {
+              if (/^(https?:|\/\/)/i.test(path)) {
+                return match;
+              }
+              const cleanPath = path.replace(/^\.\.?\//, '');
+              replacementCount++;
+              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
+              console.log(`[proxyBuildFile] Replaced ${replacementCount} (Godot engine pattern): ${match} -> ${method}="${newUrl}"`);
+              return `${method}="${newUrl}"`;
+            }
+          );
+          
+          // Pattern 5: Template literals and concatenated paths
+          // Match: `index.wasm` or './' + 'index.wasm' or similar
+          content = content.replace(
+            /`([^`]+\.(wasm|pck|js|png|jpg|jpeg|gif|svg|ico|json|css|html))`/gi,
+            (match, path) => {
+              if (/^(https?:|\/\/)/i.test(path)) {
+                return match;
+              }
+              const cleanPath = path.replace(/^\.\.?\//, '');
+              replacementCount++;
+              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
+              console.log(`[proxyBuildFile] Replaced ${replacementCount} (template literal): ${match} -> \`${newUrl}\``);
+              return `\`${newUrl}\``;
+            }
+          );
+          
+          console.log(`[proxyBuildFile] Modified index.html: ${replacementCount} total replacements made`);
         }
       } else {
-        // For binary files (images, fonts, etc.), convert stream to buffer
+        // For binary files (images, fonts, wasm, pck, etc.), convert stream to buffer
+        console.log(`[proxyBuildFile] Processing binary file: ${filePath}, contentType: ${contentType}`);
         const chunks: Uint8Array[] = [];
-        for await (const chunk of s3Response.Body as any) {
-          chunks.push(chunk);
+        let totalSize = 0;
+        try {
+          for await (const chunk of s3Response.Body as any) {
+            chunks.push(chunk);
+            totalSize += chunk.length;
+            // Log progress for large files
+            if (totalSize % (10 * 1024 * 1024) === 0) {
+              console.log(`[proxyBuildFile] Downloaded ${Math.round(totalSize / 1024 / 1024)}MB of ${filePath}`);
+            }
+          }
+          content = Buffer.concat(chunks);
+          console.log(`[proxyBuildFile] Successfully loaded binary file: ${filePath}, size: ${content.length} bytes`);
+        } catch (streamError: any) {
+          console.error(`[proxyBuildFile] Error reading stream for ${filePath}:`, streamError);
+          throw new Error(`Failed to read file stream: ${streamError.message}`);
         }
-        content = Buffer.concat(chunks);
       }
 
       // Set appropriate headers
       res.setHeader("Content-Type", contentType);
       res.setHeader("Cache-Control", "public, max-age=3600");
       
+      // CORS headers for build files (important for iframe requests)
+      const origin = req.headers.origin;
+      const corsOrigin = process.env.CORS_ORIGIN;
+      const allowedOrigins = corsOrigin ? corsOrigin.split(',').map(o => o.trim()) : ['*'];
+      
+      // Allow requests from iframe (Origin: null) or from allowed origins
+      if (!origin || origin === 'null') {
+        // For iframe requests (Origin: null), allow if in production with CORS_ORIGIN set
+        if (process.env.NODE_ENV === 'production' && corsOrigin) {
+          // Set CORS origin to the first allowed origin or use wildcard
+          const allowOrigin = allowedOrigins.includes('*') ? '*' : allowedOrigins[0];
+          res.setHeader("Access-Control-Allow-Origin", allowOrigin);
+        } else {
+          // Development: allow all
+          res.setHeader("Access-Control-Allow-Origin", "*");
+        }
+      } else {
+        // For requests with origin, check if allowed
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+          res.setHeader("Access-Control-Allow-Origin", origin);
+        }
+      }
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Type");
+      
       // Send content
       // Note: res.send() automatically ends the response when using @Res() decorator
       res.send(content);
     } catch (error: any) {
       console.error(`[proxyBuildFile] Error proxying file:`, error);
+      console.error(`[proxyBuildFile] Error details:`, {
+        name: error?.name,
+        message: error?.message,
+        code: error?.code,
+        statusCode: error?.$metadata?.httpStatusCode,
+        s3Key: s3Key,
+        filePath: filePath,
+        gameId: id
+      });
       
       // When using @Res() decorator, we must manually send error response
       // Otherwise NestJS exception filters won't work and connection will hang
@@ -430,13 +600,35 @@ export class GamesController {
       
       if (error instanceof NotFoundException) {
         statusCode = 404;
-      } else if (error.name === 'NoSuchKey' || error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+      } else if (error.name === 'NoSuchKey' || error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404 || error.code === 'NoSuchKey') {
         statusCode = 404;
-        errorMessage = 'File not found in S3';
-      } else if (error.name === 'AccessDenied' || error.$metadata?.httpStatusCode === 403) {
+        errorMessage = `File not found in S3: ${s3Key}`;
+        console.error(`[proxyBuildFile] File not found in S3, key: ${s3Key}`);
+      } else if (error.name === 'AccessDenied' || error.$metadata?.httpStatusCode === 403 || error.code === 'AccessDenied') {
         statusCode = 403;
         errorMessage = 'Access denied to file in S3';
       }
+      
+      // Set CORS headers even for errors (important for iframe requests)
+      const origin = req.headers.origin;
+      const corsOrigin = process.env.CORS_ORIGIN;
+      const allowedOrigins = corsOrigin ? corsOrigin.split(',').map(o => o.trim()) : ['*'];
+      
+      if (!origin || origin === 'null') {
+        if (process.env.NODE_ENV === 'production' && corsOrigin) {
+          const allowOrigin = allowedOrigins.includes('*') ? '*' : allowedOrigins[0];
+          res.setHeader("Access-Control-Allow-Origin", allowOrigin);
+        } else {
+          res.setHeader("Access-Control-Allow-Origin", "*");
+        }
+      } else {
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+          res.setHeader("Access-Control-Allow-Origin", origin);
+        }
+      }
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
       
       res.status(statusCode).json({
         statusCode,
