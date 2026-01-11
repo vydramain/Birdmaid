@@ -272,10 +272,50 @@ export class GamesController {
       }
     }
     
+    // FALLBACK: If no token in query, try to extract from referer (for relative path requests from iframe)
+    // This handles cases where Godot loads files via relative paths (e.g., "index.wasm") 
+    // which browser resolves relative to current URL without preserving query params
+    if (!tokenFromQuery && !userId) {
+      const refererHeader = req.headers.referer || req.headers.referrer;
+      const referer = Array.isArray(refererHeader) ? refererHeader[0] : refererHeader;
+      if (referer && typeof referer === 'string') {
+        try {
+          const refererUrl = new URL(referer);
+          const refererToken = refererUrl.searchParams.get('token');
+          if (refererToken) {
+            console.log(`[proxyBuildFile] Found token in referer, extracting...`);
+            try {
+              const secret = process.env.JWT_SECRET || "default-secret-change-in-production";
+              const payload = await this.jwtService.verifyAsync(refererToken, { secret });
+              console.log(`[proxyBuildFile] Token from referer verified: userId=${payload.userId}, isSuperAdmin=${payload.isSuperAdmin}`);
+              // Set user from token payload
+              if (!user) {
+                user = {};
+                (req as any).user = user;
+              }
+              user.userId = payload.userId;
+              user.isSuperAdmin = payload.isSuperAdmin || false;
+              userId = payload.userId;
+              isSuperAdmin = payload.isSuperAdmin || false;
+              console.log(`[proxyBuildFile] Token from referer verified: userId=${userId}, isSuperAdmin=${isSuperAdmin}`);
+            } catch (error) {
+              const errorMsg = error instanceof Error ? error.message : String(error);
+              console.warn(`[proxyBuildFile] Invalid token in referer: ${errorMsg}`);
+            }
+          }
+        } catch (error) {
+          console.warn(`[proxyBuildFile] Failed to parse referer URL: ${referer}`);
+        }
+      }
+    }
+    
     console.log(`[proxyBuildFile] Getting game ${id}`);
     console.log(`[proxyBuildFile] User object:`, user ? { userId: user.userId, isSuperAdmin: user.isSuperAdmin } : 'null');
     console.log(`[proxyBuildFile] Authorization header:`, req.headers.authorization ? 'present' : 'missing');
     console.log(`[proxyBuildFile] Token in query:`, tokenFromQuery ? 'present' : 'missing');
+    const refererForLog = req.headers.referer || req.headers.referrer;
+    const refererStr = Array.isArray(refererForLog) ? refererForLog[0] : refererForLog;
+    console.log(`[proxyBuildFile] Referer:`, refererStr || 'missing');
     console.log(`[proxyBuildFile] Extracted userId: ${userId || 'anonymous'}, isSuperAdmin: ${isSuperAdmin}`);
     
     // Get game with proper access check
@@ -433,12 +473,34 @@ export class GamesController {
           // Also match Godot-specific patterns like "index.wasm", "index.pck" in script tags or as direct references
           let replacementCount = 0;
           
-          // Pattern 1: Standard HTML attributes (src, href)
+          // CRITICAL: First, replace ALL relative paths that start with "/" (absolute paths relative to root)
+          // These are resolved by browser relative to current origin, losing query params
           content = content.replace(
-            /(src|href)\s*=\s*["']?([^"'\s>]+)["']?/gi,
+            /(["'])\/([^"'\s>]+\.(wasm|pck|js|png|jpg|jpeg|gif|svg|ico|json|css|html))(\?[^"']*)?\1/gi,
+            (match, quote, path, ext, query) => {
+              // Skip if already absolute URL
+              if (/^(https?:|\/\/)/i.test(path)) {
+                return match;
+              }
+              // Remove leading / and any existing query params
+              const cleanPath = path.replace(/^\//, '');
+              replacementCount++;
+              const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
+              console.log(`[proxyBuildFile] Replaced ${replacementCount} (absolute path): ${match} -> ${quote}${newUrl}${quote}`);
+              return `${quote}${newUrl}${quote}`;
+            }
+          );
+          
+          // Pattern 1: Standard HTML attributes (src, href) - improved to catch more cases
+          content = content.replace(
+            /(src|href)\s*=\s*["']([^"'\s>]+)["']/gi,
             (match, attr, path) => {
               // Skip absolute URLs (http://, https://, //, data:, blob:, etc.)
               if (/^(https?:|\/\/|data:|blob:|#)/i.test(path)) {
+                return match;
+              }
+              // Skip if already replaced by previous pattern (starts with proxyBase)
+              if (path.startsWith(proxyBase)) {
                 return match;
               }
               // Convert relative path to proxy URL
@@ -460,6 +522,10 @@ export class GamesController {
               if (/^(https?:|\/\/)/i.test(filename)) {
                 return match;
               }
+              // Skip if already replaced
+              if (filename.startsWith(proxyBase)) {
+                return match;
+              }
               // Remove leading ./ or ../
               const cleanPath = filename.replace(/^\.\.?\//, '');
               replacementCount++;
@@ -474,6 +540,9 @@ export class GamesController {
             /(fetch|XMLHttpRequest|open)\s*\(\s*["']([^"']+\.(wasm|pck))["']/gi,
             (match, method, path) => {
               if (/^(https?:|\/\/)/i.test(path)) {
+                return match;
+              }
+              if (path.startsWith(proxyBase)) {
                 return match;
               }
               const cleanPath = path.replace(/^\.\.?\//, '');
@@ -492,6 +561,9 @@ export class GamesController {
               if (/^(https?:|\/\/)/i.test(path)) {
                 return match;
               }
+              if (path.startsWith(proxyBase)) {
+                return match;
+              }
               const cleanPath = path.replace(/^\.\.?\//, '');
               replacementCount++;
               const newUrl = `${proxyBase}${cleanPath}${tokenSuffix}`;
@@ -506,6 +578,9 @@ export class GamesController {
             /`([^`]+\.(wasm|pck|js|png|jpg|jpeg|gif|svg|ico|json|css|html))`/gi,
             (match, path) => {
               if (/^(https?:|\/\/)/i.test(path)) {
+                return match;
+              }
+              if (path.startsWith(proxyBase)) {
                 return match;
               }
               const cleanPath = path.replace(/^\.\.?\//, '');
