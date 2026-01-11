@@ -53,25 +53,17 @@ ${DOMAIN} {
 # Note: ${DOMAIN} will be substituted by entrypoint script
 # DOMAIN should be the full domain (e.g., birdmaid.su or example.com)
 api.${DOMAIN} {
-    # Timeouts for large build files and slow responses
-    timeouts {
-        read 5m
-        read_header 30s
-        write 5m
-        idle 2m
-    }
-    
     # Proxy to backend with explicit timeouts and error handling
     reverse_proxy back:3000 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
         # Note: X-Forwarded-For and X-Forwarded-Proto are set automatically by Caddy
         
-        # Transport timeouts for upstream connection
-        transport http {
-            response_header_timeout 30s
-            dial_timeout 10s
-        }
+        # Timeouts for large build files and slow responses
+        dial_timeout 10s
+        read_timeout 5m
+        write_timeout 5m
+        response_header_timeout 30s
         
         # Health check settings
         health_uri /health
