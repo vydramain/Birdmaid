@@ -200,23 +200,35 @@ export class GamesController {
   }
 
   /**
-   * Proxy endpoint for build files (catch-all for other files).
+   * Proxy endpoint for build files (all other files).
    * This allows relative paths in index.html to work with signed URLs.
    * Example: /games/:id/build/index.js -> proxies to S3 with signed URL
-   * For index.html, modifies relative paths to use proxy endpoint.
    * 
    * IMPORTANT: This route must be declared BEFORE :id route to avoid conflicts.
-   * Uses catch-all route pattern to handle any file path.
+   * Uses explicit file parameter extraction from URL.
    */
-  @Get(":id/build/:file(*)")
+  @Get(":id/build/:file")
   @UseGuards(OptionalAuthGuard)
-  async proxyBuildFileCatchAll(
+  async proxyBuildFileExplicit(
     @Param("id") id: string,
     @Param("file") file: string,
     @Req() req: Request,
     @Res() res: Response
   ) {
-    return this.proxyBuildFile(id, file, req, res);
+    console.log(`[proxyBuildFileExplicit] ===== EXPLICIT ROUTE CALLED =====`);
+    console.log(`[proxyBuildFileExplicit] Game ID: ${id}, File: ${file}`);
+    console.log(`[proxyBuildFileExplicit] Request URL: ${req.url}, Path: ${req.path}`);
+    
+    // Handle nested paths (e.g., "assets/image.png")
+    // If file doesn't contain extension, it might be a nested path
+    // Extract full path from URL
+    const urlPath = req.url || req.path || "";
+    const buildMatch = urlPath.match(/\/build\/(.+?)(?:\?|$)/);
+    const filePath = buildMatch ? buildMatch[1] : file;
+    
+    console.log(`[proxyBuildFileExplicit] Resolved file path: ${filePath}`);
+    
+    return this.proxyBuildFile(id, filePath, req, res);
   }
 
   /**
@@ -252,7 +264,9 @@ export class GamesController {
       // Try to verify token from query parameter
       try {
         const secret = process.env.JWT_SECRET || "default-secret-change-in-production";
+        console.log(`[proxyBuildFile] Verifying token from query, token length: ${tokenFromQuery.length}`);
         const payload = await this.jwtService.verifyAsync(tokenFromQuery, { secret });
+        console.log(`[proxyBuildFile] Token payload:`, { userId: payload.userId, isSuperAdmin: payload.isSuperAdmin, exp: payload.exp });
         // Set user from token payload
         if (!user) {
           user = {};
@@ -264,7 +278,9 @@ export class GamesController {
         isSuperAdmin = payload.isSuperAdmin || false;
         console.log(`[proxyBuildFile] Token from query verified: userId=${userId}, isSuperAdmin=${isSuperAdmin}`);
       } catch (error) {
-        console.warn(`[proxyBuildFile] Invalid token in query:`, error instanceof Error ? error.message : String(error));
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.warn(`[proxyBuildFile] Invalid token in query: ${errorMsg}`);
+        console.warn(`[proxyBuildFile] Token preview: ${tokenFromQuery.substring(0, 50)}...`);
         // Don't throw error here - let getGame handle access check
       }
     }
