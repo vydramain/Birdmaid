@@ -233,12 +233,35 @@ export class GamesController {
     console.log(`[proxyBuildFile] Request path: ${req.path}`);
 
     // Get game to find build_url
+    // For build files, we need to check access the same way as getGame endpoint
+    // But we allow access if game is published OR if user has access (team member or super admin)
     const userId = (req as any).user?.userId;
     const isSuperAdmin = (req as any).user?.isSuperAdmin || false;
-    const game = await this.gamesService.getGame(id, userId, isSuperAdmin);
     
-    if (!game || !game.build_url) {
-      throw new NotFoundException("Game or build not found");
+    console.log(`[proxyBuildFile] Getting game ${id}, userId: ${userId || 'anonymous'}, isSuperAdmin: ${isSuperAdmin}`);
+    
+    let game;
+    try {
+      game = await this.gamesService.getGame(id, userId, isSuperAdmin);
+    } catch (error) {
+      console.error(`[proxyBuildFile] Failed to get game ${id}:`, error instanceof Error ? error.message : String(error));
+      // If it's NotFoundException, re-throw it
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new NotFoundException("Game not available");
+    }
+    
+    console.log(`[proxyBuildFile] Game found: ${!!game}, status: ${game?.status}, build_url: ${game?.build_url ? 'present' : 'null'}`);
+    
+    if (!game) {
+      console.error(`[proxyBuildFile] Game ${id} not found`);
+      throw new NotFoundException("Game not found");
+    }
+    
+    if (!game.build_url) {
+      console.error(`[proxyBuildFile] Game ${id} has no build_url`);
+      throw new NotFoundException("Game build not found");
     }
 
     // Extract buildId from build_url

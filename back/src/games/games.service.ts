@@ -91,19 +91,29 @@ export class GamesService {
   async getGame(gameId: string, userId?: string, isSuperAdmin?: boolean) {
     const game = await this.gamesRepo.findById(gameId);
     if (!game) {
+      console.log(`[GamesService.getGame] Game ${gameId} not found in database`);
       throw new NotFoundException("Game not found");
     }
 
+    console.log(`[GamesService.getGame] Game ${gameId} found: status=${game.status}, userId=${userId || 'anonymous'}, isSuperAdmin=${isSuperAdmin || false}`);
+
     // If published, anyone can see it
     if (game.status === "published") {
+      console.log(`[GamesService.getGame] Game ${gameId} is published, allowing access`);
       return game;
     }
 
     // If editing/archived, only team members or super admin can see
-    if (userId && (isSuperAdmin || (await this.isTeamMember(game.teamId, userId)))) {
-      return game;
+    if (userId) {
+      const isMember = await this.isTeamMember(game.teamId, userId);
+      console.log(`[GamesService.getGame] Game ${gameId} is ${game.status}, checking access: isSuperAdmin=${isSuperAdmin}, isTeamMember=${isMember}`);
+      if (isSuperAdmin || isMember) {
+        console.log(`[GamesService.getGame] Game ${gameId} access granted`);
+        return game;
+      }
     }
 
+    console.log(`[GamesService.getGame] Game ${gameId} access denied: status=${game.status}, userId=${userId || 'anonymous'}`);
     throw new NotFoundException("Game not available");
   }
 
