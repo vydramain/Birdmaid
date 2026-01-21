@@ -17,17 +17,23 @@ Skills live under `.codex/skills/**` and are opt-in: each workflow-role (in `ai/
 
 | Skill name (folder) | Origin | Purpose | Used by workflow-roles |
 | --- | --- | --- | --- |
-| birdmaid-ux-modern-baseline | project | Enforce UX baseline in docs | design-first |
-| fp-bootstrap | project | Bootstrap FP scope artifacts | discovery |
-| ux-map-sync | project | Sync UX_MAP with API/MODEL | design-first |
-| agentic-code/documentation-criteria | vendor | Doc quality checks | discovery, plan, design-first, tests-red, gate |
-| agentic-code/testing-strategy | vendor | Shape UAT/BDD + RTM | tests-red |
-| agentic-code/testing | vendor | Testing practices guidance | tests-red, tests-green |
-| agentic-code/coding-rules | vendor | Coding rules guardrails | implement |
-| agentic-code/implementation-approach | vendor | Implementation approach | implement |
-| agentic-code/integration-e2e-testing | vendor | Integration/E2E testing | tests-green |
-| agentic-code/ai-development-guide | vendor | General dev guidance | plan, implement |
-| agentic-code/metacognition | vendor | Self-check and risk scan | gate |
+| birdmaid-ux-modern-baseline | project | Enforce UX baseline in docs | design |
+| fp-bootstrap | project | Bootstrap FP scope artifacts | plan |
+| ux-map-sync | project | Sync UX_MAP with API/MODEL | design |
+| agentic-code/documentation-criteria | vendor | Doc quality checks | plan, design, build, release |
+| agentic-code/testing-strategy | vendor | Shape UAT/BDD + RTM | build |
+| agentic-code/testing | vendor | Testing practices guidance | build |
+| agentic-code/coding-rules | vendor | Coding rules guardrails | build |
+| agentic-code/implementation-approach | vendor | Implementation approach | design, build |
+| agentic-code/integration-e2e-testing | vendor | Integration/E2E testing | build |
+| agentic-code/ai-development-guide | vendor | General dev guidance | plan, build |
+| agentic-code/metacognition | vendor | Self-check and risk scan | release |
+| agents/product-lead | project | Product management skills | Product Lead agent |
+| agents/designer | project | UX design and BA skills | Designer agent |
+| agents/analyst | project | Product analytics skills | Analyst agent |
+| agents/engineer | project | Technical skills | Engineer agent |
+| agents/delivery | project | Project delivery skills | Delivery agent |
+| agents/compliance | project | Security and compliance skills | Compliance agent |
 
 > **Примечание:** Workflow-роли находятся в `ai/roles/`. См. [ai/roles/README.md](./ai/roles/README.md) для подробностей.
 
@@ -143,7 +149,8 @@ FP=FP6 mode=release
 - `back/` - NestJS backend (MongoDB + S3-compatible storage)
 - `docs/core/` - Основные документы проекта (sources of truth)
   - См. [docs/README.md](./docs/README.md) для навигации
-- `docs/archive/` - Временные/аналитические документы
+- `docs/fps/` - Feature Pack файлы (единый файл для каждого FP)
+  - См. [docs/fps/README.md](./docs/fps/README.md)
 - `ai/agents/` - Агенты-специалисты (6 агентов: Product Lead, Designer, Analyst, Engineer, Delivery, Compliance)
   - См. [ai/agents/README.md](./ai/agents/README.md)
 - `ai/roles/` - Workflow-роли (4 этапа: plan, design, build, release) + audit-роли

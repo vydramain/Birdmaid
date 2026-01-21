@@ -8,6 +8,7 @@
 |------|----------|
 | [product-delivery.md](./product-delivery.md) | Базовые правила для product delivery (из описания агентов) |
 | [agent-workflow.md](./agent-workflow.md) | Правила для работы с агентами и workflow-ролями |
+| [agents.md](./agents.md) | Интеграция агентов в Cursor (как использовать @AgentName) |
 
 ## Как использовать
 
