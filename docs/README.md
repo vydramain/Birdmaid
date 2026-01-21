@@ -57,5 +57,7 @@ docs/
 └── fps/                    # Feature Pack файлы (единый файл для каждого FP)
     ├── README.md
     ├── TEMPLATE.md
-    └── FP<N>.md            # Один файл на FP со всей информацией
+    ├── FP1.md             # Browse & Play + Admin Authoring
+    ├── FP4.md             # User Accounts & Windows 95 UI
+    └── FP5.md             # UI/UX Fixes and Polish
 ```
