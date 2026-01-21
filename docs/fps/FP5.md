@@ -269,9 +269,11 @@
 
 ## Evidence
 
-- PR: #...
-- CI: https://...
-- Demo: https://...
+- Commit: `817f830 FP5`
+- Implementation: All 16 CTAs implemented, tags management fix
+- Created: 45 files changed, 4351 insertions, 291 deletions
+- Includes: User search endpoint, cover URL signing, tag filtering fixes, Windows 95 tooltips/modals, 4 backend tests, 14 frontend tests
+- Gate: PASS (2026-01-11)
 
 **Gate Decision:** PASS  
 **Gate Reason:** All release_gate criteria met: Acceptance checklist complete (15/15 items), RTM coverage 100% (16/16 requirements mapped to tests), all ADRs captured (ADR-059 to ADR-071), artifacts created (evidence/links.md, evidence/demo-notes.txt), all 18 test files exist, implementation complete for all 16 CTAs, documentation updated. Additional tags management fix (ADR-071) implemented and documented.
