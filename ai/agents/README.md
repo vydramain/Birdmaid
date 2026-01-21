@@ -1,0 +1,81 @@
+# Агенты-специалисты (упрощенная команда)
+
+Команда из 6 агентов для работы над продуктом. Каждый агент возвращает артефакты, а не "разговор".
+
+## Команда (6 агентов)
+
+| Агент | Файл | Скилл | Что делает |
+|-------|------|-------|-----------|
+| **Product Lead** | [product-lead.md](./product-lead.md) | [product-lead](../../.codex/skills/agents/product-lead/SKILL.md) | Управляет продуктом: проблема, outcome, приоритеты, стейкхолдеры, координация команды |
+| **Designer** | [designer.md](./designer.md) | [designer](../../.codex/skills/agents/designer/SKILL.md) | UX + BA: journey map, требования, бизнес-правила, прототипы, состояния |
+| **Analyst** | [analyst.md](./analyst.md) | [analyst](../../.codex/skills/agents/analyst/SKILL.md) | Метрики, воронки, аналитика, эксперименты, дашборды |
+| **Engineer** | [engineer.md](./engineer.md) | [engineer](../../.codex/skills/agents/engineer/SKILL.md) | Техническая реализация: feasibility, архитектура, риски, NFR, код |
+| **Delivery** | [delivery.md](./delivery.md) | [delivery](../../.codex/skills/agents/delivery/SKILL.md) | План релиза, координация, зависимости, коммуникации, риски |
+| **Compliance** | [compliance.md](./compliance.md) | [compliance](../../.codex/skills/agents/compliance/SKILL.md) | Комплаенс, безопасность, приватность, политики, аудит |
+
+**Примечание:** Каждый агент имеет свой скилл, который содержит frameworks, best practices, и quality checklists. Агенты автоматически используют свои скиллы при работе.
+
+## Как использовать в Cursor
+
+### Быстрый старт
+
+Просто напиши в чате:
+```
+@Product Lead: нужно определить scope для новой фичи
+```
+
+Или:
+```
+@Designer: построить journey map для регистрации пользователей
+```
+
+### Подробный формат
+
+Если нужен более структурированный запрос:
+
+```
+ROLE: <AGENT_NAME>
+TASK: <что нужно получить>
+CONTEXT:
+- FP: <номер FP, если есть>
+- Current state: <что уже есть>
+- Constraints: <ограничения>
+OUTPUT: <формат артефакта>
+```
+
+## Правило №1
+
+**Каждый агент не угадывает контекст.** Ты даёшь входы (ссылки на файлы, текущий статус, ограничения). Агент возвращает артефакты: списки, таблицы, диаграммы, PRD/Spec/Checklist.
+
+## Типовые сценарии
+
+### Сценарий 1: Новая фича с нуля
+
+1. **Product Lead**: определяет проблему, outcome, приоритеты
+2. **Designer**: строит journey map и требования
+3. **Analyst**: определяет метрики успеха
+4. **Engineer**: оценивает feasibility и риски
+5. **Delivery**: составляет план релиза
+6. **Product Lead**: собирает всё в единый пакет + backlog
+
+### Сценарий 2: Быстрая оценка фичи
+
+1. **Product Lead**: outcome + гипотеза
+2. **Analyst**: как измерим
+3. **Engineer**: стоимость/риски
+4. **Product Lead**: решение + приоритет
+
+## Чек-лист качества
+
+Каждый агент должен вернуть:
+- ✅ Явные допущения (ASSUMPTIONS)
+- ✅ Границы (IN/OUT scope)
+- ✅ Артефактный результат (таблица/список/спека)
+- ✅ Acceptance criteria (где применимо)
+- ✅ Метрики/риски (где применимо)
+
+## Связь с Feature Packs
+
+Агенты работают с Feature Packs через единый файл `docs/fps/FP<N>.md`, где вся информация о FP в одном месте.
+
+См. также: [ai/roles/README.md](../roles/README.md) для workflow-этапов

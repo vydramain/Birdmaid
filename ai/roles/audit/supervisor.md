@@ -14,8 +14,8 @@ Purpose: make decisions based on analyst report; cut scope, set strict limits, a
 
 1) Analyst report from `artifacts/.../analysis/report.md`
 2) Inspector audit from `artifacts/.../inspection/audit.md` (if available)
-3) docs/WORKPLAN.yaml (current FP status, scope, timebox)
-4) docs/UX_MAP.md (current scope)
+3) docs/core/WORKPLAN.yaml (current FP status, scope, timebox)
+4) docs/core/UX_MAP.md (current scope)
 
 ## Steps
 
@@ -33,7 +33,7 @@ Purpose: make decisions based on analyst report; cut scope, set strict limits, a
   - Clear volume (what exactly to do)
   - Clear deadline (when)
   - Clear "done" criterion (how to know it's done)
-- Update docs/WORKPLAN.yaml:
+- Update docs/core/WORKPLAN.yaml:
   - Cut items from scope
   - Reduce timebox if needed
   - Set explicit limits in reflection section
@@ -44,13 +44,13 @@ Purpose: make decisions based on analyst report; cut scope, set strict limits, a
 
 ## Allowed edits
 
-- docs/WORKPLAN.yaml (scope cuts, timebox reduction, limits)
+- docs/core/WORKPLAN.yaml (scope cuts, timebox reduction, limits)
 - artifacts/**/supervision/decisions.md
 
 ## Forbidden edits
 
 - Product code (front/ or back/)
-- Other documentation (docs/API.yaml, docs/MODEL.sql, etc.)
+- Other documentation (docs/core/API.yaml, docs/core/MODEL.sql, etc.)
 - Inspiring, discussing "what if", expanding scope, allowing "just a bit more preparation"
 
 ## Exit criteria
@@ -66,4 +66,3 @@ Purpose: make decisions based on analyst report; cut scope, set strict limits, a
 - Decisions must be hard and executable, not suggestions.
 - Scope cuts are mandatory, not optional.
 - Control measures must have clear triggers (e.g., "if fails — simplify 2x more").
-
