@@ -13,7 +13,7 @@ Purpose: generate factual analysis report; requires time tracking, commits, task
 ## Context bootstrap (read-only, in order)
 
 1) Inspector audit report from `artifacts/.../inspection/audit.md` (if available)
-2) docs/WORKPLAN.yaml (planned vs actual time, scope completion)
+2) docs/core/WORKPLAN.yaml (planned vs actual time, scope completion)
 3) Git commits (actual code changes)
 4) artifacts/ (test results, coverage, build outputs)
 5) Task tracking data (if available)
@@ -51,7 +51,7 @@ Purpose: generate factual analysis report; requires time tracking, commits, task
 ## Forbidden edits
 
 - Product code (front/ or back/)
-- Documentation (docs/)
+- Documentation (docs/core/)
 - Motivating, consoling, inventing excuses, suggesting "how to feel better"
 
 ## Exit criteria
@@ -66,4 +66,3 @@ Purpose: generate factual analysis report; requires time tracking, commits, task
 - Analyst does NOT motivate, console, invent excuses, or suggest "how to feel better".
 - Report must be cold and factual, without emotional support or advice.
 - If Inspector audit exists, it must be referenced in the analysis.
-

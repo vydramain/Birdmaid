@@ -13,9 +13,9 @@ Birdmaid is an itch.io-at-home for the Omsk gamedev community: a small, hackatho
 
 ## Codex Skills
 
-Skills live under `.codex/skills/**` and are opt-in: each role lists required skills and when to run them. If a skill is installed but not referenced by any role, it is considered unused and must be wired in or removed (out of scope to remove now).
+Skills live under `.codex/skills/**` and are opt-in: each workflow-role (in `ai/roles/`) lists required skills and when to run them. If a skill is installed but not referenced by any role, it is considered unused and must be wired in or removed (out of scope to remove now).
 
-| Skill name (folder) | Origin | Purpose | Used by roles |
+| Skill name (folder) | Origin | Purpose | Used by workflow-roles |
 | --- | --- | --- | --- |
 | birdmaid-ux-modern-baseline | project | Enforce UX baseline in docs | design-first |
 | fp-bootstrap | project | Bootstrap FP scope artifacts | discovery |
@@ -28,6 +28,8 @@ Skills live under `.codex/skills/**` and are opt-in: each role lists required sk
 | agentic-code/integration-e2e-testing | vendor | Integration/E2E testing | tests-green |
 | agentic-code/ai-development-guide | vendor | General dev guidance | plan, implement |
 | agentic-code/metacognition | vendor | Self-check and risk scan | gate |
+
+> **Примечание:** Workflow-роли находятся в `ai/roles/`. См. [ai/roles/README.md](./ai/roles/README.md) для подробностей.
 
 ## Installing / Updating skills
 
@@ -96,11 +98,61 @@ Skills live under `.codex/skills/**` and are opt-in: each role lists required sk
   - `cp front/coverage/coverage-summary.json artifacts/FP<N>/$(date +%F)/coverage/coverage-front.json`
   - `cp back/coverage/coverage-summary.json artifacts/FP<N>/$(date +%F)/coverage/coverage-back.json`
 
+## Работа с агентами
+
+Проект использует упрощенный подход к работе с AI-агентами:
+
+### Команда агентов (6 человек)
+
+1. **@Product Lead** — управляет продуктом, определяет проблему, outcome, приоритеты
+2. **@Designer** — UX + BA, строит journey map, требования, прототипы
+3. **@Analyst** — метрики, воронки, аналитика, эксперименты
+4. **@Engineer** — техническая реализация, feasibility, архитектура, код
+5. **@Delivery** — план релиза, координация, зависимости, риски
+6. **@Compliance** — комплаенс, безопасность, приватность
+
+### Workflow-этапы (4 этапа)
+
+1. **plan** — планирование: discovery + plan
+2. **design** — дизайн: design-first + architecture
+3. **build** — реализация: tests-red + implement + tests-green
+4. **release** — релиз: gate + acceptance
+
+### Как использовать
+
+**Вызов агента:**
+```
+@Product Lead: нужно определить scope для FP6
+```
+
+**Работа над Feature Pack:**
+```
+FP=FP6 mode=plan
+FP=FP6 mode=design
+FP=FP6 mode=build
+FP=FP6 mode=release
+```
+
+**Единый файл для каждого FP:** `docs/fps/FP<N>.md` — вся информация в одном месте.
+
+См. [AGENTS.md](./AGENTS.md) для полного описания workflow и правил работы.
+
 ## Project Structure
 
 - `front/` - React + Vite + TypeScript frontend (Windows 95 UI styling)
 - `back/` - NestJS backend (MongoDB + S3-compatible storage)
-- `docs/` - Project documentation (REQUIREMENTS.md, API.yaml, UX_MAP.md, TESTS.md, etc.)
+- `docs/core/` - Основные документы проекта (sources of truth)
+  - См. [docs/README.md](./docs/README.md) для навигации
+- `docs/archive/` - Временные/аналитические документы
+- `ai/agents/` - Агенты-специалисты (6 агентов: Product Lead, Designer, Analyst, Engineer, Delivery, Compliance)
+  - См. [ai/agents/README.md](./ai/agents/README.md)
+- `ai/roles/` - Workflow-роли (4 этапа: plan, design, build, release) + audit-роли
+  - См. [ai/roles/README.md](./ai/roles/README.md)
+- `ai/roles/audit/` - Аудит-роли (analyst, inspector, supervisor)
+- `docs/fps/` - Feature Pack файлы (единый файл для каждого FP)
+  - См. [docs/fps/README.md](./docs/fps/README.md)
+- `.cursor/rules/` - Правила для Cursor
+  - См. [.cursor/rules/README.md](./.cursor/rules/README.md)
 - `artifacts/` - Test logs, coverage, and evidence (not committed to git)
 - `.codex/skills/` - Codex skills (vendor and project-specific)
 

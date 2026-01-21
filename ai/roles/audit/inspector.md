@@ -12,9 +12,9 @@ Purpose: audit actual code implementation; checks repository, executable code, i
 
 ## Context bootstrap (read-only, in order)
 
-1) docs/WORKPLAN.yaml (scope, status, claimed features)
-2) docs/UX_MAP.md (claimed CTAs and features)
-3) docs/API.yaml (claimed endpoints)
+1) docs/core/WORKPLAN.yaml (scope, status, claimed features)
+2) docs/core/UX_MAP.md (claimed CTAs and features)
+3) docs/core/API.yaml (claimed endpoints)
 4) Actual source files in front/src/ and back/src/
 5) Test files in front/__tests__/ and back/__tests__/
 6) Build outputs (if applicable)
@@ -56,7 +56,7 @@ Purpose: audit actual code implementation; checks repository, executable code, i
 ## Forbidden edits
 
 - Product code (front/ or back/)
-- Documentation (docs/)
+- Documentation (docs/core/)
 - Proposing improvements, refactoring, optimizing, praising design
 
 ## Exit criteria
@@ -70,4 +70,3 @@ Purpose: audit actual code implementation; checks repository, executable code, i
 - Inspector does NOT propose architecture, improve code, optimize, or refactor.
 - This is an auditor of fact existence, not a reviewer or architect.
 - Report must be factual and objective, without suggestions for improvement.
-
