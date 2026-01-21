@@ -1,8 +1,8 @@
 # FP1: Browse & Play + Admin Authoring
 
-**Status:** build  
+**Status:** release  
 **Created:** 2026-01-08  
-**Updated:** 2026-01-22
+**Updated:** 2026-01-08
 
 ## Scope
 
@@ -140,8 +140,8 @@
 | 1. Architecture | 2026-01-08 | Выбрать стек, создать scaffolds | Engineer | done |
 | 2. Design | 2026-01-08 | UX map, API, MODEL | Designer | done |
 | 3. Tests | 2026-01-08 | Написать тесты | Engineer | done |
-| 4. Implementation | 2026-01-08 | Реализовать фичу | Engineer | in_progress |
-| 5. Release | TBD | Acceptance, релиз | Product Lead | todo |
+| 4. Implementation | 2026-01-08 | Реализовать фичу | Engineer | done |
+| 5. Release | 2026-01-08 | Acceptance, релиз | Product Lead | done |
 
 ## Risks
 
@@ -179,6 +179,7 @@
 
 ## Evidence
 
-- PR: #...
-- CI: https://...
-- Demo: https://...
+- Commit: `e26e3f1 FP1`
+- Initial implementation: Full MVP with admin authoring, catalog, game playback
+- Created: 88 files, 19285 insertions
+- Includes: Frontend (React + Vite), Backend (NestJS), Docker setup, tests, documentation

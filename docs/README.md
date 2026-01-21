@@ -58,6 +58,8 @@ docs/
     ├── README.md
     ├── TEMPLATE.md
     ├── FP1.md             # Browse & Play + Admin Authoring
+    ├── FP2.md             # Team System and Game Editing
+    ├── FP3.md             # Windows 95 UI Behavior
     ├── FP4.md             # User Accounts & Windows 95 UI
     └── FP5.md             # UI/UX Fixes and Polish
 ```

@@ -1,8 +1,8 @@
 # FP4: User Accounts & Windows 95 UI
 
-**Status:** build  
+**Status:** release  
 **Created:** 2026-01-09  
-**Updated:** 2026-01-22
+**Updated:** 2026-01-09
 
 ## Scope
 
@@ -276,6 +276,7 @@
 
 ## Evidence
 
-- PR: #...
-- CI: https://...
-- Demo: https://...
+- Commit: `80cbf2b FP4`
+- Implementation: Full authentication system, Windows 95 UI, comments, team management
+- Created: 81 files changed, 8293 insertions, 334 deletions
+- Includes: Auth module (JWT, bcrypt, nodemailer), Windows 95 components, comments system, team membership, 12 backend tests, 11 frontend tests

@@ -56,7 +56,11 @@ Birdmaid/
 │   └── fps/                        # Feature Pack files (one file per FP)
 │       ├── README.md               # FP files description
 │       ├── TEMPLATE.md             # Template for new FP
-│       └── FP<N>.md                # Single file with all FP information
+│       ├── FP1.md                  # Browse & Play + Admin Authoring
+│       ├── FP2.md                  # Team System and Game Editing
+│       ├── FP3.md                  # Windows 95 UI Behavior
+│       ├── FP4.md                  # User Accounts & Windows 95 UI
+│       └── FP5.md                  # UI/UX Fixes and Polish
 │
 ├── .cursor/                        # Cursor rules
 │   └── rules/

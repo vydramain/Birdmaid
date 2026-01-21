@@ -4,11 +4,11 @@ Birdmaid is an itch.io-at-home for the Omsk gamedev community: a small, hackatho
 
 ## Current Status
 
-- **FP1**: Browse & Play + Admin Authoring (status: implement)
-- **FP2**: Added team system and game editing (status: completed)
-- **FP3**: Added Windows 95 UI behavior (status: completed)
-- **FP4**: User Accounts & Windows 95 UI (status: completed)
-- **FP5**: UI/UX Fixes and Polish (status: gate, PASS - completed)
+- **FP1**: Browse & Play + Admin Authoring (status: release)
+- **FP2**: Team System and Game Editing (status: release)
+- **FP3**: Windows 95 UI Behavior (status: release)
+- **FP4**: User Accounts & Windows 95 UI (status: release)
+- **FP5**: UI/UX Fixes and Polish (status: release, gate PASS)
 
 
 ## Codex Skills
@@ -184,29 +184,5 @@ FP=FP6 mode=release
 ### Infrastructure
 - Docker Compose for local development
 - MongoDB for data storage
-- S3-compatible storage (MinIO locally, Selectel S3 in production)
+- MinIO for S3-compatible object storage
 - Node.js runtime
-- Production deployment with Docker Compose, Caddy reverse proxy, automatic TLS
-
-## Production Deployment
-
-See `docs/DEPLOY.md` (English) or `docs/DEPLOY_RU.md` (Russian) for production deployment instructions.
-
-### Security Hardening
-
-After deploying to production, run the security hardening script:
-
-```bash
-sudo bash scripts/harden-server.sh
-```
-
-This will configure:
-- SSH hardening (disable root, modern algorithms)
-- Fail2ban (brute-force protection)
-- Automatic security updates
-- UFW firewall
-- Password requirements
-- NTP time synchronization
-- Log monitoring
-
-See `docs/SECURITY.md` for detailed security guide.
