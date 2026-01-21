@@ -1,6 +1,6 @@
 ---
 name: ux-map-sync
-description: Sync docs/UX_MAP.md with docs/API.yaml and docs/MODEL.sql and add CTA diagrams; use when aligning UX flow, API, and data model for an FP or feature.
+description: Sync docs/core/UX_MAP.md with docs/core/API.yaml and docs/core/MODEL.sql and add CTA diagrams; use when aligning UX flow, API, and data model for an FP or feature.
 ---
 
 # ux-map-sync
