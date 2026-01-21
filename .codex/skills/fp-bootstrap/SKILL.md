@@ -12,12 +12,12 @@ description: Create or refresh FP scope for Birdmaid; use when starting discover
 
 ## Steps
 
-1) Read: docs/REQUIREMENTS.md, docs/API.yaml, docs/MODEL.sql, docs/UX_MAP.md, docs/TESTS.md, docs/QNA_DECISIONS.md, docs/WORKPLAN.yaml.
-2) Update docs/WORKPLAN.yaml: add or refresh the FP block with scope, risks, timebox, dependencies, and status=discovery.
-3) Update docs/UX_MAP.md: add FP assignment plus a CTA table with Page, Endpoint, State, and mock_status.
-4) Update docs/QNA_DECISIONS.md: add 5-15 Questions/Gaps tagged [FP:<id>] with suggested default decisions.
+1) Read: docs/core/REQUIREMENTS.md, docs/core/API.yaml, docs/core/MODEL.sql, docs/core/UX_MAP.md, docs/core/TESTS.md, docs/core/QNA_DECISIONS.md, docs/core/WORKPLAN.yaml.
+2) Create or update docs/fps/FP<N>.md: add scope, risks, timebox, dependencies, and status=plan.
+3) Update docs/core/UX_MAP.md: add FP assignment plus a CTA table with Page, Endpoint, State, and mock_status.
+4) Update docs/core/QNA_DECISIONS.md: add 5-15 Questions/Gaps tagged [FP:<id>] with suggested default decisions.
 5) Summarize changes and request ACK.
 
 ## Output
 
-- Updated docs/WORKPLAN.yaml, docs/UX_MAP.md, docs/QNA_DECISIONS.md.
+- Created/updated docs/fps/FP<N>.md, docs/core/UX_MAP.md, docs/core/QNA_DECISIONS.md.
