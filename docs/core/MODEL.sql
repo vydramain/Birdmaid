@@ -33,6 +33,16 @@
 -- indexes: (gameId), (userId), (createdAt)
 -- notes: Comments visible to all users on published games. Stored in separate collection (ADR-035).
 
+-- Collection: jams (FP6)
+-- fields: _id, name, startDate, endDate, description_md?, registrationUrl?, createdAt
+-- indexes: (startDate), (endDate)
+-- notes: Game jams/hackathons. Used for landing window on Desktop. Current jam is the one with startDate <= now <= endDate, or nearest upcoming if no current.
+
+-- Collection: help (FP6)
+-- fields: _id, content (markdown string), updatedAt
+-- indexes: none (single document expected)
+-- notes: HELP.TXT content stored as markdown. Alternative: static file in filesystem. Single document with _id="help" or similar.
+
 -- Relations (MongoDB):
 -- - games.teamId references teams._id (no joins; resolve in app).
 -- - builds.gameId references games._id; games.currentBuild embeds minimal build info.

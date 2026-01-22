@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Link, Route, Routes, useParams, useNavigate } from "react-router-dom";
 import { apiClient } from "./api/client";
 import { useAuth } from "./contexts/AuthContext";
@@ -1876,9 +1876,29 @@ const NotFound = () => (
   </WindowShell>
 );
 
+import { DesktopPage } from "./pages/DesktopPage";
+import { MobilePage } from "./pages/MobilePage";
+
 export default function App() {
+  // Check viewport width to determine Desktop vs Mobile mode
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <Routes>
+      <Route path="/desktop" element={isMobile ? <MobilePage /> : <DesktopPage />} />
       <Route path="/" element={<CatalogPage />} />
       <Route path="/games/:gameId" element={<GamePage />} />
       <Route path="/teams" element={<TeamsPage />} />
