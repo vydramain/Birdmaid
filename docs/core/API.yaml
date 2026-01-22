@@ -141,6 +141,18 @@
 #   Returns: { users: [{ id, login }] }
 #   Notes: Returns up to 20 results. Partial match (e.g., "john" matches "john_doe", "JohnSmith"). Used for team member search (ADR-061).
 
+# ===== FP6: Desktop Workspace & Window Manager =====
+
+# GET /jam/current
+#   Auth: public
+#   Returns: { id, name, startDate, endDate, description_md?, registrationUrl? } | null
+#   Notes: Returns current or nearest upcoming jam. Used for landing window on Desktop. Returns null if no jam found.
+
+# GET /help
+#   Auth: public
+#   Returns: { content: string (markdown) }
+#   Notes: Returns HELP.TXT content as markdown. Can be stored in DB (help collection) or as static file. Used for HelpWindow.
+
 # ===== Constraints =====
 # - Publish requires cover_url + description_md + build_url/build_id.
 # - Tag assignment allowed for team members + Super Admin.
