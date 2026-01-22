@@ -346,10 +346,12 @@ docker compose logs -f front
 
 **Доступные сервисы:**
 - Frontend: `http://localhost:5173`
-- Backend: `http://localhost:3000/health`
+- Backend: `http://localhost:3002/health`
 - MongoDB: `mongodb://localhost:27017/birdmaid`
-- MinIO API: `http://localhost:9000`
-- MinIO Console: `http://localhost:9001` (user/pass: `minioadmin`)
+- MinIO API: `http://localhost:9002`
+- MinIO Console: `http://localhost:9003` (user/pass: `minioadmin`)
+
+> **Примечание:** Порты могут отличаться, если стандартные порты заняты другими сервисами. В этом случае порты автоматически изменяются в `docker-compose.yml`.
 
 ### Local MVP flow
 
