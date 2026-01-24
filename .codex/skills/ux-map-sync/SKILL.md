@@ -1,6 +1,6 @@
 ---
 name: ux-map-sync
-description: Sync docs/UX_MAP.md with docs/API.yaml and docs/MODEL.sql and add CTA diagrams; use when aligning UX flow, API, and data model for an FP or feature.
+description: Sync docs/core/UX_MAP.md with docs/core/API.yaml and docs/core/MODEL.sql and add CTA diagrams; use when aligning UX flow, API, and data model for an FP or feature.
 ---
 
 # ux-map-sync
@@ -12,12 +12,12 @@ description: Sync docs/UX_MAP.md with docs/API.yaml and docs/MODEL.sql and add C
 
 ## Steps
 
-1) Read: docs/API.yaml, docs/MODEL.sql, docs/UX_MAP.md, docs/QNA_DECISIONS.md, docs/WORKPLAN.yaml.
-2) Ensure each CTA in docs/UX_MAP.md has a mapped Page, Endpoint, State, and mock_status that match docs/API.yaml and docs/MODEL.sql.
-3) Add a CTA overview diagram and a sequenceDiagram for each CTA in docs/UX_MAP.md (use Mermaid).
-4) Record any gaps or assumptions in docs/QNA_DECISIONS.md with [FP:<id>] tags.
-5) Update docs/WORKPLAN.yaml with a short sync note.
+1) Read: docs/core/API.yaml, docs/core/MODEL.sql, docs/core/UX_MAP.md, docs/core/QNA_DECISIONS.md, docs/fps/FP<N>.md.
+2) Ensure each CTA in docs/core/UX_MAP.md has a mapped Page, Endpoint, State, and mock_status that match docs/core/API.yaml and docs/core/MODEL.sql.
+3) Add a CTA overview diagram and a sequenceDiagram for each CTA in docs/core/UX_MAP.md (use Mermaid).
+4) Record any gaps or assumptions in docs/core/QNA_DECISIONS.md with [FP:<id>] tags.
+5) Update docs/fps/FP<N>.md with UX Map section and sync note.
 
 ## Output
 
-- Updated docs/UX_MAP.md, docs/QNA_DECISIONS.md, docs/WORKPLAN.yaml.
+- Updated docs/core/UX_MAP.md, docs/core/QNA_DECISIONS.md, docs/fps/FP<N>.md.

@@ -89,13 +89,38 @@ export const apiClient = {
       credentials: 'include', // Include credentials for CORS
     });
 
+    // Handle 401 Unauthorized
+    // Only redirect if:
+    // 1. User has a token (was authenticated)
+    // 2. Request is NOT to auth endpoints (login/register/recovery)
+    // This prevents redirect on login/register errors
     if (response.status === 401) {
-      localStorage.removeItem("birdmaid_token");
-      window.location.href = "/";
+      const isAuthEndpoint = path.startsWith('/auth/');
+      const hadToken = !!token;
+      
+      if (hadToken && !isAuthEndpoint) {
+        // Token expired or invalid for protected endpoint - redirect to login
+        localStorage.removeItem("birdmaid_token");
+        window.location.href = "/";
+        return response; // Return response so error can still be thrown
+      }
+      // For auth endpoints (login/register), don't redirect - let the error be thrown
     }
 
     if (!response.ok) {
-      throw new Error(`Request failed (${response.status})`);
+      // Try to extract error message from response
+      let errorMessage = `Request failed (${response.status})`;
+      try {
+        const errorData = await response.clone().json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        }
+      } catch {
+        // If response is not JSON, use default message
+      }
+      throw new Error(errorMessage);
     }
 
     return response;
