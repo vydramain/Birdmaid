@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { apiClient } from "../api/client";
 import { HourglassLoader } from "./win95/HourglassLoader";
+import { AppHost } from "../os/apps/AppHost";
 
 type GameWindowProps = {
   buildUrl: string | null;
@@ -11,7 +12,6 @@ export function GameWindow({ buildUrl: buildUrlProp, gameId }: GameWindowProps) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [buildUrl, setBuildUrl] = useState<string | null>(buildUrlProp);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     if (buildUrlProp) {
@@ -43,10 +43,6 @@ export function GameWindow({ buildUrl: buildUrlProp, gameId }: GameWindowProps) 
     }
   };
 
-  const handleIframeLoad = () => {
-    setLoading(false);
-  };
-
   if (loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", padding: "20px" }}>
@@ -72,18 +68,8 @@ export function GameWindow({ buildUrl: buildUrlProp, gameId }: GameWindowProps) 
   }
 
   return (
-    <div style={{ width: "100%", height: "600px", position: "relative" }}>
-      <iframe
-        ref={iframeRef}
-        src={buildUrl}
-        style={{
-          width: "100%",
-          height: "100%",
-          border: "2px solid var(--win-gray-dark)",
-        }}
-        onLoad={handleIframeLoad}
-        title="Game"
-      />
+    <div style={{ width: "100%", height: "600px" }}>
+      <AppHost src={buildUrl} title="Game" />
     </div>
   );
 }

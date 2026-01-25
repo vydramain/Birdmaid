@@ -1,14 +1,15 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
-import { vi } from "vitest";
+import { fireEvent, screen } from "@/test/utils";
+import { render } from "../../src/test/utils/render";
+import { describe, it, vi, expect } from "vitest";
 import App from "../../src/App";
 
 describe("Game playback", () => {
   it("renders play iframe when build is available", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(() =>
-        Promise.resolve({
+      vi.fn((url) => {
+        if (url.toString().endsWith("/comments")) return Promise.resolve({ ok: true, json: () => Promise.resolve({ comments: [] }) } as Response);
+        return Promise.resolve({
           ok: true,
           json: () =>
             Promise.resolve({
@@ -21,24 +22,23 @@ describe("Game playback", () => {
               build_url: "https://example.com/build/index.html",
             }),
         } as Response)
-      )
+      })
     );
-    render(
-      <MemoryRouter initialEntries={["/games/1"]}>
-        <App />
-      </MemoryRouter>
-    );
+    render(<App />, { initialEntries: ["/games/1"] });
 
-    const playButton = await screen.findByText(/Play/i);
+    const playButton = await screen.findByRole("button", { name: /Play/i });
+    expect(playButton).toBeEnabled();
     fireEvent.click(playButton);
-    expect(screen.getByTitle(/Game build/i)).toBeInTheDocument();
+    
+    expect(await screen.findByTitle("Game")).toBeInTheDocument();
   });
 
-  it("shows fallback when iframe fails", async () => {
+  it("disables play button when build is missing", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(() =>
-        Promise.resolve({
+      vi.fn((url) => {
+        if (url.toString().endsWith("/comments")) return Promise.resolve({ ok: true, json: () => Promise.resolve({ comments: [] }) } as Response);
+        return Promise.resolve({
           ok: true,
           json: () =>
             Promise.resolve({
@@ -51,14 +51,11 @@ describe("Game playback", () => {
               build_url: null,
             }),
         } as Response)
-      )
+      })
     );
-    render(
-      <MemoryRouter initialEntries={["/games/1"]}>
-        <App />
-      </MemoryRouter>
-    );
+    render(<App />, { initialEntries: ["/games/1"] });
 
-    expect(await screen.findByText(/Unable to load build/i)).toBeInTheDocument();
+    const playButton = await screen.findByRole("button", { name: /Play/i });
+    expect(playButton).toBeDisabled();
   });
 });

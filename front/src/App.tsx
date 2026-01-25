@@ -58,13 +58,13 @@ type Comment = {
 
 const WindowControls = () => (
   <div className="win-window-controls">
-    <button className="win-btn" type="button">
+    <button className="win-btn" type="button" aria-label="Minimize">
       _
     </button>
-    <button className="win-btn" type="button">
+    <button className="win-btn" type="button" aria-label="Maximize">
       □
     </button>
-    <button className="win-btn" type="button">
+    <button className="win-btn" type="button" aria-label="Close">
       ×
     </button>
   </div>
@@ -269,7 +269,9 @@ const CatalogPage = () => {
       const data = (await apiClient.json<GameSummary[]>(`/games${query ? `?${query}` : ""}`)) as GameSummary[];
       
       // Debug: log cover URLs to verify they are signed URLs, not S3 keys
-      data.forEach((game) => {
+      // (Using loose type check here because data could be anything from API)
+      const safeData = Array.isArray(data) ? data : [];
+      safeData.forEach((game) => {
         if (game.cover_url) {
           if (game.cover_url.startsWith('covers/')) {
             console.error(`[CatalogPage] ERROR: Received S3 key instead of signed URL for game ${game.id}: ${game.cover_url}`);
@@ -281,13 +283,13 @@ const CatalogPage = () => {
         }
       });
       
-      setGames(data);
+      setGames(safeData);
       
       // Extract all unique tags from games
       const tagsSet = new Set<string>();
-      data.forEach((game) => {
-        (game.tags_user || []).forEach((tag) => tagsSet.add(tag));
-        (game.tags_system || []).forEach((tag) => tagsSet.add(tag));
+      safeData.forEach((game) => {
+        (Array.isArray(game.tags_user) ? game.tags_user : []).forEach((tag) => tagsSet.add(tag));
+        (Array.isArray(game.tags_system) ? game.tags_system : []).forEach((tag) => tagsSet.add(tag));
       });
       // Add team filter name to tags if present
       if (teamFilterName && !tagsSet.has(teamFilterName)) {
@@ -499,9 +501,10 @@ const GamePage = () => {
     if (!gameId) return;
     try {
       const data = await apiClient.json<{ comments: Comment[] }>(`/games/${gameId}/comments`);
-      setComments(data.comments);
+      setComments(Array.isArray(data?.comments) ? data.comments : []);
     } catch (err) {
       // Ignore errors
+      setComments([]);
     }
   };
 
@@ -511,6 +514,10 @@ const GamePage = () => {
       setError(null);
       try {
         const data = (await apiClient.json<GameDetails>(`/games/${gameId}`)) as GameDetails;
+        if (!data) throw new Error("Game not found");
+        // Safe access for potential undefined arrays in game details if used directly
+        if (data.tags_user && !Array.isArray(data.tags_user)) data.tags_user = [];
+        if (data.tags_system && !Array.isArray(data.tags_system)) data.tags_system = [];
         setGame(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
@@ -678,8 +685,8 @@ const GamePage = () => {
 
                 <div className="win-outset panel" style={{ marginTop: "12px" }}>
                   <h3 style={{ marginTop: 0 }}>Comments</h3>
-                  {comments.length === 0 && <p style={{ fontSize: "12px", color: "var(--win-gray-dark)" }}>No comments yet.</p>}
-                  {comments.map((comment) => (
+                  {Array.isArray(comments) && comments.length === 0 && <p style={{ fontSize: "12px", color: "var(--win-gray-dark)" }}>No comments yet.</p>}
+                  {Array.isArray(comments) && comments.map((comment) => (
                     <div key={comment.id} style={{ marginBottom: "12px", paddingBottom: "12px", borderBottom: "1px solid var(--win-gray-dark)" }}>
                       <div style={{ fontSize: "12px", fontWeight: "bold" }}>{comment.userLogin}</div>
                       <div style={{ fontSize: "13px", marginTop: "4px" }}>{comment.text}</div>
@@ -688,6 +695,7 @@ const GamePage = () => {
                       </div>
                     </div>
                   ))}
+                  {!Array.isArray(comments) && <p style={{ fontSize: "12px", color: "var(--win-gray-dark)" }}>Loading comments...</p>}
                   {auth.user && (
                     <div style={{ marginTop: "12px" }}>
                       <Win95Textarea
@@ -748,10 +756,13 @@ const TeamsPage = () => {
     setLoading(true);
     try {
       const data = await apiClient.json<{ teams: Team[] }>("/teams");
-      setTeams(data.teams);
-      setFilteredTeams(data.teams);
+      const safeTeams = Array.isArray(data?.teams) ? data.teams : [];
+      setTeams(safeTeams);
+      setFilteredTeams(safeTeams);
     } catch (err) {
       // Ignore errors
+      setTeams([]);
+      setFilteredTeams([]);
     } finally {
       setLoading(false);
     }
@@ -1128,6 +1139,11 @@ const EditorPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("EditorPage auth user:", auth.user);
+  }, [auth.user]);
+
+  useEffect(() => {
+    if (auth.loading) return;
     if (!auth.user) {
       navigate("/");
       return;
@@ -1153,22 +1169,25 @@ const EditorPage = () => {
   const loadTeams = async () => {
     try {
       const data = await apiClient.json<{ teams: Team[] }>("/teams");
-      setTeams(data.teams.filter((t) => t.members.includes(auth.user!.id) || auth.user!.isSuperAdmin));
+      const safeTeams = Array.isArray(data?.teams) ? data.teams : [];
+      setTeams(safeTeams.filter((t) => t.members.includes(auth.user!.id) || auth.user!.isSuperAdmin));
     } catch (err) {
       // Ignore errors
+      setTeams([]);
     }
   };
 
   const loadGame = async () => {
     try {
       const data = await apiClient.json<GameDetails>(`/games/${routeGameId}`);
+      if (!data) throw new Error("Game not found");
       setTitle(data.title);
       setDescription(data.description_md || "");
       setRepoUrl(data.repo_url || "");
       setCoverUrl(data.cover_url || "");
       setStatus(data.status);
-      setTagsUser(data.tags_user || []);
-      setTagsSystem(data.tags_system || []);
+      setTagsUser(Array.isArray(data.tags_user) ? data.tags_user : []);
+      setTagsSystem(Array.isArray(data.tags_system) ? data.tags_system : []);
       setTagsUserInput("");
       setBuildUrl(data.build_url || null);
       // Load teamId from the game data
@@ -1366,7 +1385,8 @@ const EditorPage = () => {
         body: JSON.stringify({ status, remark: remark || undefined }),
       });
     } catch (err) {
-      // Ignore errors
+      setErrorMessage(err instanceof Error ? err.message : "Failed to update status");
+      setErrorModalOpen(true);
     }
   };
 
@@ -1878,28 +1898,18 @@ const NotFound = () => (
 
 import { DesktopPage } from "./pages/DesktopPage";
 import { MobilePage } from "./pages/MobilePage";
+import Shell from "./shell/Shell";
+import { useLocation } from "react-router-dom";
 
 export default function App() {
-  // Check viewport width to determine Desktop vs Mobile mode
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window !== "undefined") {
-      return window.innerWidth < 768;
-    }
-    return false;
-  });
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const location = useLocation();
+  console.log("App location:", location.pathname);
 
   return (
     <Routes>
-      <Route path="/desktop" element={isMobile ? <MobilePage /> : <DesktopPage />} />
-      <Route path="/" element={<CatalogPage />} />
+      <Route path="/" element={<Shell />} />
+      <Route path="/desktop" element={<Shell />} />
+      <Route path="/catalog" element={<CatalogPage />} />
       <Route path="/games/:gameId" element={<GamePage />} />
       <Route path="/teams" element={<TeamsPage />} />
       <Route path="/editor/games/new" element={<EditorPage />} />

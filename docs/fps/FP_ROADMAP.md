@@ -52,15 +52,16 @@
 
 ---
 
-### 📁 FP7: Explorer & Media Viewers (todo)
+### 📁 FP7: Explorer & Media Viewers (Performance & VFS)
+**Статус:** design
 **Что входит:**
-- Полноценный Explorer с древовидной навигацией
-- Фото просмотрщик (окно с frame)
-- Видео просмотрщик (окно с frame)
-- TXT/MD файлы (Блокнот)
-- Игры через iframe (улучшение)
+- Unified Shell (Architecture Refactor)
+- Performance Budget (Zero-Lag Drag)
+- Full Explorer (Tree + Grid)
+- Media Viewers (Image, Video, Text)
+- VFS (Event-driven)
 
-**Приоритет:** Высокий (основа для навигации)
+**Приоритет:** Высокий (Performance Foundation)
 
 **Зависимости:** FP6 (базовый Explorer)
 

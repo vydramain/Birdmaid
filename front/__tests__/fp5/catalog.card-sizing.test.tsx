@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@/test/utils";
 import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import App from "../../src/App";
@@ -23,7 +23,7 @@ describe("Catalog card sizing (FP5)", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={["/catalog"]}>
         <App />
       </MemoryRouter>
     );
@@ -67,7 +67,7 @@ describe("Catalog card sizing (FP5)", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={["/catalog"]}>
         <App />
       </MemoryRouter>
     );

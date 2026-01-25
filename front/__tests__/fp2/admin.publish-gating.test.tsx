@@ -1,23 +1,45 @@
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { screen } from "@/test/utils";
+import { render } from "../../src/test/utils/render";
+import { describe, it, vi, beforeEach, expect } from "vitest";
 import App from "../../src/App";
 
 describe("Admin publish gating", () => {
   beforeEach(() => {
-    localStorage.setItem("adminToken", "admin-token");
+    const fakeToken = `header.${btoa(JSON.stringify({
+      userId: "user-1",
+      email: "user@example.com",
+      login: "user1",
+      isSuperAdmin: false
+    }))}.signature`;
+    localStorage.setItem("birdmaid_token", fakeToken);
   });
 
-  afterEach(() => {
-    localStorage.removeItem("adminToken");
-  });
+  it("disables publish until required fields are present", async () => {
+    vi.stubGlobal("fetch", vi.fn((url) => {
+        if (url.toString().endsWith("/teams")) {
+             return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({ teams: [] })
+             } as Response);
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            id: "1",
+            title: "Test Game",
+            description_md: "", 
+            repo_url: "",
+            cover_url: "",
+            build_url: null,
+            status: "editing",
+            teamId: "team-1"
+          })
+        } as Response);
+    }));
 
-  it("disables publish until required fields are present", () => {
-    render(
-      <MemoryRouter initialEntries={["/admin/games/1"]}>
-        <App />
-      </MemoryRouter>
-    );
+    render(<App />, { initialEntries: ["/editor/games/1"] });
 
-    expect(screen.getByRole("button", { name: /Publish/i })).toBeDisabled();
+    const publishBtn = await screen.findByRole("button", { name: /Publish/i });
+    expect(publishBtn).toBeDisabled();
   });
 });

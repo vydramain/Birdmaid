@@ -1,24 +1,17 @@
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
-import { vi } from "vitest";
+import { render } from "../../src/test/utils/render";
+import { describe, it, vi, expect } from "vitest";
 import App from "../../src/App";
 
 describe("Windows 95 UI styling", () => {
-  beforeEach(() => {
+  it("renders all UI elements with Windows 95 design", () => {
     vi.stubGlobal("fetch", vi.fn(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve([]),
       } as Response))
     );
-  });
 
-  it("renders all UI elements with Windows 95 design", () => {
-    render(
-      <MemoryRouter initialEntries={["/"]}>
-        <App />
-      </MemoryRouter>
-    );
+    render(<App />, { initialEntries: ["/catalog"] });
 
     // Check for Windows 95 window structure
     const window = document.querySelector(".win-window");
@@ -38,26 +31,21 @@ describe("Windows 95 UI styling", () => {
   });
 
   it("does not contain MUI Material 3 components", () => {
-    render(
-      <MemoryRouter initialEntries={["/"]}>
-        <App />
-      </MemoryRouter>
-    );
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response)));
+    
+    render(<App />, { initialEntries: ["/catalog"] });
 
     // Check that MUI classes are not present
     const muiComponents = document.querySelectorAll("[class*='Mui']");
     expect(muiComponents.length).toBe(0);
   });
 
-  it("removes Teams sidebar from Teams page", () => {
-    render(
-      <MemoryRouter initialEntries={["/teams"]}>
-        <App />
-      </MemoryRouter>
-    );
+  it("removes Teams sidebar from Teams page", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ teams: [] }) } as Response)));
+
+    render(<App />, { initialEntries: ["/teams"] });
 
     const sidebar = document.querySelector(".sidebar");
     expect(sidebar).not.toBeInTheDocument();
   });
 });
-
