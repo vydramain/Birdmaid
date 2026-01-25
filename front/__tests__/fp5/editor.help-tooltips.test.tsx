@@ -1,25 +1,19 @@
-import { render, screen, waitFor } from "@/test/utils";
-import { MemoryRouter } from "react-router-dom";
-import { vi } from "vitest";
-import App from "../../src/App";
+import { renderAppRoot, screen, waitFor } from "@/test/utils";
+import { mockApi } from "@/test/mocks/mockApi";
 
 describe("New Game page help tooltips (FP5)", () => {
   beforeEach(() => {
+    localStorage.clear();
+    // Add safety check
+    if (mockApi && typeof mockApi.reset === 'function') {
+      mockApi.reset();
+      mockApi.setupDefaults();
+    }
     localStorage.setItem("birdmaid_token", "valid-token");
-    vi.stubGlobal("fetch", vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve([]),
-      } as Response)
-    ));
   });
 
   it("displays help icons (question marks) on New Game page", () => {
-    render(
-      <MemoryRouter initialEntries={["/editor/games/new"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/editor/games/new" });
 
     // Help icons should be present (question marks or help icons)
     const helpIcons = screen.queryAllByRole("button", { name: /help|info|question/i }) ||
@@ -29,11 +23,7 @@ describe("New Game page help tooltips (FP5)", () => {
   });
 
   it("shows Windows 95 styled tooltip when help icon is clicked", async () => {
-    render(
-      <MemoryRouter initialEntries={["/editor/games/new"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/editor/games/new" });
 
     const helpIcon = screen.getByRole("button", { name: /help|info|question/i }) ||
                     document.querySelector("[class*='help'], [class*='tooltip'], [data-help]");
@@ -53,11 +43,7 @@ describe("New Game page help tooltips (FP5)", () => {
   });
 
   it("tooltip explains game upload rules", async () => {
-    render(
-      <MemoryRouter initialEntries={["/editor/games/new"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/editor/games/new" });
 
     const helpIcon = screen.getByRole("button", { name: /help|info|question/i }) ||
                     document.querySelector("[class*='help'], [class*='tooltip'], [data-help]");
@@ -80,11 +66,7 @@ describe("New Game page help tooltips (FP5)", () => {
   });
 
   it("tooltip uses Windows 95 styling", async () => {
-    render(
-      <MemoryRouter initialEntries={["/editor/games/new"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/editor/games/new" });
 
     const helpIcon = screen.getByRole("button", { name: /help|info|question/i }) ||
                     document.querySelector("[class*='help'], [class*='tooltip'], [data-help]");

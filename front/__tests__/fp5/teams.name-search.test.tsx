@@ -1,34 +1,26 @@
-import { render, screen, waitFor } from "@/test/utils";
-import { MemoryRouter } from "react-router-dom";
-import { vi } from "vitest";
-import App from "../../src/App";
+import { renderAppRoot, screen, waitFor } from "@/test/utils";
+import { mockApi } from "@/test/mocks/mockApi";
+import { makeTeam } from "@/test/fixtures/team";
 
 describe("Teams name search (FP5)", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn());
     localStorage.clear();
+    // Add safety check
+    if (mockApi && typeof mockApi.reset === 'function') {
+      mockApi.reset();
+      mockApi.setupDefaults();
+    }
   });
 
   it("filters teams by name in real-time as user types", async () => {
     const allTeams = [
-      { id: "1", name: "Alpha Team", leader: "leader1", members: [] },
-      { id: "2", name: "Beta Team", leader: "leader2", members: [] },
-      { id: "3", name: "Gamma Team", leader: "leader3", members: [] },
+      makeTeam({ id: "1", name: "Alpha Team", leader: "leader1" }),
+      makeTeam({ id: "2", name: "Beta Team", leader: "leader2" }),
+      makeTeam({ id: "3", name: "Gamma Team", leader: "leader3" }),
     ];
+    mockApi.teams(allTeams);
 
-    const mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ teams: allTeams }),
-      } as Response)
-    );
-    vi.stubGlobal("fetch", mockFetch);
-
-    render(
-      <MemoryRouter initialEntries={["/teams"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/teams" });
 
     await waitFor(() => {
       expect(screen.getByText("Alpha Team")).toBeInTheDocument();
@@ -53,23 +45,12 @@ describe("Teams name search (FP5)", () => {
 
   it("performs case-insensitive search", async () => {
     const allTeams = [
-      { id: "1", name: "Alpha Team", leader: "leader1", members: [] },
-      { id: "2", name: "Beta Team", leader: "leader2", members: [] },
+      makeTeam({ id: "1", name: "Alpha Team", leader: "leader1" }),
+      makeTeam({ id: "2", name: "Beta Team", leader: "leader2" }),
     ];
+    mockApi.teams(allTeams);
 
-    const mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ teams: allTeams }),
-      } as Response)
-    );
-    vi.stubGlobal("fetch", mockFetch);
-
-    render(
-      <MemoryRouter initialEntries={["/teams"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/teams" });
 
     await waitFor(() => {
       expect(screen.getByText("Alpha Team")).toBeInTheDocument();
@@ -88,23 +69,12 @@ describe("Teams name search (FP5)", () => {
 
   it("supports partial matches", async () => {
     const allTeams = [
-      { id: "1", name: "Alpha Team", leader: "leader1", members: [] },
-      { id: "2", name: "Beta Team", leader: "leader2", members: [] },
+      makeTeam({ id: "1", name: "Alpha Team", leader: "leader1" }),
+      makeTeam({ id: "2", name: "Beta Team", leader: "leader2" }),
     ];
+    mockApi.teams(allTeams);
 
-    const mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ teams: allTeams }),
-      } as Response)
-    );
-    vi.stubGlobal("fetch", mockFetch);
-
-    render(
-      <MemoryRouter initialEntries={["/teams"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/teams" });
 
     await waitFor(() => {
       expect(screen.getByText("Alpha Team")).toBeInTheDocument();

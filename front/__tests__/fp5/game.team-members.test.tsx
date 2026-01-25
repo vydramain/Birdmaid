@@ -1,42 +1,37 @@
-import { render, screen, waitFor } from "@/test/utils";
-import { MemoryRouter } from "react-router-dom";
-import { vi } from "vitest";
-import App from "../../src/App";
+import { renderAppRoot, screen, waitFor } from "@/test/utils";
+import { mockApi } from "@/test/mocks/mockApi";
+import { makeGame } from "@/test/fixtures/game";
+import { makeTeam } from "@/test/fixtures/team";
 
 describe("Game page team members display (FP5)", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn());
     localStorage.clear();
+    // Add safety check
+    if (mockApi && typeof mockApi.reset === 'function') {
+      mockApi.reset();
+      mockApi.setupDefaults();
+    }
   });
 
   it("displays team member logins (usernames) instead of user IDs", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            id: "game123",
-            title: "Test Game",
-            description_md: "Test description",
-            team: {
-              id: "team123",
-              name: "Test Team",
-              leader: "leader123",
-              leaderLogin: "teamleader",
-              members: ["member1", "member2", "member3"],
-              memberLogins: ["alice", "bob", "charlie"],
-            },
-            status: "published",
-          }),
-      } as Response)
-    );
-    vi.stubGlobal("fetch", mockFetch);
+    const team = makeTeam({
+      id: "team123",
+      name: "Test Team",
+      leader: "leader123",
+      leaderLogin: "teamleader",
+      members: ["member1", "member2", "member3"],
+      memberLogins: ["alice", "bob", "charlie"],
+    });
+    const game = makeGame({
+      id: "game123",
+      title: "Test Game",
+      description_md: "Test description",
+      team: team,
+      status: "published",
+    });
+    mockApi.game("game123", game);
 
-    render(
-      <MemoryRouter initialEntries={["/games/game123"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/games/game123" });
 
     await waitFor(() => {
       expect(screen.getByText("Test Game")).toBeInTheDocument();
@@ -54,32 +49,21 @@ describe("Game page team members display (FP5)", () => {
   });
 
   it("displays leader login instead of leader ID", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            id: "game123",
-            title: "Test Game",
-            team: {
-              id: "team123",
-              name: "Test Team",
-              leader: "leader123",
-              leaderLogin: "teamleader",
-              members: [],
-              memberLogins: [],
-            },
-            status: "published",
-          }),
-      } as Response)
-    );
-    vi.stubGlobal("fetch", mockFetch);
+    const team = makeTeam({
+      id: "team123",
+      name: "Test Team",
+      leader: "leader123",
+      leaderLogin: "teamleader",
+    });
+    const game = makeGame({
+      id: "game123",
+      title: "Test Game",
+      team: team,
+      status: "published",
+    });
+    mockApi.game("game123", game);
 
-    render(
-      <MemoryRouter initialEntries={["/games/game123"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/games/game123" });
 
     await waitFor(() => {
       expect(screen.getByText("Test Game")).toBeInTheDocument();

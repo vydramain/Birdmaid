@@ -1,103 +1,107 @@
-import { fireEvent, screen, waitFor } from "@/test/utils";
-import { render } from "../../src/test/utils/render";
-import { describe, it, vi, beforeEach, expect } from "vitest";
+import { fireEvent, screen, waitFor, within } from "@/test/utils";
+import { renderShell } from "../../src/test/utils/render";
+import { mockApi } from "@/test/mocks/mockApi";
+import { makeUser } from "@/test/fixtures/user";
+import { describe, it, beforeEach, expect } from "vitest";
 import App from "../../src/App";
 
 describe("Password recovery", () => {
   beforeEach(() => {
     localStorage.clear();
-    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response)));
+    // Add safety check
+    if (mockApi && typeof mockApi.reset === 'function') {
+      mockApi.reset();
+      mockApi.setupDefaults();
+    }
   });
 
   it("requests recovery code and sends email", async () => {
-    const mockFetch = vi.fn((url) => {
-        if (url.toString().includes("/auth/recovery/request")) {
-            return Promise.resolve({ ok: true, json: () => Promise.resolve({ message: "Code sent" }) } as Response);
-        }
-        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response);
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    mockApi.authRecoveryRequest();
+    mockApi.games([]);
 
-    render(<App />, { initialEntries: ["/catalog"] });
+    renderShell(<App />, { route: "/catalog" });
 
-    const loginButton = await screen.findByText("Login");
+    // Find button that's NOT inside a modal (the main UI button)
+    const loginButtons = await screen.findAllByRole("button", { name: /login/i });
+    const loginButton = loginButtons.find(btn => {
+      const modal = btn.closest('[role="dialog"], .win95-modal');
+      return !modal;
+    }) || loginButtons[0];
     fireEvent.click(loginButton);
 
+    // Wait for modal and find forgot password link
+    await waitFor(() => {
+      expect(screen.getByText(/forgot|recovery/i)).toBeInTheDocument();
+    });
     const forgotPasswordLink = screen.getByText(/forgot|recovery/i);
     fireEvent.click(forgotPasswordLink);
 
-    const emailInput = await screen.findByLabelText(/email/i);
+    // Use within modal to avoid ambiguous selectors
+    const modal = document.querySelector('[role="dialog"], .win95-modal');
+    expect(modal).toBeInTheDocument();
+    const modalScope = within(modal as HTMLElement);
+
+    const emailInput = modalScope.getByLabelText(/email/i);
     fireEvent.change(emailInput, { target: { value: "user@example.com" } });
 
-    const requestButton = screen.getByRole("button", { name: /send|request/i });
+    const requestButton = modalScope.getByRole("button", { name: /send code/i });
     fireEvent.click(requestButton);
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/auth/recovery/request"),
-        expect.objectContaining({
-          method: "POST",
-        })
-      );
+      expect(modalScope.getByLabelText(/recovery code/i)).toBeInTheDocument();
     });
   });
 
   it("verifies recovery code and resets password", async () => {
-    const mockFetch = vi.fn((url) => {
-        if (url.toString().includes("/auth/recovery/request")) {
-            return Promise.resolve({ ok: true, json: () => Promise.resolve({ message: "Code sent" }) } as Response);
-        }
-        if (url.toString().includes("/auth/recovery/verify")) {
-            return Promise.resolve({
-                ok: true,
-                json: () => Promise.resolve({
-                    message: "Password reset",
-                    token: "jwt-token-123",
-                }),
-            } as Response);
-        }
-        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response);
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    const mockUser = makeUser({ id: "user123", email: "user@example.com", login: "testuser" });
+    mockApi.authRecoveryRequest();
+    mockApi.authRecoveryVerify(mockUser, "jwt-token-123");
+    mockApi.games([]);
 
-    render(<App />, { initialEntries: ["/catalog"] });
+    renderShell(<App />, { route: "/catalog" });
 
-    const loginButton = await screen.findByText("Login");
+    // Find button that's NOT inside a modal (the main UI button)
+    const loginButtons = await screen.findAllByRole("button", { name: /login/i });
+    const loginButton = loginButtons.find(btn => {
+      const modal = btn.closest('[role="dialog"], .win95-modal');
+      return !modal;
+    }) || loginButtons[0];
     fireEvent.click(loginButton);
 
+    await waitFor(() => {
+      expect(screen.getByText(/forgot|recovery/i)).toBeInTheDocument();
+    });
     const forgotPasswordLink = screen.getByText(/forgot|recovery/i);
     fireEvent.click(forgotPasswordLink);
 
+    // Use within modal to avoid ambiguous selectors
+    const modal = document.querySelector('[role="dialog"], .win95-modal');
+    expect(modal).toBeInTheDocument();
+    const modalScope = within(modal as HTMLElement);
+
     // Request code
-    const emailInput = await screen.findByLabelText(/email/i);
+    const emailInput = modalScope.getByLabelText(/email/i);
     fireEvent.change(emailInput, { target: { value: "user@example.com" } });
     
-    const requestButton = screen.getByRole("button", { name: /send|request/i });
+    const requestButton = modalScope.getByRole("button", { name: /send code/i });
     fireEvent.click(requestButton);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/code/i)).toBeInTheDocument();
+      expect(modalScope.getByLabelText(/recovery code/i)).toBeInTheDocument();
     });
 
     // Verify code
-    const codeInput = screen.getByLabelText(/code/i);
-    const newPasswordInput = screen.getByLabelText(/new password/i);
+    const codeInput = modalScope.getByLabelText(/recovery code/i);
+    const newPasswordInput = modalScope.getByLabelText(/new password/i);
     
     fireEvent.change(codeInput, { target: { value: "123456" } });
     fireEvent.change(newPasswordInput, { target: { value: "newpassword123" } });
 
-    const verifyButton = screen.getByRole("button", { name: /verify|reset/i });
+    const verifyButton = modalScope.getByRole("button", { name: /reset password/i });
     fireEvent.click(verifyButton);
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/auth/recovery/verify"),
-        expect.objectContaining({
-          method: "POST",
-        })
-      );
+      expect(localStorage.getItem("birdmaid_token")).toBe("jwt-token-123");
     });
-
-    expect(localStorage.getItem("birdmaid_token")).toBe("jwt-token-123");
   });
 });

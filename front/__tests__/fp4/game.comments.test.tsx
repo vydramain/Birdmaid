@@ -1,29 +1,34 @@
-import { renderAppRoot, screen, waitFor, fireEvent } from "@/test/utils";
-import { mockApi, fetchMock } from "@/test/utils";
+import { renderAppRoot, screen, waitFor, fireEvent, fetchMock } from "@/test/utils";
+import { mockApi } from "@/test/mocks/mockApi";
+import { makeGame } from "@/test/fixtures/game";
+import { makeComment } from "@/test/fixtures/comment";
 import { describe, it, beforeEach, expect } from "vitest";
 
 describe("Game comments", () => {
   beforeEach(() => {
     localStorage.clear();
-    mockApi.reset();
-    mockApi.setupDefaults();
+    // Add safety check
+    if (mockApi && typeof mockApi.reset === 'function') {
+      mockApi.reset();
+      mockApi.setupDefaults();
+    }
   });
 
   it("shows comments for published game (visible to all users)", async () => {
     const gameId = "game123";
     
-    mockApi.game(gameId, {
+    mockApi.game(gameId, makeGame({
       id: gameId,
       title: "Test Game",
       status: "published",
       build_url: null,
       description_md: "Desc",
       team: { name: "Team A", members: [] }
-    });
+    }));
 
     mockApi.comments(gameId, [
-      { id: "1", text: "Great game!", userLogin: "user1", createdAt: "2026-01-09T10:00:00Z", userId: "u1" },
-      { id: "2", text: "Love it!", userLogin: "user2", createdAt: "2026-01-09T11:00:00Z", userId: "u2" },
+      makeComment({ id: "1", text: "Great game!", userLogin: "user1", createdAt: "2026-01-09T10:00:00Z", userId: "u1" }),
+      makeComment({ id: "2", text: "Love it!", userLogin: "user2", createdAt: "2026-01-09T11:00:00Z", userId: "u2" }),
     ]);
 
     renderAppRoot({ route: `/games/${gameId}` });
@@ -37,31 +42,36 @@ describe("Game comments", () => {
   });
 
   it("allows authenticated user to post comment", async () => {
-    localStorage.setItem("birdmaid_token", "valid-token");
+    // Create mock token for authenticated user
+    const mockPayload = {
+      userId: "u3",
+      email: "testuser@example.com",
+      login: "testuser",
+      isSuperAdmin: false,
+    };
+    const mockToken = `mock.${btoa(JSON.stringify(mockPayload))}.sig`;
+    localStorage.setItem("birdmaid_token", mockToken);
+    
     const gameId = "game123";
     
-    mockApi.game(gameId, {
+    mockApi.game(gameId, makeGame({
       id: gameId,
       title: "Test Game",
       status: "published",
       build_url: null
-    });
+    }));
 
     // Initial empty comments
     mockApi.comments(gameId, []);
 
     // Post comment mock - will update comments after POST
     let posted = false;
-    mockApi.register("POST", `/games/${gameId}/comments`, async () => {
+    mockApi.post(`/games/${gameId}/comments`, async () => {
       posted = true;
       // After post, update comments mock for next GET
-      mockApi.comments(gameId, [{
-        id: "3",
-        text: "New comment",
-        userLogin: "testuser",
-        createdAt: "2026-01-09T12:00:00Z",
-        userId: "u3"
-      }]);
+      mockApi.comments(gameId, [
+        makeComment({ id: "3", text: "New comment", userLogin: "testuser", createdAt: "2026-01-09T12:00:00Z", userId: "u3" })
+      ]);
       return fetchMock.json({}, 201);
     });
 

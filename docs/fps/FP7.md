@@ -468,6 +468,57 @@ window.sys.vfs.write('/desktop/test.txt', 'Smoke Test');
 // Icon "test.txt" should appear in the window grid.
 ```
 
+## Reality Check
+
+**Date:** 2026-01-22  
+**Status:** Released, but tests missing
+
+### What Still Exists
+
+- ✅ **ShellRoot** (`os/ShellRoot.tsx`) - Unified entry point at `/`
+- ✅ **WindowRegistry** (`os/wm/WindowRegistry.tsx`) - React state for window list
+- ✅ **WindowStore** (`os/wm/WindowStore.ts`) - Mutable state for window geometry (rAF-driven)
+- ✅ **WindowFrame** (`os/wm/WindowFrame.tsx`) - Window component with drag support
+- ✅ **AppRegistry** (`os/apps/AppRegistry.ts`) - App registration system
+- ✅ **AppHost** (`os/apps/AppHost.tsx`) - Iframe sandbox wrapper
+- ✅ **VirtualFileSystem** (`os/fs/VirtualFileSystem.ts`) - Event-driven VFS
+- ✅ **PlatformContext** (`contexts/PlatformContext.tsx`) - Desktop/Mobile detection
+- ✅ **Theme v1** (`retro.css`) - Chicago95 CSS variables
+
+### What Was Replaced/Removed
+
+- ❌ **Old WindowContext** (`contexts/WindowContext.tsx`) - Still exists but unused (DEAD CODE)
+- ❌ **Old WindowManager** (`components/WindowManager.tsx`) - Still exists but unused (DEAD CODE)
+- ❌ **Old routing** (`App.tsx` routes) - Still exists but `main.tsx` doesn't use it (DEAD CODE)
+- ❌ **Old Window component** (`components/Window.tsx`) - Uses old WindowContext (DEAD CODE)
+
+### Tests Status
+
+- ❌ **No FP7-specific tests** - All tests are FP6 placeholders
+- ❌ **Missing tests:**
+  - ShellRoot routing
+  - WindowStore performance (rAF drag)
+  - AppRegistry registration
+  - AppHost security (sandbox)
+  - VFS core operations
+  - VFS Desktop sync
+  - Explorer VFS integration
+  - Platform Context detection
+  - Theme visual regression
+
+### Known Issues
+
+1. **Mobile Mode:** Shows placeholder "Coming Soon (FP8)" instead of functional UI
+2. **Explorer:** Uses VFS, not jams/years/games backend structure (per FP6 docs)
+3. **Dead Code:** `WindowContext.tsx`, `components/WindowManager.tsx`, `App.tsx` routes exist but unused
+4. **Test Coverage:** FP6 tests are placeholders; FP7 has no tests
+
+### Migration Path
+
+- FP6 → FP7: Architecture refactored but features preserved
+- Tests need rewrite to use FP7 architecture
+- Dead code should be removed in cleanup PR
+
 ## Evidence Checklist
 
 ### Performance Artifacts

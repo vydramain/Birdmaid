@@ -1,33 +1,27 @@
-import { render, screen, waitFor } from "@/test/utils";
-import { MemoryRouter } from "react-router-dom";
-import { vi } from "vitest";
-import App from "../../src/App";
+import { renderAppRoot, screen, waitFor } from "@/test/utils";
+import { mockApi } from "@/test/mocks/mockApi";
+import { makeGame } from "@/test/fixtures/game";
 
 describe("Play game modal", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn());
+    localStorage.clear();
+    // Add safety check
+    if (mockApi && typeof mockApi.reset === 'function') {
+      mockApi.reset();
+      mockApi.setupDefaults();
+    }
   });
 
   it("opens Windows 95 styled draggable modal when Play button clicked", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            id: "game123",
-            title: "Test Game",
-            status: "published",
-            currentBuild: { url: "http://example.com/build/index.html" },
-          }),
-      } as Response)
-    );
-    vi.stubGlobal("fetch", mockFetch);
+    const game = makeGame({
+      id: "game123",
+      title: "Test Game",
+      status: "published",
+      build_url: "http://example.com/build/index.html",
+    });
+    mockApi.game("game123", game);
 
-    render(
-      <MemoryRouter initialEntries={["/games/game123"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/games/game123" });
 
     await waitFor(() => {
       const playButton = screen.getByRole("button", { name: /play/i });
@@ -48,24 +42,14 @@ describe("Play game modal", () => {
   });
 
   it("modal is draggable by title bar", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            id: "game123",
-            title: "Test Game",
-            currentBuild: { url: "http://example.com/build/index.html" },
-          }),
-      } as Response)
-    );
-    vi.stubGlobal("fetch", mockFetch);
+    const game = makeGame({
+      id: "game123",
+      title: "Test Game",
+      build_url: "http://example.com/build/index.html",
+    });
+    mockApi.game("game123", game);
 
-    render(
-      <MemoryRouter initialEntries={["/games/game123"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/games/game123" });
 
     await waitFor(() => {
       const playButton = screen.getByRole("button", { name: /play/i });

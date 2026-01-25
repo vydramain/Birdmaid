@@ -1,47 +1,36 @@
-import { render, screen, waitFor } from "@/test/utils";
-import { MemoryRouter } from "react-router-dom";
-import { vi } from "vitest";
-import App from "../../src/App";
+import { renderAppRoot, screen, waitFor } from "@/test/utils";
+import { mockApi } from "@/test/mocks/mockApi";
+import { makeTeam } from "@/test/fixtures/team";
+import { describe, it, beforeEach, expect, vi } from "vitest";
 
 describe("Teams info modal Make Leader button (FP5)", () => {
   beforeEach(() => {
+    localStorage.clear();
+    // Add safety check
+    if (mockApi && typeof mockApi.reset === 'function') {
+      mockApi.reset();
+      mockApi.setupDefaults();
+    }
     localStorage.setItem("birdmaid_token", "valid-token");
-    vi.stubGlobal("fetch", vi.fn());
   });
 
   it("hides 'Make Leader' button for current team leader", async () => {
     const currentUserId = "leader123";
-    const mockFetch = vi.fn((url: string) => {
-      if (url.includes("/teams/team123")) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              id: "team123",
-              name: "Test Team",
-              leader: "leader123",
-              leaderLogin: "leader",
-              members: ["leader123", "member1"],
-              memberLogins: ["leader", "alice"],
-            }),
-        } as Response);
-      }
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ teams: [{ id: "team123", name: "Test Team" }] }),
-      } as Response);
+    const team = makeTeam({
+      id: "team123",
+      name: "Test Team",
+      leader: "leader123",
+      leaderLogin: "leader",
+      members: ["leader123", "member1"],
+      memberLogins: ["leader", "alice"],
     });
-    vi.stubGlobal("fetch", mockFetch);
+    mockApi.teams([team]);
 
     // Mock current user as leader
     const mockToken = JSON.stringify({ userId: currentUserId });
     localStorage.setItem("birdmaid_token", mockToken);
 
-    render(
-      <MemoryRouter initialEntries={["/teams"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/teams" });
 
     await waitFor(() => {
       expect(screen.getByText("Test Team")).toBeInTheDocument();
@@ -70,36 +59,21 @@ describe("Teams info modal Make Leader button (FP5)", () => {
 
   it("shows 'Make Leader' button for non-leader members when current user is leader", async () => {
     const currentUserId = "leader123";
-    const mockFetch = vi.fn((url: string) => {
-      if (url.includes("/teams/team123")) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              id: "team123",
-              name: "Test Team",
-              leader: "leader123",
-              leaderLogin: "leader",
-              members: ["leader123", "member1"],
-              memberLogins: ["leader", "alice"],
-            }),
-        } as Response);
-      }
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ teams: [{ id: "team123", name: "Test Team" }] }),
-      } as Response);
+    const team = makeTeam({
+      id: "team123",
+      name: "Test Team",
+      leader: "leader123",
+      leaderLogin: "leader",
+      members: ["leader123", "member1"],
+      memberLogins: ["leader", "alice"],
     });
-    vi.stubGlobal("fetch", mockFetch);
+    mockApi.teams([team]);
 
+    // Mock current user as leader
     const mockToken = JSON.stringify({ userId: currentUserId });
     localStorage.setItem("birdmaid_token", mockToken);
 
-    render(
-      <MemoryRouter initialEntries={["/teams"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/teams" });
 
     await waitFor(() => {
       expect(screen.getByText("Test Team")).toBeInTheDocument();
