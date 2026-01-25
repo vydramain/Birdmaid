@@ -1,24 +1,28 @@
-import { renderShell, screen, waitFor, fireEvent } from "@/test/utils";
-import { fetchMock } from "@/test/setup";
+import { renderShell, screen, waitFor, fireEvent, fetchMock, within } from "@/test/utils";
+import { mockApi } from "@/test/mocks/mockApi";
+import { makeUser } from "@/test/fixtures/user";
 import { describe, it, beforeEach, expect } from "vitest";
 import App from "../../src/App";
 
 describe("User login", () => {
   beforeEach(() => {
     localStorage.clear();
-    fetchMock.reset();
-    // Default mocks
-    fetchMock.register("GET", "/teams", () => fetchMock.json({ teams: [] }));
-    fetchMock.register("GET", "/games", () => fetchMock.json([]));
+    // Add safety check
+    if (mockApi && typeof mockApi.reset === 'function') {
+      mockApi.reset();
+      mockApi.setupDefaults();
+    }
   });
 
   it("logs in user with email and password", async () => {
-    fetchMock.register("POST", "/auth/login", async (url, options) => {
-      // Basic validation
+    const mockUser = makeUser({ id: "user123", email: "user@example.com", login: "testuser", isSuperAdmin: false });
+    
+    // Mock login endpoint with validation
+    mockApi.post("/auth/login", async (url, options) => {
       const body = JSON.parse(options?.body as string);
       if (body.identifier === "user@example.com" && body.password === "password123") {
         return fetchMock.json({
-          user: { id: "user123", email: "user@example.com", login: "testuser", isSuperAdmin: false },
+          user: mockUser,
           token: "jwt-token-123",
         });
       }
@@ -27,8 +31,12 @@ describe("User login", () => {
 
     renderShell(<App />, { route: "/catalog" });
 
-    // Open modal
-    const loginButton = await screen.findByRole("button", { name: /login/i });
+    // Open modal - find button that's NOT inside a modal (the main UI button)
+    const loginButtons = await screen.findAllByRole("button", { name: /login/i });
+    const loginButton = loginButtons.find(btn => {
+      const modal = btn.closest('[role="dialog"], .win95-modal');
+      return !modal;
+    }) || loginButtons[0];
     fireEvent.click(loginButton);
 
     const identifierInput = await screen.findByLabelText(/email|login|username/i);
@@ -37,42 +45,54 @@ describe("User login", () => {
     fireEvent.change(identifierInput, { target: { value: "user@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
 
-    // Submit button
-    const submitButton = screen.getByRole("button", { name: /login/i, hidden: true }); 
-    // Note: modal might be separate, check semantics.
-    // Usually "Login" button inside modal.
-    // If multiple "Login" buttons exist (one in header, one in modal), we need to distinguish.
-    // The header button is likely "Login" (text). The modal button is likely "Login" (text).
-    // Better to target the modal one specifically or use within().
-    // For now, let's assume the header one is replaced by "Logout" or we target by location.
-    // Actually, simple click on "Login" text might work if the header one is not clickable anymore or hidden?
-    // No, header is still there.
+    // Submit button - use within modal to avoid ambiguous selector
+    const modal = await waitFor(() => {
+      const found = document.querySelector('[role="dialog"], .win95-modal') as HTMLElement;
+      if (!found) throw new Error("Modal not found");
+      return found;
+    });
+    expect(modal).toBeInTheDocument();
+    const modalScope = within(modal);
+    const submitButtons = modalScope.getAllByRole("button", { name: /login/i });
+    // Find the submit button (not the "Forgot Password" button)
+    const submitButton = submitButtons.find(btn => !btn.textContent?.includes("Forgot")) || submitButtons[0];
     
-    // Let's use getByRole inside the modal if possible.
-    // But since I can't see the modal structure easily, I'll rely on "Login" text in button.
-    // The first one was clicked to open modal.
-    // The second one submits.
-    
-    const buttons = screen.getAllByRole("button", { name: /login/i });
-    const modalButton = buttons[buttons.length - 1]; // Assuming modal is rendered last
-    fireEvent.click(modalButton);
+    // Submit the form - trigger submit event on form, not just button click
+    const form = submitButton.closest("form");
+    if (form) {
+      fireEvent.submit(form);
+    } else {
+      fireEvent.click(submitButton);
+    }
 
     await waitFor(() => {
       expect(localStorage.getItem("birdmaid_token")).toBe("jwt-token-123");
-    });
+    }, { timeout: 3000 });
   });
 
   it("logs in user with login (username) and password", async () => {
-    fetchMock.register("POST", "/auth/login", () => 
-      fetchMock.json({
-        user: { id: "user123", email: "user@example.com", login: "testuser", isSuperAdmin: false },
-        token: "jwt-token-123",
-      })
-    );
+    const mockUser = makeUser({ id: "user123", email: "user@example.com", login: "testuser", isSuperAdmin: false });
+    
+    // Mock login endpoint - accept any credentials for this test
+    mockApi.post("/auth/login", async (url, options) => {
+      const body = JSON.parse(options?.body as string);
+      if (body.identifier === "testuser" && body.password === "password123") {
+        return fetchMock.json({
+          user: mockUser,
+          token: "jwt-token-123",
+        });
+      }
+      return fetchMock.json({ message: "Invalid credentials" }, 401);
+    });
 
     renderShell(<App />, { route: "/catalog" });
 
-    const loginButton = await screen.findByRole("button", { name: /login/i });
+    // Find button that's NOT inside a modal (the main UI button)
+    const loginButtons = await screen.findAllByRole("button", { name: /login/i });
+    const loginButton = loginButtons.find(btn => {
+      const modal = btn.closest('[role="dialog"], .win95-modal');
+      return !modal;
+    }) || loginButtons[0];
     fireEvent.click(loginButton);
 
     const identifierInput = await screen.findByLabelText(/email|login|username/i);
@@ -81,12 +101,28 @@ describe("User login", () => {
     fireEvent.change(identifierInput, { target: { value: "testuser" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
 
-    const buttons = screen.getAllByRole("button", { name: /login/i });
-    const modalButton = buttons[buttons.length - 1];
-    fireEvent.click(modalButton);
+    // Submit button - use within modal to avoid ambiguous selector
+    const modal = await waitFor(() => {
+      const found = document.querySelector('[role="dialog"], .win95-modal') as HTMLElement;
+      if (!found) throw new Error("Modal not found");
+      return found;
+    });
+    expect(modal).toBeInTheDocument();
+    const modalScope = within(modal);
+    const submitButtons = modalScope.getAllByRole("button", { name: /login/i });
+    // Find the submit button (not the "Forgot Password" button)
+    const submitButton = submitButtons.find(btn => !btn.textContent?.includes("Forgot")) || submitButtons[0];
+    
+    // Submit the form - trigger submit event on form, not just button click
+    const form = submitButton.closest("form");
+    if (form) {
+      fireEvent.submit(form);
+    } else {
+      fireEvent.click(submitButton);
+    }
 
     await waitFor(() => {
       expect(localStorage.getItem("birdmaid_token")).toBe("jwt-token-123");
-    });
+    }, { timeout: 3000 });
   });
 });

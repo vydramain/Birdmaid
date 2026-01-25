@@ -1,48 +1,44 @@
-import { render, screen } from "@/test/utils";
-import { MemoryRouter } from "react-router-dom";
-import { vi } from "vitest";
-import App from "../../src/App";
+import { renderAppRoot, screen } from "@/test/utils";
+import { mockApi } from "@/test/mocks/mockApi";
 
 describe("Teams search input styling (FP5)", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ teams: [] }),
-      } as Response)
-    ));
     localStorage.clear();
+    // Add safety check
+    if (mockApi && typeof mockApi.reset === 'function') {
+      mockApi.reset();
+      mockApi.setupDefaults();
+    }
   });
 
-  it("uses Windows 95 styling for Teams search input", () => {
-    render(
-      <MemoryRouter initialEntries={["/teams"]}>
-        <App />
-      </MemoryRouter>
-    );
+  it("search input exists and is visible", () => {
+    renderAppRoot({ route: "/teams" });
 
     const searchInput = screen.getByPlaceholderText(/search|filter/i) || screen.getByLabelText(/search/i);
     
-    // Check for Windows 95 input styling
-    const inputClasses = searchInput.className;
-    const hasWin95Styling =
-      inputClasses.includes("win95") ||
-      inputClasses.includes("Win95Input") ||
-      searchInput.closest(".win95-input") !== null ||
-      searchInput.closest("[class*='win95']") !== null;
-
-    expect(hasWin95Styling).toBe(true);
-  });
-
-  it("search input matches Windows 95 design system", () => {
-    render(
-      <MemoryRouter initialEntries={["/teams"]}>
-        <App />
-      </MemoryRouter>
-    );
-
-    const searchInput = screen.getByPlaceholderText(/search|filter/i) || screen.getByLabelText(/search/i);
-    
+    // Stable invariant: input exists and is visible
     expect(searchInput).toBeInTheDocument();
+    expect(searchInput).toBeVisible();
+  });
+
+  it("search input uses Windows 95 styling classes", () => {
+    renderAppRoot({ route: "/teams" });
+
+    const searchInput = screen.getByPlaceholderText(/search|filter/i) || screen.getByLabelText(/search/i);
+    
+    // Stable invariant: input has win95 styling class (win-inset from Win95Input component)
+    // Win95Input component adds "win95-input win-inset" classes
+    const inputClasses = searchInput.className;
+    expect(inputClasses.includes("win-inset") || inputClasses.includes("win95-input")).toBe(true);
+  });
+
+  it("search input is enabled and interactive", () => {
+    renderAppRoot({ route: "/teams" });
+
+    const searchInput = screen.getByPlaceholderText(/search|filter/i) || screen.getByLabelText(/search/i);
+    
+    // Stable invariant: input is enabled and can receive focus
+    expect(searchInput).not.toBeDisabled();
+    expect(searchInput).toBeVisible();
   });
 });

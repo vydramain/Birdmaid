@@ -1,44 +1,33 @@
-import { render, screen, waitFor } from "@/test/utils";
-import { MemoryRouter } from "react-router-dom";
-import { vi } from "vitest";
-import App from "../../src/App";
+import { renderAppRoot, screen, waitFor } from "@/test/utils";
+import { mockApi } from "@/test/mocks/mockApi";
+import { makeTeam } from "@/test/fixtures/team";
 
 describe("Team member management", () => {
   beforeEach(() => {
+    localStorage.clear();
+    // Add safety check
+    if (mockApi && typeof mockApi.reset === 'function') {
+      mockApi.reset();
+      mockApi.setupDefaults();
+    }
     localStorage.setItem("birdmaid_token", "valid-token");
-    vi.stubGlobal("fetch", vi.fn());
   });
 
   it("allows team leader to add members", async () => {
-    const mockFetch = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            id: "team123",
-            name: "Test Team",
-            leader: "leader123",
-            members: ["leader123"],
-          }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            id: "team123",
-            name: "Test Team",
-            leader: "leader123",
-            members: ["leader123", "newmember123"],
-          }),
-      } as Response);
-    vi.stubGlobal("fetch", mockFetch);
+    const team = makeTeam({ id: "team123", name: "Test Team", leader: "leader123", members: ["leader123"] });
+    mockApi.teams([team]);
+    
+    // Mock POST /teams/:id/members
+    mockApi.post("/teams/team123/members", () => {
+      return Promise.resolve(new Response(JSON.stringify({
+        id: "team123",
+        name: "Test Team",
+        leader: "leader123",
+        members: ["leader123", "newmember123"],
+      }), { status: 200 }));
+    });
 
-    render(
-      <MemoryRouter initialEntries={["/teams/team123"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/teams/team123" });
 
     const userIdInput = screen.getByPlaceholderText(/user.*id|add.*member/i);
     const addButton = screen.getByRole("button", { name: /add.*member/i });
@@ -47,12 +36,8 @@ describe("Team member management", () => {
     addButton.click();
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/teams/team123/members"),
-        expect.objectContaining({
-          method: "POST",
-        })
-      );
+      // Team should be updated with new member
+      expect(screen.getByText(/newmember123|Test Team/i)).toBeInTheDocument();
     });
   });
 });

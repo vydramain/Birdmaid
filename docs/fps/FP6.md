@@ -918,6 +918,55 @@ FP6 превращает Birdmaid из обычного веб-сайта в п�
 - ✅ Build завершен
 - ✅ Release завершен
 
+## Reality Check
+
+**Date:** 2026-01-22  
+**Status:** FP6 was refactored by FP7  
+**Audit:** See [FP6 Reality Check & Platform Contracts Audit](../../testing/FP6_REALITY_CHECK.md) for platform contract validation
+
+### What Still Exists
+
+- ✅ Desktop with icons (`DesktopPage.tsx`)
+- ✅ Window Manager architecture (`WindowRegistry.tsx`, `WindowManager.tsx`)
+- ✅ Explorer window (`ExplorerWindow.tsx`)
+- ✅ Help window (`HelpWindow.tsx`)
+- ✅ Landing window (`LandingWindow.tsx`)
+- ✅ Backend endpoints: `GET /jam/current`, `GET /help`
+
+### What Was Replaced/Removed by FP7
+
+- ❌ **Old WindowContext** (`contexts/WindowContext.tsx`) → Replaced by `WindowRegistry` + `WindowStore`
+- ❌ **Old WindowManager** (`components/WindowManager.tsx`) → Replaced by `os/wm/WindowManager.tsx`
+- ❌ **Old routing** (`App.tsx` routes) → Replaced by `ShellRoot` unified entry point
+- ❌ **Direct window state** → Replaced by WindowStore (mutable state) + WindowRegistry (React state)
+
+### Architecture Changes
+
+**FP6 (Original):**
+- `WindowContext` managed all window state in React
+- Window drag triggered React re-renders
+- Routing via `react-router-dom` with multiple routes
+
+**FP7 (Current):**
+- `WindowRegistry` manages window list (React state)
+- `WindowStore` manages window geometry (mutable, rAF-driven)
+- `ShellRoot` unified entry point, no router redirects
+- VFS-based desktop icons (not hardcoded)
+
+### Tests Status
+
+- ⚠️ **All FP6 tests are placeholders** (`front/__tests__/fp6/*.test.tsx`)
+- ⚠️ Tests need rewrite to reflect FP7 architecture:
+  - Window Manager: Use `WindowRegistry` + `WindowStore` instead of `WindowContext`
+  - Explorer: Uses VFS, not jams/years/games backend structure
+  - Desktop: Icons come from VFS, not hardcoded
+
+### Migration Notes
+
+- FP6 features are accessible but use FP7 architecture
+- Tests written for FP6 won't work without updates
+- Backend endpoints (`/jam/current`, `/help`) still work and are tested
+
 ## Release Evidence
 
 **Date:** 2026-01-22

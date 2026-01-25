@@ -1,42 +1,35 @@
-import { render, screen, waitFor } from "@/test/utils";
-import { MemoryRouter } from "react-router-dom";
-import { vi } from "vitest";
-import App from "../../src/App";
+import { renderAppRoot, screen, waitFor } from "@/test/utils";
+import { mockApi } from "@/test/mocks/mockApi";
+import { makeGameSummary } from "@/test/fixtures/game";
+import { describe, it, beforeEach, expect } from "vitest";
 
 describe("Catalog cover images (FP5)", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn());
     localStorage.clear();
+    // Add safety check
+    if (mockApi && typeof mockApi.reset === 'function') {
+      mockApi.reset();
+      mockApi.setupDefaults();
+    }
   });
 
   it("displays cover images correctly when backend returns signed URLs", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve([
-            {
-              id: "1",
-              title: "Game 1",
-              cover_url: "https://s3.example.com/signed-url-1.jpg?signature=abc123",
-              status: "published",
-            },
-            {
-              id: "2",
-              title: "Game 2",
-              cover_url: "https://s3.example.com/signed-url-2.jpg?signature=def456",
-              status: "published",
-            },
-          ]),
-      } as Response)
-    );
-    vi.stubGlobal("fetch", mockFetch);
+    mockApi.games([
+      makeGameSummary({
+        id: "1",
+        title: "Game 1",
+        cover_url: "https://s3.example.com/signed-url-1.jpg?signature=abc123",
+        status: "published",
+      }),
+      makeGameSummary({
+        id: "2",
+        title: "Game 2",
+        cover_url: "https://s3.example.com/signed-url-2.jpg?signature=def456",
+        status: "published",
+      }),
+    ]);
 
-    render(
-      <MemoryRouter initialEntries={["/catalog"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/catalog" });
 
     await waitFor(() => {
       const images = screen.getAllByRole("img");
@@ -61,27 +54,16 @@ describe("Catalog cover images (FP5)", () => {
   });
 
   it("does not show 'Invalid cover URL' error when signed URLs are returned", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve([
-            {
-              id: "1",
-              title: "Game 1",
-              cover_url: "https://s3.example.com/signed-url.jpg?signature=abc123",
-              status: "published",
-            },
-          ]),
-      } as Response)
-    );
-    vi.stubGlobal("fetch", mockFetch);
+    mockApi.games([
+      makeGameSummary({
+        id: "1",
+        title: "Game 1",
+        cover_url: "https://s3.example.com/signed-url.jpg?signature=abc123",
+        status: "published",
+      }),
+    ]);
 
-    render(
-      <MemoryRouter initialEntries={["/catalog"]}>
-        <App />
-      </MemoryRouter>
-    );
+    renderAppRoot({ route: "/catalog" });
 
     await waitFor(() => {
       expect(screen.getByText("Game 1")).toBeInTheDocument();

@@ -1,18 +1,22 @@
 import { renderAppRoot, screen, waitFor } from "@/test/utils";
-import { mockApi } from "@/test/utils";
+import { mockApi } from "@/test/mocks/mockApi";
+import { makeGameSummary } from "@/test/fixtures/game";
 import { describe, it, beforeEach, expect } from "vitest";
 
 describe("Catalog visibility", () => {
   beforeEach(() => {
     localStorage.clear();
-    mockApi.reset();
-    mockApi.setupDefaults();
+    // Add safety check
+    if (mockApi && typeof mockApi.reset === 'function') {
+      mockApi.reset();
+      mockApi.setupDefaults();
+    }
   });
 
   it("shows only published games for unauthenticated users (backend filtering simulation)", async () => {
     // Simulate backend returning only published games for public
     mockApi.games([
-      { id: "1", title: "Published Game", status: "published" }
+      makeGameSummary({ id: "1", title: "Published Game", status: "published" })
     ]);
 
     renderAppRoot({ route: "/catalog" });
@@ -36,12 +40,20 @@ describe("Catalog visibility", () => {
   });
 
   it("shows all games (including editing/archived for user's teams) for authenticated users", async () => {
-    localStorage.setItem("birdmaid_token", "valid-token");
+    // Create mock token for authenticated user
+    const mockPayload = {
+      userId: "user1",
+      email: "user@example.com",
+      login: "testuser",
+      isSuperAdmin: false,
+    };
+    const mockToken = `mock.${btoa(JSON.stringify(mockPayload))}.sig`;
+    localStorage.setItem("birdmaid_token", mockToken);
     
     // Simulate backend returning user's games too
     mockApi.games([
-      { id: "1", title: "Published Game", status: "published" },
-      { id: "2", title: "My Team's Game", status: "editing", teamId: "myteam" },
+      makeGameSummary({ id: "1", title: "Published Game", status: "published" }),
+      makeGameSummary({ id: "2", title: "My Team's Game", status: "editing", teamId: "myteam" }),
     ]);
 
     renderAppRoot({ route: "/catalog" });

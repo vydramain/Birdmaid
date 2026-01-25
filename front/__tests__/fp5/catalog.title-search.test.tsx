@@ -1,38 +1,48 @@
-import { renderShell, screen, waitFor, fireEvent } from "@/test/utils";
-import { fetchMock } from "@/test/setup";
-import App from "../../src/App";
+import { renderAppRoot, screen, waitFor, fireEvent } from "@/test/utils";
+import { mockApi } from "@/test/mocks/mockApi";
+import { makeGameSummary } from "@/test/fixtures/game";
 
 describe("Catalog title search (FP5)", () => {
   const allGames = [
-    { id: "1", title: "Adventure Game", cover_url: "http://example.com/1.jpg", status: "published" as const },
-    { id: "2", title: "Racing Game", cover_url: "http://example.com/2.jpg", status: "published" as const },
-    { id: "3", title: "Puzzle Game", cover_url: "http://example.com/3.jpg", status: "published" as const },
+    makeGameSummary({ id: "1", title: "Adventure Game", cover_url: "http://example.com/1.jpg", status: "published" }),
+    makeGameSummary({ id: "2", title: "Racing Game", cover_url: "http://example.com/2.jpg", status: "published" }),
+    makeGameSummary({ id: "3", title: "Puzzle Game", cover_url: "http://example.com/3.jpg", status: "published" }),
   ];
 
   beforeEach(() => {
     localStorage.clear();
-    fetchMock.reset();
+    // Add safety check
+    if (mockApi && typeof mockApi.reset === 'function') {
+      mockApi.reset();
+      mockApi.setupDefaults();
+    }
     
-    // Setup dynamic mock for games search
-    fetchMock.register("GET", "games", (url) => {
-      // Use a dummy base for relative URLs if needed, though fetch receives full URL usually
-      // fetchMock passes full URL string.
-      const urlObj = new URL(url);
-      const searchQuery = urlObj.searchParams.get("title") || "";
+    // Setup dynamic mock for games search with query param support
+    mockApi.get("/games", (url, options, params) => {
+      // Extract query params from URL
+      let searchQuery = "";
+      try {
+        const urlObj = new URL(url);
+        searchQuery = urlObj.searchParams.get("title") || "";
+      } catch {
+        // If URL parsing fails, try to extract from url string
+        const match = url.match(/[?&]title=([^&]*)/);
+        if (match) searchQuery = decodeURIComponent(match[1]);
+      }
       
       const filtered = searchQuery
         ? allGames.filter((game) => game.title.toLowerCase().includes(searchQuery.toLowerCase()))
         : allGames;
 
-      return fetchMock.json(filtered);
+      return Promise.resolve(new Response(JSON.stringify(filtered), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }));
     });
-
-    // Mock teams (required for catalog load)
-    fetchMock.register("GET", "/teams", () => fetchMock.json({ teams: [] }));
   });
 
   it("filters games by title in real-time as user types", async () => {
-    renderShell(<App />, { route: "/catalog" });
+    renderAppRoot({ route: "/catalog" });
 
     await waitFor(() => {
       expect(screen.getByText("Adventure Game")).toBeInTheDocument();
@@ -52,7 +62,7 @@ describe("Catalog title search (FP5)", () => {
   });
 
   it("performs case-insensitive search", async () => {
-    renderShell(<App />, { route: "/catalog" });
+    renderAppRoot({ route: "/catalog" });
 
     await waitFor(() => {
       expect(screen.getByText("Adventure Game")).toBeInTheDocument();
@@ -67,7 +77,7 @@ describe("Catalog title search (FP5)", () => {
   });
 
   it("supports partial matches", async () => {
-    renderShell(<App />, { route: "/catalog" });
+    renderAppRoot({ route: "/catalog" });
 
     await waitFor(() => {
       expect(screen.getByText("Adventure Game")).toBeInTheDocument();

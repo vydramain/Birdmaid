@@ -1,9 +1,10 @@
 import "@testing-library/jest-dom";
 import { vi, afterEach } from "vitest";
 import { setupFetchMock, fetchMock } from "./utils/mock-fetch";
+import { mockApi } from "./mocks/mockApi";
 
-// Re-export fetchMock for tests that import it from here
-export { fetchMock };
+// Re-export fetchMock and mockApi for tests that import from here
+export { fetchMock, mockApi };
 
 // --- Debug: Verify setup is loaded ---
 console.log("[TEST SETUP] loaded");
@@ -109,7 +110,13 @@ global.cancelAnimationFrame = (id) => clearTimeout(id) as unknown as number;
 // Cleanup
 afterEach(() => {
   vi.clearAllMocks();
-  fetchMock.reset();
+  // Add safety check - mockApi might not be initialized in some edge cases
+  if (mockApi && typeof mockApi.reset === 'function') {
+    mockApi.reset(); // This also calls fetchMock.reset()
+  } else {
+    // Fallback: reset fetchMock directly
+    fetchMock.reset();
+  }
   localStorage.clear();
   sessionStorage.clear();
 });
