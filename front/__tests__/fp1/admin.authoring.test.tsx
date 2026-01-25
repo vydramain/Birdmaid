@@ -1,27 +1,61 @@
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { screen } from "@/test/utils";
+import { render } from "../../src/test/utils/render";
+import { describe, it, vi, beforeEach } from "vitest";
 import App from "../../src/App";
 
 describe("Admin authoring", () => {
-  it("allows creating a team", () => {
-    render(
-      <MemoryRouter initialEntries={["/admin/teams"]}>
-        <App />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByText(/Create team/i)).toBeInTheDocument();
+  beforeEach(() => {
+    // Mock authenticated superadmin
+    const fakeToken = `header.${btoa(JSON.stringify({
+      userId: "admin-1",
+      email: "admin@example.com",
+      login: "admin",
+      isSuperAdmin: true
+    }))}.signature`;
+    localStorage.setItem("birdmaid_token", fakeToken);
   });
 
-  it("allows editing game details", () => {
-    render(
-      <MemoryRouter initialEntries={["/admin/games/1"]}>
-        <App />
-      </MemoryRouter>
-    );
+  it("allows creating a team", async () => {
+    // Mock teams fetch
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ teams: [] })
+    } as Response)));
 
-    expect(screen.getByText(/Description/i)).toBeInTheDocument();
-    expect(screen.getByText(/Repository/i)).toBeInTheDocument();
-    expect(screen.getByText(/Cover/i)).toBeInTheDocument();
+    render(<App />, { initialEntries: ["/teams"] });
+
+    expect(await screen.findByText(/Create team/i)).toBeInTheDocument();
+  });
+
+  it("allows editing game details", async () => {
+    // Mock game fetch
+    vi.stubGlobal("fetch", vi.fn((url) => {
+        if (url.toString().endsWith("/teams")) {
+             return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({ teams: [] })
+             } as Response);
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            id: "1",
+            title: "Test Game",
+            description_md: "Desc",
+            repo_url: "http://repo",
+            cover_url: "http://cover",
+            status: "editing",
+            tags_user: [],
+            tags_system: [],
+            teamId: "team-1"
+          })
+        } as Response);
+    }));
+
+    render(<App />, { initialEntries: ["/editor/games/1"] });
+
+    expect(await screen.findByText(/Description/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Repository/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Cover/i)).toBeInTheDocument();
   });
 });

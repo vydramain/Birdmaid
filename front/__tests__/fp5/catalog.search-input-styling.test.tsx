@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen } from "@/test/utils";
 import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import App from "../../src/App";
@@ -16,7 +16,7 @@ describe("Catalog search input styling (FP5)", () => {
 
   it("uses Windows 95 styling for catalog search input", () => {
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={["/catalog"]}>
         <App />
       </MemoryRouter>
     );
@@ -37,7 +37,7 @@ describe("Catalog search input styling (FP5)", () => {
 
   it("search input matches Windows 95 design system", () => {
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={["/catalog"]}>
         <App />
       </MemoryRouter>
     );

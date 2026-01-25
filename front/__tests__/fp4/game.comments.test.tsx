@@ -1,33 +1,32 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
-import { vi } from "vitest";
-import App from "../../src/App";
+import { renderAppRoot, screen, waitFor, fireEvent } from "@/test/utils";
+import { mockApi, fetchMock } from "@/test/utils";
+import { describe, it, beforeEach, expect } from "vitest";
 
 describe("Game comments", () => {
-  it("shows comments for published game (visible to all users)", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            id: "game123",
-            title: "Test Game",
-            status: "published",
-            comments: [
-              { id: "1", text: "Great game!", userLogin: "user1", createdAt: "2026-01-09T10:00:00Z" },
-              { id: "2", text: "Love it!", userLogin: "user2", createdAt: "2026-01-09T11:00:00Z" },
-            ],
-          }),
-      } as Response)
-    );
-    vi.stubGlobal("fetch", mockFetch);
+  beforeEach(() => {
     localStorage.clear();
+    mockApi.reset();
+    mockApi.setupDefaults();
+  });
 
-    render(
-      <MemoryRouter initialEntries={["/games/game123"]}>
-        <App />
-      </MemoryRouter>
-    );
+  it("shows comments for published game (visible to all users)", async () => {
+    const gameId = "game123";
+    
+    mockApi.game(gameId, {
+      id: gameId,
+      title: "Test Game",
+      status: "published",
+      build_url: null,
+      description_md: "Desc",
+      team: { name: "Team A", members: [] }
+    });
+
+    mockApi.comments(gameId, [
+      { id: "1", text: "Great game!", userLogin: "user1", createdAt: "2026-01-09T10:00:00Z", userId: "u1" },
+      { id: "2", text: "Love it!", userLogin: "user2", createdAt: "2026-01-09T11:00:00Z", userId: "u2" },
+    ]);
+
+    renderAppRoot({ route: `/games/${gameId}` });
 
     await waitFor(() => {
       expect(screen.getByText("Great game!")).toBeInTheDocument();
@@ -39,52 +38,47 @@ describe("Game comments", () => {
 
   it("allows authenticated user to post comment", async () => {
     localStorage.setItem("birdmaid_token", "valid-token");
-    const mockFetch = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            id: "game123",
-            title: "Test Game",
-            status: "published",
-            comments: [],
-          }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            id: "3",
-            text: "New comment",
-            userLogin: "testuser",
-            createdAt: "2026-01-09T12:00:00Z",
-          }),
-      } as Response);
-    vi.stubGlobal("fetch", mockFetch);
-
-    render(
-      <MemoryRouter initialEntries={["/games/game123"]}>
-        <App />
-      </MemoryRouter>
-    );
-
-    await waitFor(() => {
-      const commentInput = screen.getByPlaceholderText(/comment|write/i);
-      commentInput.setAttribute("value", "New comment");
-
-      const postButton = screen.getByRole("button", { name: /post|submit/i });
-      postButton.click();
+    const gameId = "game123";
+    
+    mockApi.game(gameId, {
+      id: gameId,
+      title: "Test Game",
+      status: "published",
+      build_url: null
     });
 
+    // Initial empty comments
+    mockApi.comments(gameId, []);
+
+    // Post comment mock - will update comments after POST
+    let posted = false;
+    mockApi.register("POST", `/games/${gameId}/comments`, async () => {
+      posted = true;
+      // After post, update comments mock for next GET
+      mockApi.comments(gameId, [{
+        id: "3",
+        text: "New comment",
+        userLogin: "testuser",
+        createdAt: "2026-01-09T12:00:00Z",
+        userId: "u3"
+      }]);
+      return fetchMock.json({}, 201);
+    });
+
+    renderAppRoot({ route: `/games/${gameId}` });
+
+    // Wait for page to load
+    await waitFor(() => screen.getByText("Test Game"));
+
+    const commentInput = screen.getByPlaceholderText(/write a comment/i);
+    fireEvent.change(commentInput, { target: { value: "New comment" } });
+
+    const postButton = screen.getByRole("button", { name: /post comment/i });
+    fireEvent.click(postButton);
+
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/games/game123/comments"),
-        expect.objectContaining({
-          method: "POST",
-        })
-      );
+      expect(posted).toBe(true);
+      expect(screen.getByText("New comment")).toBeInTheDocument();
     });
   });
 });
-

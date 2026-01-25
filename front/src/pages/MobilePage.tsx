@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useWindow } from "../contexts/WindowContext";
+import { useWindowRegistry } from "../os/wm/WindowRegistry";
 import { DesktopIcon } from "../components/DesktopIcon";
-import { WindowManager } from "../components/WindowManager";
+import { WindowManager } from "../os/wm/WindowManager";
 
 export function MobilePage() {
-  const { openWindow, windows } = useWindow();
+  const { openWindow, windows } = useWindowRegistry();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const icons = [

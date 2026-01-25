@@ -8,7 +8,7 @@
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ci": "vitest run",
+    "test:ci": "! grep -rE '\\.skip|\\.only|test\\.todo|describe\\.todo' __tests__ && vitest run --coverage",
     "coverage": "vitest run --coverage",
     "preview": "node server.js"
   },

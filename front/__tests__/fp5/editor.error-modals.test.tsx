@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@/test/utils";
 import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import App from "../../src/App";

@@ -1,0 +1,114 @@
+import { useRef, useEffect, useState, ReactNode } from "react";
+import { windowStore } from "./WindowStore";
+import { useWindowRegistry } from "./WindowRegistry";
+
+type WindowFrameProps = {
+  id: string;
+  title: string;
+  children: ReactNode;
+  onClose?: () => void;
+};
+
+export function WindowFrame({ id, title, children, onClose }: WindowFrameProps) {
+  const { focusWindow, closeWindow } = useWindowRegistry();
+  const windowRef = useRef<HTMLDivElement>(null);
+  
+  // 1. Subscribe to React State (Registry/Meta)
+  const [state, setState] = useState(() => windowStore.get(id));
+
+  useEffect(() => {
+    return windowStore.subscribe(id, (newState) => {
+      setState(newState);
+    });
+  }, [id]);
+
+  // 2. Subscribe to Geometry (rAF/Direct DOM)
+  useEffect(() => {
+    return windowStore.subscribeGeometry(id, (geom) => {
+      if (windowRef.current) {
+        windowRef.current.style.transform = `translate3d(${geom.x}px, ${geom.y}px, 0)`;
+      }
+    });
+  }, [id]);
+
+  // 3. Drag Logic with Pointer Events (Solves Iframe Issue)
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Only drag from titlebar
+    if (!(e.target as HTMLElement).closest(".win-titlebar")) return;
+    if ((e.target as HTMLElement).closest(".win-window-controls")) return;
+
+    e.preventDefault(); 
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    focusWindow(id);
+    windowStore.startDrag(id, e.clientX, e.clientY);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (state.isDragging) {
+      windowStore.updateDrag(e.clientX, e.clientY);
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (state.isDragging) {
+      windowStore.endDrag();
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    }
+  };
+
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onClose) onClose();
+    else closeWindow(id);
+  };
+
+  if (state.minimized) return null;
+
+  return (
+    <div
+      ref={windowRef}
+      className="win-window-base win-window"
+      style={{
+        position: "absolute",
+        left: 0, 
+        top: 0,
+        transform: `translate3d(${state.x}px, ${state.y}px, 0)`,
+        zIndex: state.zIndex,
+        width: state.width,
+        display: "flex",
+        flexDirection: "column",
+        minWidth: "300px",
+        maxWidth: "90vw",
+        maxHeight: "90vh",
+        boxShadow: state.zIndex > 10 ? "4px 4px 10px rgba(0,0,0,0.5)" : undefined,
+      }}
+      onMouseDown={() => focusWindow(id)}
+    >
+      <header
+        className="win-titlebar"
+        style={{ cursor: state.isDragging ? "grabbing" : "grab", touchAction: "none" }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
+        <div className="title">
+          <span>◆</span>
+          <span>{title}</span>
+        </div>
+        <div className="win-window-controls">
+          <button 
+            className="win-btn" 
+            type="button" 
+            onClick={handleClose}
+            aria-label="Close window"
+          >
+            ×
+          </button>
+        </div>
+      </header>
+      <div className="content" style={{ padding: "0", flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        {children}
+      </div>
+    </div>
+  );
+}

@@ -1,19 +1,15 @@
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { screen } from "@/test/utils";
+import { render } from "../../src/test/utils/render";
+import { describe, it } from "vitest";
 import App from "../../src/App";
 
 describe("Admin forbidden UI states", () => {
-  beforeEach(() => {
-    localStorage.removeItem("adminToken");
-  });
+  it("redirects to home when access is denied", async () => {
+    localStorage.removeItem("birdmaid_token");
 
-  it("renders a forbidden banner when access is denied", () => {
-    render(
-      <MemoryRouter initialEntries={["/admin/games/1"]}>
-        <App />
-      </MemoryRouter>
-    );
+    render(<App />, { initialEntries: ["/editor/games/1"] });
 
-    expect(screen.getByText(/Access denied/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Welcome/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Access denied/i)).not.toBeInTheDocument();
   });
 });

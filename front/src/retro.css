@@ -1,15 +1,18 @@
 @import url("https://fonts.googleapis.com/css2?family=VT323&family=Pixelify+Sans:wght@400;700&family=Silkscreen:wght@400;700&display=swap");
 
 :root {
+  /* Chicago95 Palette */
   --win-gray: #c0c0c0;
   --win-gray-light: #dfdfdf;
   --win-gray-dark: #808080;
-  --win-gray-darker: #404040;
+  --win-gray-darker: #404040; /* Used for deepest shadows */
   --win-blue: #000080;
   --win-blue-light: #1084d0;
   --win-teal: #008080;
   --win-white: #ffffff;
   --win-black: #000000;
+  --win-red: #ff0000;
+  --win-yellow: #ffff00;
 }
 
 * {
@@ -18,15 +21,18 @@
 
 body {
   margin: 0;
-  font-family: "Pixelify Sans", "VT323", "MS Sans Serif", "Tahoma", sans-serif;
+  font-family: "MS Sans Serif", "Tahoma", sans-serif;
   color: var(--win-black);
   background-color: var(--win-teal);
+  /* Classic Dithered Background */
   background-image:
     linear-gradient(45deg, #000000 25%, transparent 25%, transparent 75%, #000000 75%, #000000),
     linear-gradient(45deg, #000000 25%, transparent 25%, transparent 75%, #000000 75%, #000000);
   background-size: 2px 2px;
   background-position: 0 0, 1px 1px;
   background-blend-mode: overlay;
+  /* Use pixel font for "retro" feel if MS Sans Serif missing, but prefer system fonts for readability */
+  -webkit-font-smoothing: none;
 }
 
 button {
@@ -40,14 +46,27 @@ button {
   justify-content: center;
 }
 
-/* Common styles for all Windows 95 windows (borders, background, shadow) */
+/* --- Window Frame --- */
+
 .win-window-base {
   background: var(--win-gray);
-  border-top: 2px solid var(--win-gray-light);
-  border-left: 2px solid var(--win-gray-light);
-  border-right: 2px solid var(--win-black);
-  border-bottom: 2px solid var(--win-black);
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+  /* Classic 3D Window Border */
+  box-shadow: 
+    inset 1px 1px var(--win-gray-light), 
+    inset -1px -1px var(--win-gray-darker),
+    1px 1px 0 0 var(--win-black); /* Outer thin black line */
+  border-top: 1px solid var(--win-gray-light);
+  border-left: 1px solid var(--win-gray-light);
+  border-right: 1px solid var(--win-gray-dark);
+  border-bottom: 1px solid var(--win-gray-dark);
+  /* Outer border handled by wrapper or shadow for simplicity */
+  border: 2px solid var(--win-gray); /* Reset */
+  border-top-color: var(--win-gray-light);
+  border-left-color: var(--win-gray-light);
+  border-right-color: var(--win-gray-dark);
+  border-bottom-color: var(--win-gray-dark);
+  box-shadow: 1px 1px 0 0 var(--win-black), inset 1px 1px var(--win-white), inset -1px -1px var(--win-gray-dark);
+  
   display: flex;
   flex-direction: column;
 }
@@ -59,12 +78,13 @@ button {
   min-height: 90vh;
 }
 
-/* Modal windows (compact, auto-sized) */
+/* Modal windows */
 .win95-modal {
   position: absolute;
   width: auto;
   height: auto;
   min-height: auto;
+  box-shadow: 2px 2px 0 0 var(--win-black), inset 1px 1px var(--win-white), inset -1px -1px var(--win-gray-dark);
 }
 
 .win-titlebar {
@@ -73,71 +93,89 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
+  padding: 2px 4px;
   font-size: 12px;
-  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  margin: 2px;
 }
 
 .win-titlebar .title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 700;
+  gap: 6px;
 }
 
 .win-window-controls {
   display: flex;
-  gap: 4px;
+  gap: 2px;
 }
+
+/* --- Buttons --- */
 
 .win-btn {
   background: var(--win-gray);
-  border-top: 2px solid var(--win-white);
-  border-left: 2px solid var(--win-white);
-  border-right: 2px solid var(--win-black);
-  border-bottom: 2px solid var(--win-black);
-  box-shadow: inset 1px 1px var(--win-gray-light), inset -1px -1px var(--win-gray-darker);
-  padding: 6px 12px;
+  color: var(--win-black);
+  border: 1px solid var(--win-black); /* Fallback */
+  border-top-color: var(--win-white);
+  border-left-color: var(--win-white);
+  border-right-color: var(--win-black);
+  border-bottom-color: var(--win-black);
+  box-shadow: 1px 1px 0 var(--win-black), inset -1px -1px 0 var(--win-gray-dark);
+  
+  padding: 4px 12px;
+  font-size: 11px;
   cursor: pointer;
+  text-align: center;
+  min-width: 20px;
 }
 
 .win-btn:active {
-  border-top: 2px solid var(--win-black);
-  border-left: 2px solid var(--win-black);
-  border-right: 2px solid var(--win-white);
-  border-bottom: 2px solid var(--win-white);
+  border-top-color: var(--win-black);
+  border-left-color: var(--win-black);
+  border-right-color: var(--win-white);
+  border-bottom-color: var(--win-white);
+  box-shadow: none; /* Flatten */
+  transform: translate(1px, 1px);
 }
 
 .win-btn[disabled] {
-  opacity: 0.6;
+  color: var(--win-gray-dark);
+  text-shadow: 1px 1px var(--win-white);
   cursor: not-allowed;
 }
 
+/* --- Inset/Outset Panels --- */
+
 .win-inset {
   background: var(--win-white);
-  border-top: 2px solid var(--win-gray-dark);
-  border-left: 2px solid var(--win-gray-dark);
-  border-right: 2px solid var(--win-white);
-  border-bottom: 2px solid var(--win-white);
-  padding: 6px;
+  border: 1px solid var(--win-gray-dark);
+  border-top-color: var(--win-gray-dark);
+  border-left-color: var(--win-gray-dark);
+  border-right-color: var(--win-white);
+  border-bottom-color: var(--win-white);
+  box-shadow: inset 1px 1px 0 var(--win-black);
+  padding: 2px;
 }
 
 .win-outset {
   background: var(--win-gray);
-  border-top: 2px solid var(--win-white);
-  border-left: 2px solid var(--win-white);
-  border-right: 2px solid var(--win-gray-darker);
-  border-bottom: 2px solid var(--win-gray-darker);
+  border: 1px solid var(--win-white);
+  border-top-color: var(--win-white);
+  border-left-color: var(--win-white);
+  border-right-color: var(--win-gray-dark);
+  border-bottom-color: var(--win-gray-dark);
+  box-shadow: 1px 1px 0 var(--win-black);
   padding: 6px;
 }
+
+/* --- Menus & Toolbars --- */
 
 .win-menu {
   display: flex;
   gap: 8px;
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--win-white);
-  box-shadow: 0 1px 0 var(--win-gray-dark);
-  font-size: 13px;
+  padding: 2px 6px;
+  margin-bottom: 2px;
 }
 
 .win-menu span {
@@ -154,216 +192,46 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 4px;
+  border-top: 1px solid var(--win-white);
   border-bottom: 1px solid var(--win-gray-dark);
+  margin-bottom: 4px;
 }
+
+/* --- Content Area --- */
 
 .content {
   flex: 1;
   overflow: auto;
-  padding: 16px;
+  padding: 0; /* Let children handle padding */
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
-.featured {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-  gap: 16px;
-}
-
-.featured-image {
-  background: radial-gradient(circle at top, #3a3a3a, #0b0b0b);
-  height: 280px;
-  position: relative;
-  overflow: hidden;
-}
-
-.featured-image::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0) 0,
-    rgba(255, 255, 255, 0) 50%,
-    rgba(0, 0, 0, 0.12) 50%,
-    rgba(0, 0, 0, 0.12) 100%
-  );
-  background-size: 100% 4px;
-}
+/* --- Helpers --- */
 
 .tag-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
-  padding: 8px;
+  padding: 4px;
+  border-bottom: 1px solid var(--win-gray-dark);
+  background: var(--win-gray);
 }
 
 .tag-chip {
-  padding: 4px 10px;
-  font-size: 12px;
+  padding: 2px 6px;
+  font-size: 11px;
   background: var(--win-gray);
-  border: 2px solid var(--win-gray-dark);
+  border: 1px solid var(--win-black); /* Simple border for tags */
 }
 
-.catalog-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-}
-
-@media (max-width: 1200px) {
-  .catalog-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .catalog-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
+/* --- Responsive --- */
 
 @media (max-width: 600px) {
-  .catalog-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.game-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 6px;
-  aspect-ratio: 1;
-}
-
-.game-thumb {
-  background: linear-gradient(135deg, #0c0c0c, #2b2b2b);
-  border: 2px solid var(--win-gray-dark);
-}
-
-.game-hero {
-  position: relative;
-  background: #101010;
-  height: 360px;
-  overflow: hidden;
-}
-
-.game-hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.75));
-}
-
-.hero-content {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  z-index: 1;
-}
-
-.game-meta {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.sidebar {
-  width: 220px;
-  background: var(--win-gray);
-  border-right: 2px solid var(--win-gray-dark);
-  padding: 10px;
-}
-
-.teams-layout {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 12px;
-  height: 100%;
-}
-
-.teams-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-}
-
-.editor-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 16px;
-}
-
-.panel {
-  padding: 10px;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-
-.form-field input,
-.form-field textarea,
-.form-field select {
-  padding: 6px;
-  border: 2px solid var(--win-gray-dark);
-  background: var(--win-white);
-  font-family: inherit;
-}
-
-.status-pill {
-  padding: 4px 10px;
-  border: 2px solid var(--win-gray-dark);
-  background: var(--win-white);
-  font-size: 12px;
-}
-
-.danger {
-  border: 2px solid #aa0000;
-  padding: 8px;
-  color: #aa0000;
-  font-weight: 700;
-}
-
-.win95-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Modal windows inherit base styles from .win-window-base */
-
-@media (max-width: 960px) {
-  .featured {
-    grid-template-columns: 1fr;
-  }
-  .teams-layout {
-    grid-template-columns: 1fr;
-  }
-  .editor-layout {
-    grid-template-columns: 1fr;
-  }
-  .sidebar {
-    width: 100%;
+  .win-window {
+    min-height: 100vh;
+    border: none; /* Full screen on mobile */
   }
 }

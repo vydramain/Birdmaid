@@ -1,11 +1,56 @@
 import { useEffect, useState } from "react";
-import { useWindow } from "../contexts/WindowContext";
+import { useWindowRegistry } from "../os/wm/WindowRegistry";
 import { DesktopIcon } from "../components/DesktopIcon";
-import { WindowManager } from "../components/WindowManager";
+import { WindowManager } from "../os/wm/WindowManager";
+import { vfs } from "../os/fs/VirtualFileSystem";
+
+type DesktopIconData = {
+  id: string;
+  label: string;
+  icon: string;
+  target?: string;
+};
 
 export function DesktopPage() {
-  const { openWindow } = useWindow();
-  const [landingSeen, setLandingSeen] = useState(false);
+  const { openWindow } = useWindowRegistry();
+  const [icons, setIcons] = useState<DesktopIconData[]>([]);
+
+  // VFS Sync
+  useEffect(() => {
+    const updateIcons = () => {
+      const nodes = vfs.readDir('/desktop');
+      const newIcons = nodes.map(node => {
+        let icon = '📄';
+        let target = '';
+        let label = node.name;
+
+        if (node.name.endsWith('.url')) {
+          // Parse link file
+          try {
+            const data = JSON.parse(node.content as string);
+            icon = data.icon || '🔗';
+            target = data.target;
+            label = data.label || node.name;
+          } catch (e) {
+            console.error('Failed to parse link:', node.name);
+          }
+        } else if (node.name.endsWith('.txt') || node.name.endsWith('.md')) {
+          icon = '📝';
+        }
+
+        return {
+          id: node.name,
+          label,
+          icon,
+          target
+        };
+      });
+      setIcons(newIcons);
+    };
+
+    updateIcons();
+    return vfs.subscribe('/desktop', updateIcons);
+  }, []);
 
   useEffect(() => {
     // Check if landing window was already seen
@@ -13,61 +58,18 @@ export function DesktopPage() {
     if (!seen) {
       // Open landing window automatically
       openWindow("landing");
-      setLandingSeen(true);
     }
   }, [openWindow]);
 
-  const icons = [
-    {
-      id: "games",
-      label: "Игры",
-      icon: "🎮",
-      onClick: () => {
-        // Open games catalog in a window
-        // For now, just navigate or open a window
-        window.location.href = "/";
-      },
-    },
-    {
-      id: "explorer",
-      label: "Explorer",
-      icon: "📁",
-      onClick: () => openWindow("explorer"),
-    },
-    {
-      id: "help",
-      label: "HELP.TXT",
-      icon: "❓",
-      onClick: () => openWindow("help"),
-    },
-    {
-      id: "installer",
-      label: "Мастер по установке",
-      icon: "⚙️",
-      onClick: () => {
-        // Placeholder - will be implemented in FP10
-        alert("Coming in FP10");
-      },
-    },
-    {
-      id: "trash",
-      label: "Говно - не открывать",
-      icon: "🗑️",
-      onClick: () => {
-        // Placeholder - shuточный контент
-        alert("You were warned!");
-      },
-    },
-    {
-      id: "widgets",
-      label: "Безделушки",
-      icon: "🎲",
-      onClick: () => {
-        // Placeholder - will be implemented in FP8
-        alert("Coming in FP8");
-      },
-    },
-  ];
+  const handleIconClick = (icon: DesktopIconData) => {
+    if (icon.target) {
+      openWindow(icon.target as any);
+    } else if (icon.id.endsWith('.txt')) {
+      openWindow('help'); // Mapping everything to Help for now
+    } else {
+      openWindow('explorer'); // Fallback
+    }
+  };
 
   return (
     <div
@@ -100,7 +102,7 @@ export function DesktopPage() {
             key={icon.id}
             icon={icon.icon}
             label={icon.label}
-            onClick={icon.onClick}
+            onClick={() => handleIconClick(icon)}
             tooltip={icon.label}
           />
         ))}

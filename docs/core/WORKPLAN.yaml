@@ -386,3 +386,105 @@ fp:
     tests_phase: code
     gate_decision: PASS
     gate_reason: "All release_gate criteria met: Acceptance checklist complete (15/15 items), RTM coverage 100% (16/16 requirements mapped to tests), all ADRs captured (ADR-059 to ADR-071), artifacts created (evidence/links.md, evidence/demo-notes.txt), all 18 test files exist, implementation complete for all 16 CTAs, documentation updated. Additional tags management fix (ADR-071) implemented and documented."
+
+  - id: FP7
+    name: Explorer & Media Viewers (Performance & VFS)
+    scope:
+      - Unified Shell (Architecture Refactor)
+      - Performance Budget (Zero-Lag Drag)
+      - Full Explorer (Tree + Grid)
+      - Media Viewers (Image, Video, Text)
+      - VFS (Event-driven)
+
+    status: design
+    timebox: TBD
+
+    wip_limits:
+      max_parallel_cta: 2
+      max_open_questions: 0
+
+    exit_criteria:
+      discovery_ready:
+        - All FP7 requirements documented in docs/fps/FP7.md
+        - Questions/Gaps logged in docs/fps/FP7.md
+        - ack.discovery filled (by/at/scope)
+      design_ready:
+        - docs/UX_MAP.md: FP7 CTA table filled
+        - docs/QNA_DECISIONS.md: ADRs for critical FP7 decisions
+        - ack.design_first filled (by/at/scope)
+      architecture_ready:
+        - ack.architecture filled (by/at/scope)
+      tests_red_ready:
+        - docs/TESTS.md: UAT/BDD for FP7
+        - ack.tests_red_spec filled (by/at/scope)
+
+    risks:
+      - "Jank" on low-end Android devices during drag.
+      - Iframe games stealing focus/pointer.
+      - Memory leaks from frequent window open/close.
+
+    dependencies:
+      - docs/fps/FP7.md
+      - docs/core/REQUIREMENTS.md
+      - docs/core/UX_MAP.md
+      - docs/core/QNA_DECISIONS.md
+
+    blockers:
+      - None
+
+    repo_state:
+      front:
+        exists: true
+        stack: [React 18.2, Vite 5.1, TypeScript 5.4, Vitest 1.3]
+      back:
+        exists: true
+        stack: [NestJS 10.3, TypeScript 5.4, Jest 29.7, MongoDB 6, MinIO]
+      root_package_json: false
+      docker_compose_present: true
+
+    decisions_links:
+      adrs:
+        - "docs/fps/FP7.md#Decisions-ADRs"
+      ux_map:
+        - "docs/UX_MAP.md#FP7-Explorer--Media-Viewers"
+      tests:
+        - "docs/TESTS.md#FP7-Explorer--Media-Viewers"
+      requirements:
+        - "docs/fps/FP7.md#Requirements"
+
+    artifacts_paths:
+      root_pattern: "artifacts/${FP_ID}/${YYYY}-${MM}-${DD}/"
+      required:
+        - "logs/back-tests.log"
+        - "logs/front-tests.log"
+        - "coverage/coverage-back.json"
+        - "coverage/coverage-front.json"
+        - "evidence/demo-notes.txt"
+        - "evidence/links.md"
+
+    ack:
+      discovery:
+        by: TBD
+        at: TBD
+        scope: FP7 discovery
+      design_first:
+        by: TBD
+        at: TBD
+        scope: FP7 design-first
+      architecture:
+        by: TBD
+        at: TBD
+        scope: FP7 architecture
+      tests_red_spec:
+        by: TBD
+        at: TBD
+        scope: FP7 tests-red spec
+      gate:
+        by: TBD
+        at: TBD
+        scope: FP7 gate
+
+    ack_format: "Fill ack.<stage>.by/at/scope after each stage; required for discovery, plan, design-first, architecture, tests-red spec, gate."
+
+    tests_phase: code
+    gate_decision: TBD

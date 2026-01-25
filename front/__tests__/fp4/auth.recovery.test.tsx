@@ -1,40 +1,36 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
-import { vi } from "vitest";
+import { fireEvent, screen, waitFor } from "@/test/utils";
+import { render } from "../../src/test/utils/render";
+import { describe, it, vi, beforeEach, expect } from "vitest";
 import App from "../../src/App";
 
 describe("Password recovery", () => {
   beforeEach(() => {
     localStorage.clear();
-    vi.stubGlobal("fetch", vi.fn());
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response)));
   });
 
   it("requests recovery code and sends email", async () => {
-    const mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ message: "Code sent" }),
-      } as Response)
-    );
+    const mockFetch = vi.fn((url) => {
+        if (url.toString().includes("/auth/recovery/request")) {
+            return Promise.resolve({ ok: true, json: () => Promise.resolve({ message: "Code sent" }) } as Response);
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response);
+    });
     vi.stubGlobal("fetch", mockFetch);
 
-    render(
-      <MemoryRouter initialEntries={["/"]}>
-        <App />
-      </MemoryRouter>
-    );
+    render(<App />, { initialEntries: ["/catalog"] });
 
-    const loginButton = screen.getByText(/Login/i);
-    loginButton.click();
+    const loginButton = await screen.findByText("Login");
+    fireEvent.click(loginButton);
 
     const forgotPasswordLink = screen.getByText(/forgot|recovery/i);
-    forgotPasswordLink.click();
+    fireEvent.click(forgotPasswordLink);
 
-    const emailInput = screen.getByLabelText(/email/i);
-    emailInput.setAttribute("value", "user@example.com");
+    const emailInput = await screen.findByLabelText(/email/i);
+    fireEvent.change(emailInput, { target: { value: "user@example.com" } });
 
     const requestButton = screen.getByRole("button", { name: /send|request/i });
-    requestButton.click();
+    fireEvent.click(requestButton);
 
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
@@ -47,39 +43,37 @@ describe("Password recovery", () => {
   });
 
   it("verifies recovery code and resets password", async () => {
-    const mockFetch = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ message: "Code sent" }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            message: "Password reset",
-            token: "jwt-token-123",
-          }),
-      } as Response);
+    const mockFetch = vi.fn((url) => {
+        if (url.toString().includes("/auth/recovery/request")) {
+            return Promise.resolve({ ok: true, json: () => Promise.resolve({ message: "Code sent" }) } as Response);
+        }
+        if (url.toString().includes("/auth/recovery/verify")) {
+            return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({
+                    message: "Password reset",
+                    token: "jwt-token-123",
+                }),
+            } as Response);
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response);
+    });
     vi.stubGlobal("fetch", mockFetch);
 
-    render(
-      <MemoryRouter initialEntries={["/"]}>
-        <App />
-      </MemoryRouter>
-    );
+    render(<App />, { initialEntries: ["/catalog"] });
 
-    const loginButton = screen.getByText(/Login/i);
-    loginButton.click();
+    const loginButton = await screen.findByText("Login");
+    fireEvent.click(loginButton);
 
     const forgotPasswordLink = screen.getByText(/forgot|recovery/i);
-    forgotPasswordLink.click();
+    fireEvent.click(forgotPasswordLink);
 
     // Request code
-    const emailInput = screen.getByLabelText(/email/i);
-    emailInput.setAttribute("value", "user@example.com");
+    const emailInput = await screen.findByLabelText(/email/i);
+    fireEvent.change(emailInput, { target: { value: "user@example.com" } });
+    
     const requestButton = screen.getByRole("button", { name: /send|request/i });
-    requestButton.click();
+    fireEvent.click(requestButton);
 
     await waitFor(() => {
       expect(screen.getByLabelText(/code/i)).toBeInTheDocument();
@@ -88,11 +82,12 @@ describe("Password recovery", () => {
     // Verify code
     const codeInput = screen.getByLabelText(/code/i);
     const newPasswordInput = screen.getByLabelText(/new password/i);
-    codeInput.setAttribute("value", "123456");
-    newPasswordInput.setAttribute("value", "newpassword123");
+    
+    fireEvent.change(codeInput, { target: { value: "123456" } });
+    fireEvent.change(newPasswordInput, { target: { value: "newpassword123" } });
 
     const verifyButton = screen.getByRole("button", { name: /verify|reset/i });
-    verifyButton.click();
+    fireEvent.click(verifyButton);
 
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
@@ -106,4 +101,3 @@ describe("Password recovery", () => {
     expect(localStorage.getItem("birdmaid_token")).toBe("jwt-token-123");
   });
 });
-
