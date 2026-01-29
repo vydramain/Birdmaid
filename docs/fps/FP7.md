@@ -156,16 +156,27 @@
    - Focus: клик по окну → поднимает на передний план (z-index)
    - **Viewport Boundary:** Окна нельзя утащить за пределы viewport (координаты ограничены `[0, 0]` до `[viewportWidth - windowWidth, viewportHeight - windowHeight]`)
 
-4. **Explorer:**
-   - Tree view (слева): иерархия папок
+4. **Desktop Icons (контракт):**
+   - Desktop Icons читаются **строго из фиксированной системной папки Desktop**
+   - Источник: `/Disk C/desktop` (системная папка Desktop)
+   - Запрет: Desktop Icons **не могут быть перенесены** в произвольные папки
+   - Иконки рендерятся из содержимого папки `/Disk C/desktop`
+   - Двойной клик по иконке → открывается соответствующим приложением/Viewer
+
+5. **Explorer (контракт):**
+   - Explorer обязан уметь навигировать по **всему дереву от root**
+   - Tree view (слева): иерархия папок от root (`/`) до любого уровня вложенности
    - Grid view (справа): содержимое текущей папки
    - Синхронизация: изменения в VFS мгновенно отражаются в обоих видах
+   - **Нет "жёстких" путей в UI** кроме системных папок 1-го уровня
+   - Explorer показывает все системные папки первого уровня на root
+   - Навигация работает для любой структуры, созданной Organizer'ом внутри системных папок
 
-5. **Открытие контента:**
+6. **Открытие контента:**
    - Двойной клик по файлу → открывается соответствующим Viewer/Executor
    - Тип файла определяется по расширению или метаданным VFS
 
-6. **User Panel (системное окно):**
+7. **User Panel (системное окно):**
    - Открывается кликом по User Icon в Taskbar Tray
    - Windows 95 стилистика (отдельное окно, не Start Menu)
    - Отображает:
@@ -195,30 +206,78 @@
 
 ### Структура VFS
 
-VFS организована как иерархия папок и файлов:
+VFS организована как иерархия папок и файлов с разделением на **immutable root-level system folders** и **mutable subtree**.
+
+#### Root (My Computer)
+
+**Root** (`/` или "My Computer") — это корневая сущность VFS, от которой начинается вся файловая система. Root не может быть удален, переименован или перемещен.
+
+#### Root-Level System Folders (Immutable)
+
+**Первый уровень папок** — это непосредственные дети root (`/`). Эти папки являются **системными** и **неизменяемыми**:
+
+- **Нельзя удалять** root-level system folders
+- **Нельзя переименовывать** root-level system folders
+- **Нельзя перемещать** root-level system folders
+- **Нельзя изменять набор** root-level system folders (добавлять/удалять системные папки)
+
+**Список системных папок первого уровня (final):**
+
+- `/Disk A` — системная папка (диск A)
+- `/Disk B` — системная папка (диск B)
+- `/Disk C` — системная папка (диск C)
+  - Внутри Disk C могут быть системные подпапки:
+    - `/Disk C/desktop` — системная папка Desktop (источник Desktop Icons)
+    - `/Disk C/images` — системная папка для изображений
+    - `/Disk C/videos` — системная папка для видео
+    - `/Disk C/documents` — системная папка для документов/игр
+
+**Важно:** Внутри системных папок первого уровня Organizer имеет **полную свободу** — может создавать любые подпапки, любую вложенность, загружать файлы, переименовывать/перемещать/удалять элементы.
+
+#### Subtree (Mutable)
+
+**Subtree** — это всё, что находится **ниже первого уровня** (внутри системных папок):
+
+- Organizer может:
+  - Создавать папки любой глубины вложенности
+  - Загружать файлы в любые папки
+  - Переименовывать файлы и папки (кроме root-level system folders)
+  - Перемещать файлы и папки (кроме root-level system folders)
+  - Удалять файлы и папки (кроме root-level system folders)
+- Guest/Participant: read-only доступ к subtree
+
+#### Пример структуры
 
 ```
 / My Computer (root)
-  /Disk A
-  /Disk B
-  /Disk C
-    /images (folder)
-        /LD58 (folder)
-          image1.png (image)
-    /videos
-        /LD62 (folder)
-          video1.mp4 (video)
-    /documents
-        /LD59 (folder)
-          /command1 (folder)
-            game (executable game execute in iframe)
-          /command2 (folder)
-            game (link to another source to execute in iframe)
-    /desktop (folder)
+  /Disk A (system folder, immutable)
+    /... (любая структура, созданная Organizer'ом)
+  /Disk B (system folder, immutable)
+    /... (любая структура, созданная Organizer'ом)
+  /Disk C (system folder, immutable)
+    /desktop (system folder, immutable)
       My Computer (link to root for explorer)
-      registration.html  (html)
+      registration.html (html)
       help.txt (txt)
+      /... (любая структура, созданная Organizer'ом)
+    /images (system folder, immutable)
+      /LD58 (folder, создана Organizer'ом)
+        image1.png (image)
+      /... (любая структура, созданная Organizer'ом)
+    /videos (system folder, immutable)
+      /LD62 (folder, создана Organizer'ом)
+        video1.mp4 (video)
+      /... (любая структура, созданная Organizer'ом)
+    /documents (system folder, immutable)
+      /LD59 (folder, создана Organizer'ом)
+        /command1 (folder, создана Organizer'ом)
+          game (executable game execute in iframe)
+        /command2 (folder, создана Organizer'ом)
+          game (link to another source to execute in iframe)
+      /... (любая структура, созданная Organizer'ом)
 ```
+
+**Примечание:** Структура внутри системных папок является примером и может быть любой — Organizer строит её самостоятельно.
 
 ### Типы контента
 
@@ -295,17 +354,22 @@ interface ContentItem {
 ### Organizer (Организатор)
 
 **Права:**
-- Полный контроль контента:
-  - `createFolder` (создание папок)
-  - `uploadFile` (загрузка файлов)
-  - `moveItem` (перемещение файлов/папок)
-  - `deleteItem` (удаление файлов/папок)
-  - `renameItem` (переименование)
-- Управление размещением контента
+- Полный контроль контента в **subtree** (внутри системных папок):
+  - `createFolder` (создание папок любой глубины вложенности)
+  - `uploadFile` (загрузка файлов в любые папки)
+  - `moveItem` (перемещение файлов/папок внутри subtree)
+  - `deleteItem` (удаление файлов/папок из subtree)
+  - `renameItem` (переименование файлов/папок в subtree)
+- Управление размещением контента (внутри системных папок)
 - Управление доступом (в рамках предусмотренной модели)
 
 **Ограничения:**
-- Нет ограничений на операции с контентом (в рамках VFS/S3)
+- **НЕ может изменять root-level system folders:**
+  - Запрещено удалять root-level system folders (`/Disk A`, `/Disk B`, `/Disk C`, и т.д.)
+  - Запрещено переименовывать root-level system folders
+  - Запрещено перемещать root-level system folders
+  - Запрещено изменять набор root-level system folders (добавлять/удалять системные папки)
+- При попытке изменить root-level system folder → выбрасывается `PermissionDenied` ошибка
 
 ### Хранение ролей
 
@@ -362,6 +426,18 @@ interface ContentItem {
    - VFS является источником правды для UI
    - S3 является источником правды для персистентности
    - При конфликте: последняя операция Organizer имеет приоритет
+
+### Миграция S3 (Migration Notes)
+
+**Маппинг S3 keys:**
+- S3 keys должны маппиться как `root/system-folder/...` + произвольная вложенность
+- Пример: `Disk C/desktop/help.txt`, `Disk C/images/LD58/image1.png`
+- Структура в S3 соответствует структуре VFS: root → system folder → subtree
+
+**Ограничения миграции:**
+- **Запрещена миграция**, требующая изменения набора системных папок первого уровня
+- Если существующая структура S3 не соответствует новому контракту (immutable system folders), требуется реализация мигратора
+- Без мигратора: система не может быть обновлена, если структура S3 не соответствует контракту
 
 ## Architecture
 
@@ -573,9 +649,12 @@ function enforceViewportBoundary(win: WindowGeometry, viewport: ViewportSize): W
    - VFS методы `writeFile`, `mkdir`, `delete`, `move` выбрасывают `PermissionDenied` для Guest
    - Проверка на уровне VFS API
 
-2. **Organizer Full Control:**
-   - Все операции разрешены
-   - Проверка на уровне Backend API (JWT токен + роль)
+2. **Organizer Full Control (с ограничениями):**
+   - Все операции разрешены в **subtree** (внутри системных папок)
+   - **Запрещено изменять root-level system folders:**
+     - Попытка удалить/переименовать/переместить root-level system folder → выбрасывается `PermissionDenied`
+     - Проверка на уровне VFS API и Backend API (JWT токен + роль)
+   - Проверка на уровне Backend API (JWT токен + роль) для всех операций
 
 ### XSS Protection
 
@@ -640,14 +719,16 @@ function enforceViewportBoundary(win: WindowGeometry, viewport: ViewportSize): W
    - `shell.platform-context.test.tsx`: Platform Context фиксируется на сессию
 
 2. **Desktop Icons:**
-   - `desktop.icons.render.test.tsx`: Desktop Icons рендерятся из VFS `/desktop`
+   - `desktop.icons.render.test.tsx`: Desktop Icons рендерятся из VFS `/Disk C/desktop`
    - `desktop.icons.open.test.tsx`: Двойной клик по иконке открывает окно
+   - `desktop.icons.from-desktop-only.test.tsx`: Desktop Icons берутся только из системной Desktop-папки (`/Disk C/desktop`), перенос иконок в произвольные папки запрещен
 
 3. **Explorer:**
    - `explorer.tree-view.test.tsx`: Tree view показывает иерархию папок
    - `explorer.grid-view.test.tsx`: Grid view показывает содержимое папки
    - `explorer.navigate.test.tsx`: Клик по папке обновляет grid view
    - `explorer.vfs-sync.test.tsx`: Изменения VFS отражаются в Explorer
+   - `explorer.root-tree.includes-system-folders.test.tsx`: Tree на root всегда содержит системные папки первого уровня (`/Disk A`, `/Disk B`, `/Disk C`)
 
 4. **Windowing:**
    - `window.viewport-boundary.test.tsx`: Окна нельзя утащить за пределы viewport
@@ -664,8 +745,10 @@ function enforceViewportBoundary(win: WindowGeometry, viewport: ViewportSize): W
 
 6. **VFS:**
    - `vfs.read-only-guest.test.tsx`: Guest не может писать в VFS
-   - `vfs.organizer-full-control.test.tsx`: Organizer может create/upload/move/delete
+   - `vfs.organizer-full-control.test.tsx`: Organizer может create/upload/move/delete в subtree
    - `vfs.sync-s3.test.tsx`: Изменения VFS синхронизируются с S3
+   - `vfs.system-folders.immutable.test.tsx`: Попытка Organizer удалить/переименовать/переместить root-level system folder → PermissionDenied
+   - `vfs.organizer.nested-ops.test.tsx`: Organizer может создать глубокую вложенность внутри system folder и управлять ей (mkdir/upload/move/delete)
 
 7. **Security:**
    - `security.iframe-sandbox.test.tsx`: Executor iframe имеет sandbox политику
@@ -696,10 +779,12 @@ front/__tests__/fp7/
   shell.platform-context.test.tsx
   desktop.icons.render.test.tsx
   desktop.icons.open.test.tsx
+  desktop.icons.from-desktop-only.test.tsx
   explorer.tree-view.test.tsx
   explorer.grid-view.test.tsx
   explorer.navigate.test.tsx
   explorer.vfs-sync.test.tsx
+  explorer.root-tree.includes-system-folders.test.tsx
   window.viewport-boundary.test.tsx
   window.drag.test.tsx
   window.focus.test.tsx
@@ -712,6 +797,8 @@ front/__tests__/fp7/
   vfs.read-only-guest.test.tsx
   vfs.organizer-full-control.test.tsx
   vfs.sync-s3.test.tsx
+  vfs.system-folders.immutable.test.tsx
+  vfs.organizer.nested-ops.test.tsx
   security.iframe-sandbox.test.tsx
   security.postmessage.test.tsx
   security.xss.test.tsx
