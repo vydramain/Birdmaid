@@ -16,6 +16,11 @@ type WindowState = WindowGeometry & {
 type Listener = (state: WindowState) => void;
 type GeometryListener = (geometry: WindowGeometry) => void;
 
+type ViewportSize = {
+  width: number;
+  height: number;
+};
+
 class WindowStore {
   private states = new Map<string, WindowState>();
   private listeners = new Map<string, Set<Listener>>();
@@ -27,6 +32,9 @@ class WindowStore {
   private dragOffset = { x: 0, y: 0 };
   private pendingGeometry: WindowGeometry | null = null;
   private rafId: number | null = null;
+
+  // Taskbar height (stub for now, will be configurable later)
+  private taskbarHeight = 40; // Taskbar stub height
 
   // Default state
   private defaultState: WindowState = {
@@ -61,7 +69,19 @@ class WindowStore {
     const current = this.states.get(id);
     if (!current) return;
 
-    const next = { ...current, ...partial };
+    let next = { ...current, ...partial };
+    
+    // Enforce viewport boundary if geometry is being updated
+    if (partial.x !== undefined || partial.y !== undefined || partial.width !== undefined || partial.height !== undefined) {
+      const enforcedGeometry = this.enforceViewportBoundary({
+        x: next.x,
+        y: next.y,
+        width: next.width,
+        height: next.height,
+      });
+      next = { ...next, ...enforcedGeometry };
+    }
+    
     this.states.set(id, next);
     this.notify(id, next);
   }
@@ -121,6 +141,44 @@ class WindowStore {
     }
   }
 
+  // --- Viewport Boundary Enforcement ---
+
+  /**
+   * Enforces viewport boundary constraints on window geometry.
+   * Windows cannot be dragged or resized outside the viewport.
+   * 
+   * @param geometry - Window geometry to enforce
+   * @returns Enforced geometry that stays within viewport bounds
+   */
+  private enforceViewportBoundary(geometry: WindowGeometry): WindowGeometry {
+    const viewport: ViewportSize = {
+      width: window.innerWidth,
+      height: window.innerHeight - this.taskbarHeight,
+    };
+
+    // Ensure window width doesn't exceed viewport
+    const clampedWidth = Math.min(geometry.width, viewport.width);
+    
+    // Ensure window height doesn't exceed viewport (minimum: header visible)
+    const minHeight = 50; // Minimum height to keep header visible
+    const clampedHeight = Math.min(geometry.height, viewport.height, Math.max(geometry.height, minHeight));
+
+    // Clamp x coordinate: 0 <= x <= viewportWidth - windowWidth
+    const maxX = Math.max(0, viewport.width - clampedWidth);
+    const clampedX = Math.max(0, Math.min(geometry.x, maxX));
+
+    // Clamp y coordinate: 0 <= y <= viewportHeight - windowHeight
+    const maxY = Math.max(0, viewport.height - clampedHeight);
+    const clampedY = Math.max(0, Math.min(geometry.y, maxY));
+
+    return {
+      x: clampedX,
+      y: clampedY,
+      width: clampedWidth,
+      height: clampedHeight,
+    };
+  }
+
   // --- Drag & Drop Logic (rAF Driven) ---
 
   startDrag(id: string, clientX: number, clientY: number) {
@@ -140,19 +198,25 @@ class WindowStore {
 
     const current = this.get(this.activeDragId);
     
-    this.pendingGeometry = {
+    const rawGeometry = {
       x: clientX - this.dragOffset.x,
       y: clientY - this.dragOffset.y,
       width: current.width,
       height: current.height,
     };
+
+    // Enforce viewport boundary during drag
+    this.pendingGeometry = this.enforceViewportBoundary(rawGeometry);
   }
 
   endDrag() {
     if (this.activeDragId && this.pendingGeometry) {
+      // Enforce viewport boundary one final time before committing
+      const enforcedGeometry = this.enforceViewportBoundary(this.pendingGeometry);
+      
       // Commit final state (triggers React re-render)
       this.update(this.activeDragId, {
-        ...this.pendingGeometry,
+        ...enforcedGeometry,
         isDragging: false,
       });
     } else if (this.activeDragId) {

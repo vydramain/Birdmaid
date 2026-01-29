@@ -95,9 +95,12 @@
 - [ ] Написать тест: `vfs.read-only-guest.test.tsx`
 
 ### 3.2 VFS инициализация из S3
-- [ ] Реализовать VFS инициализацию из S3 (list операция)
+- [ ] Реализовать VFS seed: создание root-level system folders (`/Disk A`, `/Disk B`, `/Disk C`, и т.д.)
+- [ ] **ВАЖНО:** VFS seed включает **только system folders первого уровня**
+- [ ] Дальнейшая структура создаётся Organizer'ом (не seed'ится)
+- [ ] Реализовать VFS инициализацию из S3 (list операция на root)
 - [ ] Реализовать кэширование в памяти
-- [ ] Проверить, что VFS инициализируется на boot
+- [ ] Проверить, что VFS инициализируется на boot с системными папками
 
 ### 3.3 Explorer (Tree + Grid view)
 - [ ] Реализовать Explorer компонент
@@ -114,17 +117,26 @@
 - [ ] Написать тест: `explorer.vfs-sync.test.tsx`
 
 ### 3.5 Desktop Icons интеграция с VFS
-- [ ] Реализовать чтение Desktop Icons из VFS `/desktop`
-- [ ] Убедиться, что иконки рендерятся из VFS
+- [ ] Реализовать чтение Desktop Icons из системной папки `/Disk C/desktop`
+- [ ] Убедиться, что иконки рендерятся только из фиксированной системной папки Desktop
+- [ ] Запретить перенос Desktop Icons в произвольные папки
 - [ ] Написать тест: `desktop.icons.render.test.tsx`
 - [ ] Написать тест: `desktop.icons.open.test.tsx`
+- [ ] Написать тест: `desktop.icons.from-desktop-only.test.tsx`
 
-### 3.6 Тесты
+### 3.6 System Folders Immutability
+- [ ] Реализовать проверку immutability root-level system folders
+- [ ] Попытка Organizer удалить/переименовать/переместить system folder → PermissionDenied
+- [ ] Написать тест: `vfs.system-folders.immutable.test.tsx`
+- [ ] Написать тест: `vfs.organizer.nested-ops.test.tsx` (глубокая вложенность внутри system folder)
+- [ ] Написать тест: `explorer.root-tree.includes-system-folders.test.tsx`
+
+### 3.7 Тесты
 - [ ] Запустить тесты: `explorer.*.test.tsx`, `desktop.icons.*.test.tsx`, `vfs.*.test.tsx`
 - [ ] Убедиться, что все тесты зеленые
 - [ ] Проверить coverage
 
-**DoD:** VFS работает, Explorer показывает Tree + Grid view, изменения VFS отражаются в Explorer, Desktop Icons рендерятся из VFS, тесты зеленые.
+**DoD:** VFS работает с immutable system folders, Explorer показывает Tree + Grid view, изменения VFS отражаются в Explorer, Desktop Icons рендерятся из `/Disk C/desktop`, system folders защищены от изменений, тесты зеленые.
 
 ---
 
@@ -204,11 +216,15 @@
 
 ### 5.4 RBAC проверки
 - [ ] Реализовать проверку роли Guest (read-only)
-- [ ] Реализовать проверку роли Organizer (full control)
+- [ ] Реализовать проверку роли Organizer (full control в subtree)
+- [ ] **ВАЖНО:** Реализовать проверку immutability root-level system folders
+  - Попытка Organizer удалить/переименовать/переместить system folder → PermissionDenied
+  - Проверка на уровне VFS API и Backend API
 - [ ] Реализовать проверку на уровне VFS API
 - [ ] Реализовать проверку на уровне Backend API (JWT токен + роль)
 - [ ] Написать тест: `vfs.read-only-guest.test.tsx`
 - [ ] Написать тест: `vfs.organizer-full-control.test.tsx`
+- [ ] Написать тест: `vfs.system-folders.immutable.test.tsx`
 - [ ] Написать тест: `auth.roles.test.tsx`
 
 ### 5.5 UI для Organizer
@@ -222,7 +238,7 @@
 - [ ] Убедиться, что все тесты зеленые
 - [ ] Проверить coverage
 
-**DoD:** Backend API работает, S3 синхронизация работает, RBAC проверки работают, Organizer может create/upload/move/delete, Guest не может писать, тесты зеленые.
+**DoD:** Backend API работает, S3 синхронизация работает, RBAC проверки работают (включая immutability system folders), Organizer может create/upload/move/delete в subtree, Guest не может писать, system folders защищены от изменений, тесты зеленые.
 
 ---
 
