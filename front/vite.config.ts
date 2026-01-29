@@ -21,6 +21,11 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
     globals: true,
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/legacy/**", // Legacy tests for old react-router architecture (FP7 v2 cleanup)
+    ],
     coverage: {
       reporter: ["json-summary", "lcov", "text"],
     },
