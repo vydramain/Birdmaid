@@ -1,72 +1,56 @@
 import React from "react";
 import { render as rtlRender, RenderOptions } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
 import { PlatformProvider } from "../../contexts/PlatformContext";
 import { AuthProvider } from "../../contexts/AuthContext";
 import { WindowRegistryProvider } from "../../os/wm/WindowRegistry";
-import { WindowPositionProvider } from "../../contexts/WindowPositionContext";
-import App from "../../App.tsx";
+import { ShellRoot } from "../../os/ShellRoot";
 
 // Types
 type PlatformType = "desktop" | "mobile";
 
 interface CommonRenderOptions extends Omit<RenderOptions, 'wrapper'> {
-  route?: string;
-  initialEntries?: string[];
   platform?: PlatformType;
 }
 
 /**
- * renderAppRoot: Renders App component with Router.
- * Use this when testing App.tsx which contains <Routes> and expects Router above.
+ * renderAppRoot: Renders ShellRoot (shell-only architecture, FP7 v2).
+ * Use this when testing the full application.
  * 
- * Includes: Platform, Auth, WindowRegistry, WindowPosition, Router, App.
+ * Includes: Platform, Auth, WindowRegistry, ShellRoot.
  */
 export function renderAppRoot(options: CommonRenderOptions = {}) {
-  const { route, initialEntries, platform = "desktop", ...renderOptions } = options;
-  const entries = route ? [route] : (initialEntries || ["/"]);
+  const { platform = "desktop", ...renderOptions } = options;
 
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <PlatformProvider initialPlatform={platform}>
         <AuthProvider>
           <WindowRegistryProvider>
-            <WindowPositionProvider>
-              <MemoryRouter initialEntries={entries}>
-                {children}
-              </MemoryRouter>
-            </WindowPositionProvider>
+            {children}
           </WindowRegistryProvider>
         </AuthProvider>
       </PlatformProvider>
     );
   }
 
-  return rtlRender(<App />, { wrapper: Wrapper, ...renderOptions });
+  return rtlRender(<ShellRoot />, { wrapper: Wrapper, ...renderOptions });
 }
 
 /**
  * renderShell: Renders components within the full OS environment.
  * Use this for integration tests involving windows, taskbar, desktop, or full page flows.
  * 
- * Includes: Platform, Auth, WindowRegistry, WindowPosition, Router.
- * 
- * NOTE: Do NOT use this with <App /> - use renderAppRoot() instead.
+ * Includes: Platform, Auth, WindowRegistry.
  */
 export function renderShell(ui: React.ReactElement, options: CommonRenderOptions = {}) {
-  const { route, initialEntries, platform = "desktop", ...renderOptions } = options;
-  const entries = route ? [route] : (initialEntries || ["/"]);
+  const { platform = "desktop", ...renderOptions } = options;
 
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <PlatformProvider initialPlatform={platform}>
         <AuthProvider>
           <WindowRegistryProvider>
-            <WindowPositionProvider>
-              <MemoryRouter initialEntries={entries}>
-                {children}
-              </MemoryRouter>
-            </WindowPositionProvider>
+            {children}
           </WindowRegistryProvider>
         </AuthProvider>
       </PlatformProvider>
@@ -81,19 +65,16 @@ export function renderShell(ui: React.ReactElement, options: CommonRenderOptions
  * Use this for unit tests of specific components (buttons, inputs) or features 
  * that don't depend on the Window Manager.
  * 
- * Includes: Platform, Auth, Router.
+ * Includes: Platform, Auth.
  */
 export function renderFeature(ui: React.ReactElement, options: CommonRenderOptions = {}) {
-  const { route, initialEntries, platform = "desktop", ...renderOptions } = options;
-  const entries = route ? [route] : (initialEntries || ["/"]);
+  const { platform = "desktop", ...renderOptions } = options;
 
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <PlatformProvider initialPlatform={platform}>
         <AuthProvider>
-          <MemoryRouter initialEntries={entries}>
-            {children}
-          </MemoryRouter>
+          {children}
         </AuthProvider>
       </PlatformProvider>
     );
