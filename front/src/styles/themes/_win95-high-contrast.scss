@@ -41,21 +41,21 @@
   // Spacing (same as default)
   // ============================================================================
 
-  --spacing-xs: 2px;
-  --spacing-sm: 4px;
-  --spacing-md: 8px;
-  --spacing-lg: 12px;
-  --spacing-xl: 16px;
+  --spacing-xs: 0.125rem; // 2px
+  --spacing-sm: 0.25rem; // 4px
+  --spacing-md: 0.5rem; // 8px
+  --spacing-lg: 0.75rem; // 12px
+  --spacing-xl: 1rem; // 16px
 
   // ============================================================================
   // Typography (same as default, but can be adjusted for readability)
   // ============================================================================
 
   --font-family: "MS Sans Serif", "Tahoma", sans-serif;
-  --font-size-small: 10px;
-  --font-size-normal: 11px;
-  --font-size-medium: 12px;
-  --font-size-large: 14px;
+  --font-size-small: 0.625rem; // 10px
+  --font-size-normal: 0.688rem; // 11px
+  --font-size-medium: 0.75rem; // 12px
+  --font-size-large: 0.875rem; // 14px
   --font-weight-normal: normal;
   --font-weight-bold: bold;
   --line-height-tight: 1.2;
@@ -76,47 +76,47 @@
   // Window Dimensions (same as default)
   // ============================================================================
 
-  --window-titlebar-height: 20px;
-  --window-titlebar-padding: 2px 4px;
-  --window-titlebar-margin: 2px;
-  --window-controls-size: 18px;
-  --window-controls-gap: 2px;
+  --window-titlebar-height: 1.25rem; // 20px
+  --window-titlebar-padding: 0.125rem 0.25rem; // 2px 4px
+  --window-titlebar-margin: 0.125rem; // 2px
+  --window-controls-size: 1.125rem; // 18px
+  --window-controls-gap: 0.125rem; // 2px
 
   // ============================================================================
   // Taskbar Dimensions (same as default)
   // ============================================================================
 
-  --taskbar-height: 40px;
-  --taskbar-padding: 0 8px;
-  --taskbar-tray-gap: 8px;
-  --taskbar-tray-icon-size: 24px;
+  --taskbar-height: 2.5rem; // 40px
+  --taskbar-padding: 0 0.5rem; // 0 8px
+  --taskbar-tray-gap: 0.5rem; // 8px
+  --taskbar-tray-icon-size: 1.5rem; // 24px
 
   // ============================================================================
   // Desktop Icons (same as default)
   // ============================================================================
 
-  --desktop-icon-size: 48px;
-  --desktop-icon-label-max-width: 64px;
-  --desktop-icon-grid-column-gap: 8px;
-  --desktop-icon-grid-row-gap: 16px;
-  --desktop-icon-padding: 8px;
+  --desktop-icon-size: 3rem; // 48px
+  --desktop-icon-label-max-width: 4rem; // 64px
+  --desktop-icon-grid-column-gap: 0.5rem; // 8px
+  --desktop-icon-grid-row-gap: 1rem; // 16px
+  --desktop-icon-padding: 0.5rem; // 8px
 
   // ============================================================================
   // Explorer (same as default)
   // ============================================================================
 
-  --explorer-divider-width: 4px;
-  --explorer-tree-width: 200px;
-  --explorer-tree-min-width: 150px;
-  --explorer-tree-max-width: 400px;
-  --explorer-grid-item-width: 64px;
-  --explorer-grid-item-icon-size: 32px;
+  --explorer-divider-width: 0.25rem; // 4px
+  --explorer-tree-width: 12.5rem; // 200px
+  --explorer-tree-min-width: 9.375rem; // 150px
+  --explorer-tree-max-width: 25rem; // 400px
+  --explorer-grid-item-width: 4rem; // 64px
+  --explorer-grid-item-icon-size: 2rem; // 32px
 
   // ============================================================================
   // Scrollbar (same as default)
   // ============================================================================
 
-  --scrollbar-width: 16px;
-  --scrollbar-thumb-min-height: 20px;
-  --scrollbar-button-size: 16px;
+  --scrollbar-width: 1rem; // 16px
+  --scrollbar-thumb-min-height: 1.25rem; // 20px
+  --scrollbar-button-size: 1rem; // 16px
 }

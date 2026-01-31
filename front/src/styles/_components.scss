@@ -30,7 +30,7 @@
 
 .win-window {
   width: 100%;
-  max-width: 1440px;
+  max-width: 90rem; // 1440px
   min-height: 90vh;
 }
 
@@ -40,14 +40,16 @@
   height: auto;
   min-height: auto;
   box-shadow:
-    2px 2px 0 0 var(--win-black, #000),
-    inset 1px 1px var(--win-white, #fff),
-    inset -1px -1px var(--win-gray-darker, #404040);
+    0.125rem 0.125rem 0 0 var(--win-black, #000),
+    // 2px 2px
+    inset 0.0625rem 0.0625rem var(--win-white, #fff),
+    // 1px 1px
+    inset -0.0625rem -0.0625rem var(--win-gray-darker, #404040); // -1px -1px
 }
 
 .win-window-controls {
   display: flex;
-  gap: var(--window-controls-gap, 2px);
+  gap: var(--window-controls-gap, 0.125rem); // 2px
 
   .control-button {
     @include window-control-button;
@@ -78,7 +80,7 @@
   top: 0;
   display: flex;
   flex-direction: column;
-  min-width: 300px;
+  min-width: 18.75rem; // 300px
   max-width: 90vw;
   max-height: 90vh;
 }
@@ -100,7 +102,7 @@
   .title {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 0.375rem; // 6px
   }
 }
 
@@ -118,11 +120,11 @@
 // ============================================================================
 
 .win-taskbar {
-  height: var(--taskbar-height, 40px);
+  height: var(--taskbar-height, 2.5rem); // 40px
   background-color: var(--win-gray, #c0c0c0);
-  border-top: 2px solid var(--win-white, #fff);
-  border-bottom: 2px solid var(--win-gray-dark, #808080);
-  padding: var(--taskbar-padding, 0 8px);
+  border-top: 0.125rem solid var(--win-white, #fff); // 2px
+  border-bottom: 0.125rem solid var(--win-gray-dark, #808080); // 2px
+  padding: var(--taskbar-padding, 0 0.5rem); // 0 8px
   z-index: var(--z-taskbar, 10000);
   display: flex;
   align-items: center;
@@ -136,11 +138,11 @@
   left: 0;
   right: 0;
   background-color: var(--win-gray, #c0c0c0);
-  border-top: 2px solid var(--win-white, #fff);
-  border-bottom: 2px solid var(--win-gray-dark, #808080);
+  border-top: 0.125rem solid var(--win-white, #fff); // 2px
+  border-bottom: 0.125rem solid var(--win-gray-dark, #808080); // 2px
   display: flex;
   align-items: center;
-  padding: var(--taskbar-padding, 0 8px);
+  padding: var(--taskbar-padding, 0 0.5rem); // 0 8px
   box-sizing: border-box;
 }
 
@@ -151,24 +153,26 @@
 .win-taskbar-tray {
   display: flex;
   align-items: center;
-  gap: var(--taskbar-tray-gap, 8px);
-  padding: 0 var(--spacing-sm, 4px);
+  gap: var(--taskbar-tray-gap, 0.5rem); // 8px
+  padding: 0 var(--spacing-sm, 0.25rem); // 4px
 
   .tray-icon {
-    width: var(--taskbar-tray-icon-size, 24px);
-    height: var(--taskbar-tray-icon-size, 24px);
+    width: var(--taskbar-tray-icon-size, 1.5rem); // 24px
+    height: var(--taskbar-tray-icon-size, 1.5rem); // 24px
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: var(--win-gray, #c0c0c0);
-    border: 1px solid var(--win-black, #000);
+    border: 0.0625rem solid var(--win-black, #000); // 1px
     border-color: var(--win-white, #fff) var(--win-black, #000) var(--win-black, #000)
       var(--win-white, #fff);
     box-shadow:
-      1px 1px 0 var(--win-black, #000),
-      inset -1px -1px 0 var(--win-gray-dark, #808080);
-    font-size: 14px;
+      0.0625rem 0.0625rem 0 var(--win-black, #000),
+      // 1px 1px
+      inset -0.0625rem -0.0625rem 0 var(--win-gray-dark, #808080); // -1px -1px
+
+    font-size: 0.875rem; // 14px
     user-select: none;
 
     &.tray-icon-logged-in {
@@ -177,9 +181,9 @@
   }
 
   .tray-clock {
-    font-size: var(--font-size-normal, 11px);
+    font-size: var(--font-size-normal, 0.688rem); // 11px
     color: var(--win-text, #000);
-    padding: 0 var(--spacing-sm, 4px);
+    padding: 0 var(--spacing-sm, 0.25rem); // 4px
     font-family: monospace;
     user-select: none;
   }
@@ -192,30 +196,30 @@
 .win-explorer {
   display: flex;
   height: 100%;
-  gap: var(--spacing-sm, 4px);
+  gap: var(--spacing-sm, 0.25rem); // 4px
 
   // Tree View (Left)
   .explorer-tree {
-    width: var(--explorer-tree-width, 200px);
-    min-width: var(--explorer-tree-min-width, 150px);
+    width: var(--explorer-tree-width, 12.5rem); // 200px
+    min-width: var(--explorer-tree-min-width, 9.375rem); // 150px
     background-color: var(--win-gray, #c0c0c0);
-    padding: var(--spacing-sm, 4px);
+    padding: var(--spacing-sm, 0.25rem); // 4px
 
     @include bevel-inset;
 
     overflow: auto;
 
     .tree-item {
-      font-size: var(--font-size-normal, 11px);
-      padding: 2px var(--spacing-sm, 4px);
+      font-size: var(--font-size-normal, 0.688rem); // 11px
+      padding: 0.125rem var(--spacing-sm, 0.25rem); // 2px 4px
       // Computed paddingLeft via CSS variable (set inline: --tree-level)
-      padding-left: calc(4px + var(--tree-level, 0) * 16px);
+      padding-left: calc(0.25rem + var(--tree-level, 0) * 1rem); // 4px + level * 16px
       cursor: pointer;
       color: var(--win-text, #000);
       line-height: var(--line-height-normal, 1.4);
       display: flex;
       align-items: center;
-      gap: var(--spacing-sm, 4px);
+      gap: var(--spacing-sm, 0.25rem); // 4px
       background-color: transparent;
 
       &:hover {
@@ -230,16 +234,16 @@
     }
 
     .tree-expand-icon {
-      font-size: var(--font-size-small, 10px);
+      font-size: var(--font-size-small, 0.625rem); // 10px
     }
 
     .tree-spacer {
-      width: 10px;
+      width: 0.625rem; // 10px
     }
   }
 
   .explorer-divider {
-    width: var(--explorer-divider-width, 4px);
+    width: var(--explorer-divider-width, 0.25rem); // 4px
     background-color: var(--win-gray, #c0c0c0);
     cursor: col-resize;
   }
@@ -249,26 +253,26 @@
     display: flex;
     flex-direction: column;
     flex: 1;
-    gap: var(--spacing-sm, 4px);
+    gap: var(--spacing-sm, 0.25rem); // 4px
   }
 
   // Toolbar
   .explorer-toolbar {
     display: flex;
-    gap: var(--spacing-sm, 4px);
-    padding: var(--spacing-sm, 4px);
+    gap: var(--spacing-sm, 0.25rem); // 4px
+    padding: var(--spacing-sm, 0.25rem); // 4px
     background-color: var(--win-white, #fff);
 
     @include bevel-inset;
 
     .explorer-up-button {
-      min-width: 30px;
+      min-width: 1.875rem; // 30px
     }
 
     .explorer-path {
       flex: 1;
-      padding: 2px var(--spacing-sm, 4px);
-      border: 1px solid var(--win-gray-dark, #808080);
+      padding: 0.125rem var(--spacing-sm, 0.25rem); // 2px 4px
+      border: 0.0625rem solid var(--win-gray-dark, #808080); // 1px
     }
   }
 
@@ -277,15 +281,18 @@
     flex: 1;
     background-color: var(--win-white, #fff);
     overflow: auto;
-    padding: var(--spacing-md, 8px);
+    padding: var(--spacing-md, 0.5rem); // 8px
 
     @include bevel-inset;
   }
 
   .explorer-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--explorer-grid-item-width, 64px), 1fr));
-    gap: var(--spacing-xl, 16px);
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(var(--explorer-grid-item-width, 4rem), 1fr)
+    ); // 64px
+    gap: var(--spacing-xl, 1rem); // 16px
 
     .explorer-grid-item {
       display: flex;
@@ -295,12 +302,12 @@
       text-align: center;
 
       .explorer-icon {
-        font-size: 24px;
-        margin-bottom: var(--spacing-sm, 4px);
+        font-size: 1.5rem; // 24px
+        margin-bottom: var(--spacing-sm, 0.25rem); // 4px
       }
 
       .explorer-filename {
-        font-size: var(--font-size-normal, 11px);
+        font-size: var(--font-size-normal, 0.688rem); // 11px
         word-break: break-word;
       }
     }
@@ -308,8 +315,8 @@
 
   // Status Bar
   .explorer-status {
-    margin-top: var(--spacing-sm, 4px);
-    font-size: var(--font-size-normal, 11px);
+    margin-top: var(--spacing-sm, 0.25rem); // 4px
+    font-size: var(--font-size-normal, 0.688rem); // 11px
     color: var(--win-gray-dark, #808080);
   }
 }
@@ -320,9 +327,9 @@
 
 .desktop-icons-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 16px;
-  padding: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr)); // 80px
+  gap: 1rem; // 16px
+  padding: 1rem; // 16px
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -333,25 +340,25 @@
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  padding: 8px;
+  padding: 0.5rem; // 8px
   position: relative;
 }
 
 .desktop-icon-box {
-  width: 48px;
-  height: 48px;
+  width: 3rem; // 48px
+  height: 3rem; // 48px
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: var(--win-gray, #c0c0c0);
-  border: 2px outset var(--win-gray-light, #dfdfdf);
-  margin-bottom: 4px;
+  border: 0.125rem outset var(--win-gray-light, #dfdfdf); // 2px
+  margin-bottom: 0.25rem; // 4px
 }
 
 .desktop-icon-label {
-  font-size: 11px;
+  font-size: 0.688rem; // 11px
   text-align: center;
-  max-width: 64px;
+  max-width: 4rem; // 64px
 }
 
 // Tooltip - transform stays inline (whitelist for centering)
@@ -359,11 +366,11 @@
   position: absolute;
   bottom: 100%;
   left: 50%;
-  margin-bottom: 4px;
-  padding: 4px 8px;
+  margin-bottom: 0.25rem; // 4px
+  padding: 0.25rem 0.5rem; // 4px 8px
   background-color: var(--win-yellow, #ff0);
-  border: 1px solid var(--win-gray-dark, #808080);
-  font-size: 10px;
+  border: 0.0625rem solid var(--win-gray-dark, #808080); // 1px
+  font-size: 0.625rem; // 10px
   white-space: nowrap;
   z-index: 1000;
   // transform: translateX(-50%) stays inline (whitelist)
@@ -380,9 +387,11 @@
   background-image: repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 2px,
-    rgb(0 0 0 / 3%) 2px,
-    rgb(0 0 0 / 3%) 4px
+    transparent 0.125rem,
+    // 2px
+    rgb(0 0 0 / 3%) 0.125rem,
+    // 2px
+    rgb(0 0 0 / 3%) 0.25rem // 4px
   );
   position: relative;
   overflow: hidden;
@@ -394,8 +403,8 @@
 
 // WindowManager content wrapper
 .win-content-wrapper {
-  padding: var(--spacing-lg, 12px);
-  height: 100%;
+  padding: var(--spacing-lg, 0.75rem); // 12px
+  height: 100vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -428,13 +437,13 @@
 }
 
 .viewer-error {
-  padding: var(--spacing-xl, 20px);
+  padding: var(--spacing-xl, 1.25rem); // 20px
   color: var(--win-red, #f00);
   background-color: var(--win-white, #fff);
 }
 
 .viewer-empty {
-  padding: var(--spacing-xl, 20px);
+  padding: var(--spacing-xl, 1.25rem); // 20px
   color: var(--win-gray-dark, #808080);
   background-color: var(--win-white, #fff);
 }
@@ -445,7 +454,7 @@
 
   background-color: var(--win-gray, #c0c0c0);
   overflow: auto;
-  padding: var(--spacing-md, 8px);
+  padding: var(--spacing-md, 0.5rem); // 8px
 }
 
 .viewer-image {
@@ -460,7 +469,7 @@
   @extend .viewer-container;
 
   background-color: var(--win-black, #000);
-  padding: var(--spacing-md, 8px);
+  padding: var(--spacing-md, 0.5rem); // 8px
 }
 
 .viewer-video {
@@ -482,21 +491,21 @@
 
 .notepad-preview {
   flex: 1;
-  padding: var(--spacing-md, 8px);
+  padding: var(--spacing-md, 0.5rem); // 8px
   overflow: auto;
   font-family: var(--font-family, "MS Sans Serif", "Tahoma", sans-serif);
-  font-size: var(--font-size-normal, 11px);
+  font-size: var(--font-size-normal, 0.688rem); // 11px
   line-height: var(--line-height-relaxed, 1.5);
   color: var(--win-text, #000);
 }
 
 .notepad-textarea {
   flex: 1;
-  padding: var(--spacing-md, 8px);
+  padding: var(--spacing-md, 0.5rem); // 8px
   border: none;
   outline: none;
   font-family: var(--win-font-mono, "Courier New", monospace);
-  font-size: var(--font-size-normal, 11px);
+  font-size: var(--font-size-normal, 0.688rem); // 11px
   line-height: var(--line-height-relaxed, 1.5);
   color: var(--win-text, #000);
   background-color: var(--win-white, #fff);
@@ -546,7 +555,7 @@
 }
 
 .apphost-error {
-  padding: var(--spacing-xl, 20px);
+  padding: var(--spacing-xl, 1.25rem); // 20px
   color: var(--win-red, #f00);
 }
 
@@ -569,16 +578,16 @@
 .user-panel-container {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md, 8px);
-  padding: var(--spacing-md, 8px);
-  min-height: 200px;
+  gap: var(--spacing-md, 0.5rem); // 8px
+  padding: var(--spacing-md, 0.5rem); // 8px
+  min-height: 12.5rem; // 200px
 }
 
 .user-panel-info {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm, 4px);
-  padding: var(--spacing-md, 8px);
+  gap: var(--spacing-sm, 0.25rem); // 4px
+  padding: var(--spacing-md, 0.5rem); // 8px
 
   @include bevel-inset;
 
@@ -586,23 +595,23 @@
 }
 
 .user-panel-title {
-  font-size: var(--font-size-normal, 11px);
+  font-size: var(--font-size-normal, 0.688rem); // 11px
   font-weight: var(--font-weight-bold, bold);
 }
 
 .user-panel-field {
-  font-size: var(--font-size-normal, 11px);
+  font-size: var(--font-size-normal, 0.688rem); // 11px
 }
 
 .user-panel-disabled {
-  font-size: var(--font-size-normal, 11px);
+  font-size: var(--font-size-normal, 0.688rem); // 11px
   color: var(--win-text-disabled, #808080);
 }
 
 .user-panel-actions {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm, 4px);
+  gap: var(--spacing-sm, 0.25rem); // 4px
 }
 
 .user-panel-button {
@@ -619,8 +628,8 @@
   left: 0;
   right: 0;
   background-color: var(--win-gray, #c0c0c0);
-  border-bottom: 2px solid var(--win-black, #000);
-  padding: var(--spacing-sm, 4px) var(--spacing-md, 8px);
+  border-bottom: 0.125rem solid var(--win-black, #000); // 2px
+  padding: var(--spacing-sm, 0.25rem) var(--spacing-md, 0.5rem); // 4px 8px
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -629,7 +638,7 @@
 
 .win-header-buttons {
   display: flex;
-  gap: var(--spacing-md, 8px);
+  gap: var(--spacing-md, 0.5rem); // 8px
   align-items: center;
 }
 
@@ -641,13 +650,13 @@
   position: absolute;
   top: 100%;
   left: 0;
-  margin-top: var(--spacing-sm, 4px);
-  min-width: 120px;
+  margin-top: var(--spacing-sm, 0.25rem); // 4px
+  min-width: 7.5rem; // 120px
   // Note: z-index stays inline for computed values
 }
 
 .win-header-spacer {
-  height: 40px;
+  height: 2.5rem; // 40px
 }
 
 // ============================================================================
@@ -693,32 +702,32 @@
 
 .mobile-header {
   background-color: var(--win-gray, #c0c0c0);
-  border-bottom: 2px solid var(--win-gray-dark, #808080);
-  padding: var(--spacing-md, 8px);
+  border-bottom: 0.125rem solid var(--win-gray-dark, #808080); // 2px
+  padding: var(--spacing-md, 0.5rem); // 8px
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .mobile-date {
-  font-size: var(--font-size-medium, 12px);
+  font-size: var(--font-size-medium, 0.75rem); // 12px
   font-weight: var(--font-weight-bold, bold);
 }
 
 .mobile-menu-button {
-  padding: var(--spacing-sm, 4px) var(--spacing-md, 8px);
+  padding: var(--spacing-sm, 0.25rem) var(--spacing-md, 0.5rem); // 4px 8px
 }
 
 .mobile-menu {
   position: absolute;
-  top: 40px;
-  right: var(--spacing-md, 8px);
+  top: 2.5rem; // 40px
+  right: var(--spacing-md, 0.5rem); // 8px
   background-color: var(--win-gray, #c0c0c0);
 
   @include bevel-outset;
 
   z-index: 1000;
-  min-width: 150px;
+  min-width: 9.375rem; // 150px
   // Note: z-index stays inline for computed values if needed
 }
 
@@ -726,14 +735,14 @@
   display: block;
   width: 100%;
   text-align: left;
-  padding: var(--spacing-md, 8px);
+  padding: var(--spacing-md, 0.5rem); // 8px
 }
 
 .mobile-icons-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-xl, 16px);
-  padding: var(--spacing-xl, 16px);
+  gap: var(--spacing-xl, 1rem); // 16px
+  padding: var(--spacing-xl, 1rem); // 16px
   flex: 1;
   overflow: auto;
 }
@@ -745,7 +754,7 @@
 
 // MobileShell stub (minimal styles)
 .mobile-shell {
-  padding: var(--spacing-xl, 20px);
+  padding: var(--spacing-xl, 1.25rem); // 20px
   text-align: center;
   color: var(--win-white, #fff);
   background: var(--win-black, #000);

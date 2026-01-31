@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Script to check for inline styles without allow-tag comment
+ * Script to check for inline styles without allow-tag comment and absolute units
  * This script is used in pre-commit hook to enforce style guardrails
  * 
  * Format: // inline-style: allowed (reason: drag/resize|layout-calc|performance)
@@ -16,6 +16,9 @@ const path = require("path");
 
 // Format: // inline-style: allowed (reason: drag/resize|layout-calc|performance)
 const ALLOW_TAG_PATTERN = /inline-style:\s*allowed\s*\(reason:\s*(drag\/resize|layout-calc|performance)\)/i;
+
+// Absolute units that are forbidden (px, pt, pc, in, cm, mm, q, Q)
+const ABSOLUTE_UNITS_PATTERN = /\b\d+(\.\d+)?(px|pt|pc|in|cm|mm|[qQ])\b/gi;
 
 function checkFile(filePath) {
   const content = fs.readFileSync(filePath, "utf-8");
@@ -41,6 +44,18 @@ function checkFile(filePath) {
           file: filePath,
           line: i + 1,
           message: `Inline style found without allow-tag comment. Add: // inline-style: allowed (reason: drag/resize|layout-calc|performance)`,
+        });
+      }
+
+      // Check for absolute units in inline styles (even if allow-tag is present)
+      // Absolute units are forbidden everywhere, including inline styles
+      const absoluteUnitsMatch = line.match(ABSOLUTE_UNITS_PATTERN);
+      if (absoluteUnitsMatch) {
+        const units = [...new Set(absoluteUnitsMatch.map(m => m.match(/(px|pt|pc|in|cm|mm|[qQ])$/i)?.[0]).filter(Boolean))];
+        errors.push({
+          file: filePath,
+          line: i + 1,
+          message: `Absolute units found in inline style: ${units.join(", ")}. Use relative units (rem, em, %, vh, vw, vmin, vmax, ch, ex) instead.`,
         });
       }
     }
@@ -75,6 +90,12 @@ const args = process.argv.slice(2);
 const filesToCheck = args.length > 0
   ? args.filter((arg) => {
       const fullPath = path.isAbsolute(arg) ? arg : path.join(process.cwd(), arg);
+      // Skip canary test files - they are meant to fail and are tested separately
+      // Check both relative and absolute paths
+      const normalizedPath = fullPath.replace(/\\/g, "/");
+      if (normalizedPath.includes("__tests__/style-guardrails/") || normalizedPath.includes("/style-guardrails/")) {
+        return false;
+      }
       return fs.existsSync(fullPath) && (arg.endsWith(".tsx") || arg.endsWith(".ts"));
     })
   : findTsxFiles(path.join(__dirname, "..", "src"));
@@ -90,16 +111,18 @@ filesToCheck.forEach((file) => {
 });
 
 if (allErrors.length > 0) {
-  console.error("\n❌ Style Guardrails: Inline styles found without allow-tag comment:\n");
+  console.error("\n❌ Style Guardrails: Issues found:\n");
   allErrors.forEach((error) => {
     console.error(`  ${error.file}:${error.line}`);
     console.error(`    ${error.message}\n`);
   });
-  console.error("  Allowed reasons: drag/resize, layout-calc, performance\n");
+  console.error("  Rules:");
+  console.error("    - Inline styles require allow-tag: // inline-style: allowed (reason: drag/resize|layout-calc|performance)");
+  console.error("    - Absolute units (px, pt, pc, in, cm, mm, q, Q) are forbidden. Use relative units (rem, em, %, vh, vw, vmin, vmax, ch, ex) instead.\n");
   process.exit(1);
 } else {
   if (filesToCheck.length > 0) {
-    console.log("✅ Style Guardrails: No inline styles without allow-tag found");
+    console.log("✅ Style Guardrails: No inline style violations found");
   }
   process.exit(0);
 }

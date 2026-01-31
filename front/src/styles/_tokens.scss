@@ -42,11 +42,11 @@ $win-text-disabled: var(--win-text-disabled, #808080); // Disabled text (with te
 // Spacing
 // ============================================================================
 
-$spacing-xs: var(--spacing-xs, 2px); // Minimal spacing
-$spacing-sm: var(--spacing-sm, 4px); // Small spacing
-$spacing-md: var(--spacing-md, 8px); // Medium spacing
-$spacing-lg: var(--spacing-lg, 12px); // Large spacing
-$spacing-xl: var(--spacing-xl, 16px); // Extra large spacing
+$spacing-xs: var(--spacing-xs, 0.125rem); // Minimal spacing (2px)
+$spacing-sm: var(--spacing-sm, 0.25rem); // Small spacing (4px)
+$spacing-md: var(--spacing-md, 0.5rem); // Medium spacing (8px)
+$spacing-lg: var(--spacing-lg, 0.75rem); // Large spacing (12px)
+$spacing-xl: var(--spacing-xl, 1rem); // Extra large spacing (16px)
 
 // ============================================================================
 // Typography
@@ -54,10 +54,10 @@ $spacing-xl: var(--spacing-xl, 16px); // Extra large spacing
 
 $font-family: var(--font-family, "MS Sans Serif", "Tahoma", sans-serif);
 
-$font-size-small: var(--font-size-small, 10px); // Tooltips, small labels
-$font-size-normal: var(--font-size-normal, 11px); // Default text, buttons, inputs
-$font-size-medium: var(--font-size-medium, 12px); // Title bar, menu items
-$font-size-large: var(--font-size-large, 14px); // Headings (if needed)
+$font-size-small: var(--font-size-small, 0.625rem); // Tooltips, small labels (10px)
+$font-size-normal: var(--font-size-normal, 0.688rem); // Default text, buttons, inputs (11px)
+$font-size-medium: var(--font-size-medium, 0.75rem); // Title bar, menu items (12px)
+$font-size-large: var(--font-size-large, 0.875rem); // Headings (if needed) (14px)
 
 $font-weight-normal: var(--font-weight-normal, normal);
 $font-weight-bold: var(--font-weight-bold, bold);
@@ -80,46 +80,46 @@ $z-modal: var(--z-modal, 10001); // Modal overlays (above taskbar)
 // Window Dimensions
 // ============================================================================
 
-$window-titlebar-height: var(--window-titlebar-height, 20px);
-$window-titlebar-padding: var(--window-titlebar-padding, 2px 4px);
-$window-titlebar-margin: var(--window-titlebar-margin, 2px);
-$window-controls-size: var(--window-controls-size, 18px);
-$window-controls-gap: var(--window-controls-gap, 2px);
+$window-titlebar-height: var(--window-titlebar-height, 1.25rem); // 20px
+$window-titlebar-padding: var(--window-titlebar-padding, 0.125rem 0.25rem); // 2px 4px
+$window-titlebar-margin: var(--window-titlebar-margin, 0.125rem); // 2px
+$window-controls-size: var(--window-controls-size, 1.125rem); // 18px
+$window-controls-gap: var(--window-controls-gap, 0.125rem); // 2px
 
 // ============================================================================
 // Taskbar Dimensions
 // ============================================================================
 
-$taskbar-height: var(--taskbar-height, 40px);
-$taskbar-padding: var(--taskbar-padding, 0 8px);
-$taskbar-tray-gap: var(--taskbar-tray-gap, 8px);
-$taskbar-tray-icon-size: var(--taskbar-tray-icon-size, 24px);
+$taskbar-height: var(--taskbar-height, 2.5rem); // 40px
+$taskbar-padding: var(--taskbar-padding, 0 0.5rem); // 0 8px
+$taskbar-tray-gap: var(--taskbar-tray-gap, 0.5rem); // 8px
+$taskbar-tray-icon-size: var(--taskbar-tray-icon-size, 1.5rem); // 24px
 
 // ============================================================================
 // Desktop Icons
 // ============================================================================
 
-$desktop-icon-size: var(--desktop-icon-size, 48px);
-$desktop-icon-label-max-width: var(--desktop-icon-label-max-width, 64px);
-$desktop-icon-grid-column-gap: var(--desktop-icon-grid-column-gap, 8px);
-$desktop-icon-grid-row-gap: var(--desktop-icon-grid-row-gap, 16px);
-$desktop-icon-padding: var(--desktop-icon-padding, 8px);
+$desktop-icon-size: var(--desktop-icon-size, 3rem); // 48px
+$desktop-icon-label-max-width: var(--desktop-icon-label-max-width, 4rem); // 64px
+$desktop-icon-grid-column-gap: var(--desktop-icon-grid-column-gap, 0.5rem); // 8px
+$desktop-icon-grid-row-gap: var(--desktop-icon-grid-row-gap, 1rem); // 16px
+$desktop-icon-padding: var(--desktop-icon-padding, 0.5rem); // 8px
 
 // ============================================================================
 // Explorer
 // ============================================================================
 
-$explorer-divider-width: var(--explorer-divider-width, 4px);
-$explorer-tree-width: var(--explorer-tree-width, 200px);
-$explorer-tree-min-width: var(--explorer-tree-min-width, 150px);
-$explorer-tree-max-width: var(--explorer-tree-max-width, 400px);
-$explorer-grid-item-width: var(--explorer-grid-item-width, 64px);
-$explorer-grid-item-icon-size: var(--explorer-grid-item-icon-size, 32px);
+$explorer-divider-width: var(--explorer-divider-width, 0.25rem); // 4px
+$explorer-tree-width: var(--explorer-tree-width, 12.5rem); // 200px
+$explorer-tree-min-width: var(--explorer-tree-min-width, 9.375rem); // 150px
+$explorer-tree-max-width: var(--explorer-tree-max-width, 25rem); // 400px
+$explorer-grid-item-width: var(--explorer-grid-item-width, 4rem); // 64px
+$explorer-grid-item-icon-size: var(--explorer-grid-item-icon-size, 2rem); // 32px
 
 // ============================================================================
 // Scrollbar
 // ============================================================================
 
-$scrollbar-width: var(--scrollbar-width, 16px);
-$scrollbar-thumb-min-height: var(--scrollbar-thumb-min-height, 20px);
-$scrollbar-button-size: var(--scrollbar-button-size, 16px);
+$scrollbar-width: var(--scrollbar-width, 1rem); // 16px
+$scrollbar-thumb-min-height: var(--scrollbar-thumb-min-height, 1.25rem); // 20px
+$scrollbar-button-size: var(--scrollbar-button-size, 1rem); // 16px

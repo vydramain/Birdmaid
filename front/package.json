@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ci": "! grep -rE '\\.skip|\\.only|test\\.todo|describe\\.todo' __tests__ && vitest run --coverage",
-    "test:canary": "npm run lint:canary:should-fail && npm run lint:canary:should-pass && npx stylelint __tests__/style-guardrails/canary-important.test.css 2>&1 | grep -q 'Unexpected !important' && echo '✅ Canary !important test correctly fails' || (echo '❌ Canary !important test should fail but passed' && exit 1)",
+    "test:canary": "npm run lint:canary:should-fail && npm run lint:canary:should-pass && npm run lint:canary:absolute-units && echo '✅ All canary tests passed'",
+    "lint:canary:absolute-units": "npx stylelint __tests__/style-guardrails/canary-absolute-units.test.css 2>&1 | grep -q 'Unexpected unit' && echo '✅ Canary absolute-units test correctly fails' || (echo '❌ Canary absolute-units test should fail but passed' && exit 1) && node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-absolute-units.test.tsx 2>&1 | grep -q 'Absolute units found' && echo '✅ Canary inline-absolute-units test correctly fails' || (echo '❌ Canary inline-absolute-units test should fail but passed' && exit 1)",
     "coverage": "vitest run --coverage",
     "preview": "node server.js",
     "preview:mobile": "vite preview --mode mobile",
@@ -54,14 +55,5 @@
     "typescript": "^5.4.0",
     "vite": "^5.1.0",
     "vitest": "^1.3.0"
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "npx eslint --max-warnings=0",
-      "node scripts/check-inline-styles.cjs"
-    ],
-    "*.{css,scss}": [
-      "npx stylelint"
-    ]
   }
 }

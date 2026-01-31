@@ -5,7 +5,8 @@
     "color-hex-case": "lower",
     "color-hex-length": "short",
     "indentation": 2,
-    "string-quotes": "double"
+    "string-quotes": "double",
+    "unit-disallowed-list": ["px", "pt", "pc", "in", "cm", "mm", "q", "Q"]
   },
   "ignoreFiles": [
     "**/*.js",
@@ -15,7 +16,7 @@
     "node_modules/**",
     "dist/**",
     "coverage/**",
-    "__tests__/**/*.test.{ts,tsx,js,jsx}"
+    "__tests__/**/*.test.{ts,tsx,js,jsx,css,scss}"
   ],
   "overrides": [
     {
