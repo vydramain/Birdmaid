@@ -1,0 +1,123 @@
+/**
+ * Windows 95 UI Tokens (SCSS)
+ * 
+ * Source of truth for Win95 styling tokens in SCSS format.
+ * Mirrors TypeScript tokens from ui/win95/tokens.ts for SCSS usage.
+ * 
+ * References:
+ * - front/src/ui/win95/tokens.ts: TypeScript tokens
+ * - docs/design/WIN95_TOKENS_RULES.md: Token rules
+ * - docs/fps/FP7.md: UX Rules Desktop Win95
+ */
+
+// ============================================================================
+// Colors
+// ============================================================================
+
+// Base grays (Chicago95 palette)
+$win-gray: #c0c0c0;           // Main window background
+$win-gray-light: #dfdfdf;     // Top/left borders (raised)
+$win-gray-dark: #808080;      // Bottom/right borders (sunken)
+$win-gray-darker: #404040;    // Deepest shadows
+
+// System colors
+$win-white: #ffffff;          // Text on dark, top/left highlights
+$win-black: #000000;          // Text, outer borders
+
+// Accent colors
+$win-blue: #000080;            // Title bar background (start)
+$win-blue-light: #1084d0;     // Title bar background (end gradient)
+$win-teal: #008080;           // Desktop background (classic dithered)
+$win-red: #ff0000;            // Error states, close button hover
+$win-yellow: #ffff00;         // Tooltips, highlights
+
+// Text colors
+$win-text: #000000;            // Default text
+$win-text-inverse: #ffffff;   // Text on dark backgrounds (title bar)
+$win-text-disabled: #808080;  // Disabled text (with text-shadow)
+
+// ============================================================================
+// Spacing
+// ============================================================================
+
+$spacing-xs: 2px;             // Minimal spacing
+$spacing-sm: 4px;              // Small spacing
+$spacing-md: 8px;              // Medium spacing
+$spacing-lg: 12px;             // Large spacing
+$spacing-xl: 16px;             // Extra large spacing
+
+// ============================================================================
+// Typography
+// ============================================================================
+
+$font-family: "MS Sans Serif", "Tahoma", sans-serif;
+
+$font-size-small: 10px;       // Tooltips, small labels
+$font-size-normal: 11px;      // Default text, buttons, inputs
+$font-size-medium: 12px;      // Title bar, menu items
+$font-size-large: 14px;       // Headings (if needed)
+
+$font-weight-normal: normal;
+$font-weight-bold: bold;
+
+$line-height-tight: 1.2;      // Icons, compact
+$line-height-normal: 1.4;     // Default
+$line-height-relaxed: 1.6;    // Readable text
+
+// ============================================================================
+// Z-Index Layers
+// ============================================================================
+
+$z-desktop: 1;                // Desktop background
+$z-window: 10;                // Base window z-index
+$z-window-focused: 20;        // Focused window (higher)
+$z-taskbar: 10000;            // Taskbar (always on top)
+$z-modal: 10001;              // Modal overlays (above taskbar)
+
+// ============================================================================
+// Window Dimensions
+// ============================================================================
+
+$window-titlebar-height: 20px;
+$window-titlebar-padding: 2px 4px;
+$window-titlebar-margin: 2px;
+$window-controls-size: 18px;
+$window-controls-gap: 2px;
+
+// ============================================================================
+// Taskbar Dimensions
+// ============================================================================
+
+$taskbar-height: 40px;
+$taskbar-padding: 0 8px;
+$taskbar-tray-gap: 8px;
+$taskbar-tray-icon-size: 24px;
+
+// ============================================================================
+// Desktop Icons
+// ============================================================================
+
+$desktop-icon-size: 48px;
+$desktop-icon-label-max-width: 64px;
+$desktop-icon-grid-column-gap: 8px;
+$desktop-icon-grid-row-gap: 16px;
+$desktop-icon-padding: 8px;
+
+// ============================================================================
+// Explorer
+// ============================================================================
+
+$explorer-divider-width: 4px;
+$explorer-tree-width: 200px;
+$explorer-tree-min-width: 150px;
+$explorer-tree-max-width: 400px;
+$explorer-grid-item-width: 64px;
+$explorer-grid-item-icon-size: 32px;
+
+// ============================================================================
+// Scrollbar
+// ============================================================================
+
+$scrollbar-width: 16px;
+$scrollbar-thumb-min-height: 20px;
+$scrollbar-button-size: 16px;

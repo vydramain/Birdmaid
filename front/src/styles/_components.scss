@@ -1,0 +1,262 @@
+/**
+ * Windows 95 UI Component Classes
+ * 
+ * Component-specific classes for Win95 UI components.
+ * Use component classes when you have a fixed structure (window, taskbar, explorer).
+ * 
+ * Rule: Mixin vs Component Class
+ * - Component Class: Fixed structure, specific component (window, taskbar)
+ * - Mixin: Reusable pattern that can be applied to different elements
+ * 
+ * References:
+ * - docs/style/GUIDE_STYLE.md: Style guide rules
+ */
+
+@import './tokens';
+@import './mixins';
+
+// ============================================================================
+// Window Component
+// ============================================================================
+
+.win-window-base {
+  background: $win-gray;
+  @include window-frame;
+  display: flex;
+  flex-direction: column;
+}
+
+.win-window {
+  width: 100%;
+  max-width: 1440px;
+  min-height: 90vh;
+}
+
+.win-window-modal {
+  position: absolute;
+  width: auto;
+  height: auto;
+  min-height: auto;
+  box-shadow: 2px 2px 0 0 $win-black, inset 1px 1px $win-white, inset -1px -1px $win-gray-darker;
+}
+
+.win-titlebar {
+  @include window-titlebar;
+  
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.win-window-controls {
+  display: flex;
+  gap: $window-controls-gap;
+  
+  .control-button {
+    @include window-control-button;
+    
+    &:active {
+      @include window-control-button-active;
+    }
+    
+    &.close:hover {
+      background-color: $win-red;
+      color: $win-white;
+    }
+  }
+}
+
+.win-content {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+// ============================================================================
+// Taskbar Component
+// ============================================================================
+
+.win-taskbar {
+  height: $taskbar-height;
+  background-color: $win-gray;
+  border-top: 2px solid $win-white;
+  border-bottom: 2px solid $win-gray-dark;
+  padding: $taskbar-padding;
+  z-index: $z-taskbar;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.win-taskbar-tray {
+  display: flex;
+  align-items: center;
+  gap: $taskbar-tray-gap;
+  padding: 0 $spacing-sm;
+  
+  .tray-icon {
+    width: $taskbar-tray-icon-size;
+    height: $taskbar-tray-icon-size;
+    cursor: pointer;
+  }
+  
+  .tray-clock {
+    font-size: $font-size-normal;
+    color: $win-text;
+    padding: 0 $spacing-sm;
+  }
+}
+
+// ============================================================================
+// Explorer Component
+// ============================================================================
+
+.win-explorer {
+  display: flex;
+  height: 100%;
+  
+  .explorer-tree {
+    width: $explorer-tree-width;
+    min-width: $explorer-tree-min-width;
+    max-width: $explorer-tree-max-width;
+    background-color: $win-gray;
+    padding: $spacing-sm;
+    @include bevel-inset;
+    overflow-y: auto;
+    
+    .tree-item {
+      font-size: $font-size-normal;
+      padding: 2px $spacing-sm;
+      cursor: pointer;
+      color: $win-text;
+      line-height: $line-height-normal;
+      
+      &:hover {
+        background-color: $win-blue;
+        color: $win-text-inverse;
+      }
+      
+      &.selected {
+        background-color: $win-blue;
+        color: $win-text-inverse;
+      }
+    }
+  }
+  
+  .explorer-divider {
+    width: $explorer-divider-width;
+    background-color: $win-gray;
+    cursor: col-resize;
+  }
+  
+  .explorer-grid {
+    flex: 1;
+    background-color: $win-white;
+    padding: $spacing-md;
+    @include bevel-inset;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax($explorer-grid-item-width, 1fr));
+    gap: $spacing-sm;
+    
+    .grid-item {
+      padding: $spacing-sm;
+      cursor: pointer;
+      text-align: center;
+      
+      &:hover {
+        background-color: $win-blue;
+        color: $win-text-inverse;
+      }
+      
+      &.selected {
+        background-color: $win-blue;
+        color: $win-text-inverse;
+      }
+      
+      .grid-item-icon {
+        width: $explorer-grid-item-icon-size;
+        height: $explorer-grid-item-icon-size;
+        margin-bottom: $spacing-xs;
+      }
+      
+      .grid-item-label {
+        font-size: $font-size-normal;
+        color: $win-text;
+        word-break: break-word;
+        line-height: $line-height-tight;
+      }
+    }
+  }
+}
+
+// ============================================================================
+// Desktop Icons Component
+// ============================================================================
+
+.win-desktop-icons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax($desktop-icon-size, 1fr));
+  column-gap: $desktop-icon-grid-column-gap;
+  row-gap: $desktop-icon-grid-row-gap;
+  padding: $desktop-icon-padding;
+  
+  .desktop-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: $desktop-icon-padding;
+    cursor: pointer;
+    
+    .icon-container {
+      width: $desktop-icon-size;
+      height: $desktop-icon-size;
+      background-color: $win-gray;
+      border: 2px outset $win-gray-light;
+      margin-bottom: $spacing-sm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .icon-label {
+      font-size: $font-size-normal;
+      text-align: center;
+      max-width: $desktop-icon-label-max-width;
+      color: $win-text;
+      line-height: $line-height-tight;
+    }
+    
+    &:hover,
+    &.selected {
+      .icon-container {
+        background-color: $win-blue;
+      }
+      
+      .icon-label {
+        color: $win-text-inverse;
+      }
+    }
+  }
+}
+
+// ============================================================================
+// Desktop (Wallpaper)
+// ============================================================================
+
+.win-desktop {
+  background-color: $win-teal;
+  // Classic dithered background (can be replaced with image URL)
+  background-image:
+    linear-gradient(45deg, #000000 25%, transparent 25%, transparent 75%, #000000 75%, #000000),
+    linear-gradient(45deg, #000000 25%, transparent 25%, transparent 75%, #000000 75%, #000000);
+  background-size: 2px 2px;
+  background-position: 0 0, 1px 1px;
+  background-blend-mode: overlay;
+  min-height: 100vh;
+  padding: $desktop-icon-padding;
+}

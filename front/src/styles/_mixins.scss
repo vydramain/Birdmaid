@@ -1,0 +1,208 @@
+/**
+ * Windows 95 UI Mixins
+ * 
+ * Reusable mixins for Win95 styling patterns.
+ * Use mixins for repeated patterns (bevels, borders, buttons).
+ * 
+ * Rule: Mixin vs Component Class
+ * - Mixin: Reusable pattern that can be applied to different elements
+ * - Component Class: Specific component with fixed structure
+ * 
+ * References:
+ * - docs/style/GUIDE_STYLE.md: Style guide rules
+ */
+
+@import './tokens';
+
+// ============================================================================
+// 3D Bevel Mixins
+// ============================================================================
+
+/**
+ * Inset bevel (sunken panel)
+ * Top/left: dark, bottom/right: light
+ * 
+ * Usage:
+ *   @include bevel-inset;
+ */
+@mixin bevel-inset {
+  border-top: 1px solid $win-gray-dark;
+  border-left: 1px solid $win-gray-dark;
+  border-right: 1px solid $win-white;
+  border-bottom: 1px solid $win-white;
+  box-shadow: inset 1px 1px 0 $win-black;
+}
+
+/**
+ * Outset bevel (raised panel)
+ * Top/left: light, bottom/right: dark
+ * 
+ * Usage:
+ *   @include bevel-outset;
+ */
+@mixin bevel-outset {
+  border-top: 1px solid $win-white;
+  border-left: 1px solid $win-white;
+  border-right: 1px solid $win-gray-dark;
+  border-bottom: 1px solid $win-gray-dark;
+  box-shadow: 1px 1px 0 $win-black;
+}
+
+/**
+ * Window frame border (3D window)
+ * Outer: black, inner: 3D bevel
+ * 
+ * Usage:
+ *   @include window-frame;
+ */
+@mixin window-frame {
+  border-top: 1px solid $win-gray-light;
+  border-left: 1px solid $win-gray-light;
+  border-right: 1px solid $win-gray-dark;
+  border-bottom: 1px solid $win-gray-dark;
+  box-shadow: 1px 1px 0 $win-black, inset 1px 1px $win-white, inset -1px -1px $win-gray-darker;
+}
+
+// ============================================================================
+// Window Title Bar Mixin
+// ============================================================================
+
+/**
+ * Window title bar styling
+ * 
+ * Usage:
+ *   @include window-titlebar;
+ */
+@mixin window-titlebar {
+  height: $window-titlebar-height;
+  padding: $window-titlebar-padding;
+  margin: $window-titlebar-margin;
+  font-size: $font-size-medium;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, $win-blue 0%, $win-blue-light 100%);
+  color: $win-text-inverse;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// ============================================================================
+// Button Mixins
+// ============================================================================
+
+/**
+ * Default button styling (outset)
+ * 
+ * Usage:
+ *   @include button-default;
+ */
+@mixin button-default {
+  padding: $spacing-sm $spacing-lg;
+  font-size: $font-size-normal;
+  min-width: 20px;
+  border: 1px solid $win-black;
+  border-top-color: $win-white;
+  border-left-color: $win-white;
+  border-right-color: $win-black;
+  border-bottom-color: $win-black;
+  box-shadow: 1px 1px 0 $win-black, inset -1px -1px 0 $win-gray-dark;
+  background: $win-gray;
+  color: $win-text;
+  cursor: pointer;
+  text-align: center;
+}
+
+/**
+ * Button active state (pressed)
+ * 
+ * Usage:
+ *   button:active {
+ *     @include button-active;
+ *   }
+ */
+@mixin button-active {
+  border-top-color: $win-black;
+  border-left-color: $win-black;
+  border-right-color: $win-white;
+  border-bottom-color: $win-white;
+  box-shadow: none;
+  transform: translate(1px, 1px);
+}
+
+/**
+ * Button disabled state
+ * 
+ * Usage:
+ *   button:disabled {
+ *     @include button-disabled;
+ *   }
+ */
+@mixin button-disabled {
+  color: $win-text-disabled;
+  text-shadow: 1px 1px $win-white;
+  cursor: not-allowed;
+}
+
+// ============================================================================
+// Input Field Mixin
+// ============================================================================
+
+/**
+ * Text input field (inset)
+ * 
+ * Usage:
+ *   @include input-text;
+ */
+@mixin input-text {
+  padding: $spacing-sm 6px;
+  font-size: $font-size-normal;
+  background: $win-white;
+  @include bevel-inset;
+  color: $win-text;
+}
+
+// ============================================================================
+// Window Control Button Mixin
+// ============================================================================
+
+/**
+ * Window control button (minimize/maximize/close)
+ * 
+ * Usage:
+ *   @include window-control-button;
+ */
+@mixin window-control-button {
+  width: $window-controls-size;
+  height: $window-controls-size;
+  padding: 0;
+  font-size: $font-size-medium;
+  line-height: $window-controls-size;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid $win-black;
+  border-top-color: $win-white;
+  border-left-color: $win-white;
+  border-right-color: $win-black;
+  border-bottom-color: $win-black;
+  box-shadow: 1px 1px 0 $win-black, inset -1px -1px 0 $win-gray-dark;
+  background: $win-gray;
+  color: $win-text;
+}
+
+/**
+ * Window control button active (pressed)
+ * 
+ * Usage:
+ *   .window-control-button:active {
+ *     @include window-control-button-active;
+ *   }
+ */
+@mixin window-control-button-active {
+  border-top-color: $win-black;
+  border-left-color: $win-black;
+  border-right-color: $win-white;
+  border-bottom-color: $win-white;
+  box-shadow: none;
+  transform: translate(1px, 1px);
+}
