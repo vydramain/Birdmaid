@@ -3,7 +3,7 @@
 **Status:** plan+design  
 **Created:** 2026-01-22  
 **Updated:** 2026-01-22  
-**Version:** 2.1 (Contract Spec)
+**Version:** 2.2 (Contract Spec)
 
 **Release Gate:** [FP7_RELEASE_GATE.md](./FP7_RELEASE_GATE.md) — Gate checklist для release gate (15-минутный сценарий проверки)
 
@@ -963,6 +963,7 @@ front/__tests__/fp7/
 - [ ] **FP7.md:** Полностью обновлен с контрактом
 - [ ] **CUTLIST:** Список удаленного кода задокументирован
 - [ ] **Rewrite Checklist:** Чеклист переписывания выполнен
+- [ ] **Style Guardrails:** Документация и guardrails настроены
 
 ## Cutline / Migration Notes
 
@@ -1071,6 +1072,23 @@ front/__tests__/fp7/
 - [ ] Заменить email/password auth на Telegram
 - [ ] Написать тесты: `auth.telegram.test.tsx`
 
+### Phase 9: Style Guardrails
+- [x] Создать структуру каталогов `front/src/styles/**` (tokens, mixins, components, utilities)
+- [x] Создать документацию `docs/style/GUIDE_STYLE.md` (структура, обязательные tokens/mixins)
+- [x] Создать гайд `front/src/styles/guide.md` (когда делать mixin vs component class)
+- [ ] Настроить ESLint с правилом для блокировки inline styles (кроме whitelist с allow-tag)
+- [ ] Настроить Stylelint с правилом для блокировки `!important`
+- [ ] Настроить husky + lint-staged для pre-commit hooks
+- [ ] Создать canary checks (2 мини-примера) для проверки guardrails
+- [ ] Проверить, что pre-commit реально падает на `!important`
+- [ ] Проверить, что pre-commit реально падает на inline style без allow-tag
+
+**DoD:**
+- [ ] `npm run lint` зелёный
+- [ ] pre-commit реально падает на `!important`
+- [ ] pre-commit реально падает на inline style без allow-tag
+- [ ] Док с правилами существует и однозначен
+
 ---
 
 ---
@@ -1133,4 +1151,67 @@ front/__tests__/fp7/
 - Хранение ролей в БД и ручное назначение Organizer — текущий этап MVP, UI управления ролями не требуется
 - Win95-style системная панель управления пользователем обеспечивает единообразный UX и соответствует стилистике платформы
 
-**End of FP7 v2.1 Contract Spec**
+### Version 2.2 (2026-01-22)
+
+**Добавлено:**
+
+1. **Style Guardrails:**
+   - Настроены ESLint и Stylelint для блокировки `!important` и inline styles
+   - Pre-commit hooks через husky + lint-staged
+   - Документация: `docs/style/GUIDE_STYLE.md`
+   - Canary checks для проверки guardrails
+   - Whitelist для inline styles с allow-tag комментарием (drag/resize/layout calc)
+   - **Раздел изменён:** Plan → Phase 9: Style Guardrails
+
+**Почему:**
+- Обеспечивает единообразный стиль системы (tokens + mixins + components + utilities)
+- Предотвращает использование `!important` и неконтролируемых inline styles
+- Минимальные изменения, строгий контракт, "tests-red → implement → tests-green"
+
+### Version 2.3 (2026-01-22)
+
+**Добавлено:**
+
+1. **Win95 UI Style Structure (Design Phase):**
+   - Создана структура каталогов `front/src/styles/**`:
+     - `_tokens.scss`: Design tokens (colors, spacing, borders, z-index, typography)
+     - `_mixins.scss`: Reusable mixins (bevel, window frame, titlebar, buttons)
+     - `_components.scss`: Component classes (window, taskbar, explorer, icons)
+     - `_utilities.scss`: Utility classes (layout/text helpers)
+     - `index.scss`: Main entry point
+   - Создана документация `docs/style/GUIDE_STYLE.md`:
+     - Структура каталогов
+     - Обязательные tokens/mixins для FP7
+     - Гайд по миграции inline styles → SCSS
+   - Создан гайд `front/src/styles/guide.md`:
+     - Правило выбора: mixin vs component class
+     - Примеры использования
+     - Чек-лист для FP7
+   - **Раздел изменён:** Plan → Phase 9: Style Guardrails (добавлена структура стилей)
+
+**Обязательные Tokens для FP7:**
+- Colors (Chicago95 palette): gray, grayLight, grayDark, white, black, blue, blueLight, teal, red, text, textInverse, textDisabled
+- Spacing: xs (2px), sm (4px), md (8px), lg (12px), xl (16px)
+- Borders: inset (sunken), outset (raised), window (3D frame)
+- Z-index: desktop (1), window (10), window-focused (20), taskbar (10000), modal (10001)
+- Typography: font-family, sizes (small/normal/medium/large), weights, line-heights
+
+**Обязательные Mixins для FP7:**
+- `bevel-inset`, `bevel-outset`, `window-frame` — для 3D bevels
+- `window-titlebar`, `window-control-button`, `window-control-button-active` — для окон
+- `button-default`, `button-active`, `button-disabled` — для кнопок
+- `input-text` — для input полей
+
+**Обязательные Component Classes для FP7:**
+- `.win-window-base`, `.win-titlebar`, `.win-window-controls` — для окон
+- `.win-taskbar`, `.win-taskbar-tray` — для taskbar
+- `.win-explorer`, `.explorer-tree`, `.explorer-grid` — для explorer
+- `.win-desktop-icons`, `.desktop-icon` — для desktop icons
+
+**Почему:**
+- Структура позволяет постепенную миграцию inline styles → SCSS
+- Повторяющиеся паттерны через mixins/компонентные классы (без дублирования)
+- Никаких !important (правильная специфичность селекторов)
+- Минимальные изменения, строгий контракт, "tests-red → implement → tests-green"
+
+**End of FP7 v2.3 Contract Spec**

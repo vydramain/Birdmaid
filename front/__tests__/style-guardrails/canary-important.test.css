@@ -1,0 +1,6 @@
+/* Canary test: This file should FAIL stylelint check for !important */
+/* Purpose: Verify that pre-commit hook blocks !important in CSS */
+
+.test-important {
+  color: red !important; /* This should cause stylelint to fail */
+}

@@ -40,6 +40,7 @@ export default defineConfig(({ command, mode }) => {
         "**/node_modules/**",
         "**/dist/**",
         "**/legacy/**", // Legacy tests for old react-router architecture (FP7 v2 cleanup)
+        "**/style-guardrails/**", // Canary files for style guardrails (not actual tests)
       ],
       coverage: {
         reporter: ["json-summary", "lcov", "text"],

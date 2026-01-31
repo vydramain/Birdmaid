@@ -1,0 +1,20 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "rules": {
+    "declaration-no-important": true,
+    "color-hex-case": "lower",
+    "color-hex-length": "short",
+    "indentation": 2,
+    "string-quotes": "double"
+  },
+  "ignoreFiles": [
+    "**/*.js",
+    "**/*.jsx",
+    "**/*.ts",
+    "**/*.tsx",
+    "node_modules/**",
+    "dist/**",
+    "coverage/**",
+    "__tests__/**"
+  ]
+}

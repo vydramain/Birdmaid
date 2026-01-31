@@ -1,0 +1,11 @@
+{
+  "*.{ts,tsx}": [
+    "node scripts/check-inline-styles.cjs",
+    "eslint --fix",
+    "prettier --write"
+  ],
+  "*.{css,scss}": [
+    "stylelint --fix",
+    "prettier --write"
+  ]
+}
