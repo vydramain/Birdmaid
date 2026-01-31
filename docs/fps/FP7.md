@@ -5,6 +5,8 @@
 **Updated:** 2026-01-22  
 **Version:** 2.1 (Contract Spec)
 
+**Release Gate:** [FP7_RELEASE_GATE.md](./FP7_RELEASE_GATE.md) — Gate checklist для release gate (15-минутный сценарий проверки)
+
 ## Outcome
 
 Платформа реализована как shell-only система: пользователь попадает на рабочий стол Windows 95 (desktop) или Windows Mobile 6.0 (mobile), где контент представлен как файловая система. Навигация происходит исключительно через Desktop Icons и Explorer — никакого "обычного сайта". Контент открывается в соответствующих окнах (ImageViewer, VideoViewer, Notepad, Internet Explorer, Executor). Организаторы могут создавать/размещать любой контент через VFS, синхронизированный с S3-совместимым хранилищем. Авторизация через Telegram. Окна не могут быть утащены за пределы viewport.

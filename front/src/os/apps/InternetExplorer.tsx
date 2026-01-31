@@ -1,0 +1,152 @@
+import { useEffect, useState } from "react";
+import { VFSNode } from "../fs/VirtualFileSystem";
+import { HourglassLoader } from "../../components/win95/HourglassLoader";
+
+type InternetExplorerProps = {
+  content?: {
+    node?: VFSNode;
+    path?: string;
+    src?: string; // Direct URL (for API-loaded content)
+  };
+};
+
+/**
+ * Internet Explorer: Windows 95 style HTML viewer
+ * - HTML content in sandboxed iframe
+ * - No top-level navigation
+ * - Can only call our API
+ */
+export function InternetExplorer({ content }: InternetExplorerProps) {
+  const [htmlSrc, setHtmlSrc] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadHTML = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // If direct src URL provided, use it
+        if (content?.src) {
+          setHtmlSrc(content.src);
+          setLoading(false);
+          return;
+        }
+
+        // If VFS node provided, create blob URL
+        if (content?.node && content.node.type === 'file') {
+          const fileContent = content.node.content;
+          if (fileContent instanceof Blob) {
+            const blobUrl = URL.createObjectURL(fileContent);
+            setHtmlSrc(blobUrl);
+            setLoading(false);
+            return () => {
+              URL.revokeObjectURL(blobUrl);
+            };
+          } else if (typeof fileContent === 'string') {
+            // If it's a string (URL or HTML), create blob URL
+            const blob = new Blob([fileContent], { type: 'text/html' });
+            const blobUrl = URL.createObjectURL(blob);
+            setHtmlSrc(blobUrl);
+            setLoading(false);
+            return () => {
+              URL.revokeObjectURL(blobUrl);
+            };
+          }
+        }
+
+        // If path provided, try to load from API
+        if (content?.path) {
+          // TODO: Load from API endpoint when VFS/S3 integration is ready
+          setError("HTML loading from path not yet implemented");
+          setLoading(false);
+          return;
+        }
+
+        setError("No HTML source provided");
+        setLoading(false);
+      } catch (err) {
+        console.error("Error loading HTML:", err);
+        setError(err instanceof Error ? err.message : "Failed to load HTML");
+        setLoading(false);
+      }
+    };
+
+    loadHTML();
+  }, [content]);
+
+  if (loading) {
+    return (
+      <div style={{ 
+        width: "100%", 
+        height: "100%", 
+        display: "flex", 
+        justifyContent: "center", 
+        alignItems: "center",
+        backgroundColor: "var(--win-white)"
+      }}>
+        <HourglassLoader />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ 
+        padding: "20px", 
+        color: "var(--win-red)",
+        backgroundColor: "var(--win-white)"
+      }}>
+        Error: {error}
+      </div>
+    );
+  }
+
+  if (!htmlSrc) {
+    return (
+      <div style={{ 
+        padding: "20px", 
+        color: "var(--win-gray-dark)",
+        backgroundColor: "var(--win-white)"
+      }}>
+        No HTML content to display
+      </div>
+    );
+  }
+
+  // Strict sandbox policy for HTML content
+  // allow-scripts: Required for HTML to work
+  // allow-same-origin: Required for API calls to our backend (same origin)
+  // allow-forms: Allow form submissions
+  // allow-popups: Allow popups (but not top-level navigation)
+  // NO allow-top-navigation: Prevent iframe from navigating parent window
+  // NO allow-modals: Prevent alert/confirm dialogs
+  const sandboxPolicy = "allow-scripts allow-same-origin allow-forms allow-popups";
+
+  return (
+    <div style={{ 
+      width: "100%", 
+      height: "100%", 
+      position: "relative",
+      backgroundColor: "var(--win-white)"
+    }}>
+      <iframe
+        src={htmlSrc}
+        title={content?.node?.name || "HTML Content"}
+        sandbox={sandboxPolicy}
+        style={{
+          width: "100%",
+          height: "100%",
+          border: "none",
+          display: loading ? "none" : "block"
+        }}
+        onLoad={() => setLoading(false)}
+        onError={() => {
+          setError("Failed to load HTML content");
+          setLoading(false);
+        }}
+      />
+    </div>
+  );
+}

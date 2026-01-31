@@ -107,6 +107,17 @@ Object.defineProperty(window, 'matchMedia', {
 global.requestAnimationFrame = (cb) => setTimeout(cb, 0);
 global.cancelAnimationFrame = (id) => clearTimeout(id) as unknown as number;
 
+// Mock URL.createObjectURL and URL.revokeObjectURL (jsdom doesn't support them)
+// Used by ImageViewer, VideoViewer, InternetExplorer
+let blobUrlCounter = 0;
+global.URL.createObjectURL = vi.fn((blob: Blob) => {
+  blobUrlCounter++;
+  return `blob:test://mock-url-${blobUrlCounter}`;
+});
+global.URL.revokeObjectURL = vi.fn((url: string) => {
+  // No-op in tests
+});
+
 // Cleanup
 afterEach(() => {
   vi.clearAllMocks();

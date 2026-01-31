@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useWindowRegistry } from "../os/wm/WindowRegistry";
 import { DesktopIcon } from "../components/DesktopIcon";
 import { WindowManager } from "../os/wm/WindowManager";
-import { vfs } from "../os/fs/VirtualFileSystem";
+import { vfs, VFSNode } from "../os/fs/VirtualFileSystem";
+import { appRegistry } from "../os/apps/AppRegistry";
 
 type DesktopIconData = {
   id: string;
@@ -15,10 +16,10 @@ export function DesktopPage() {
   const { openWindow } = useWindowRegistry();
   const [icons, setIcons] = useState<DesktopIconData[]>([]);
 
-  // VFS Sync
+  // VFS Sync - Desktop Icons читаются строго из /Disk C/desktop
   useEffect(() => {
     const updateIcons = () => {
-      const nodes = vfs.readDir('/desktop');
+      const nodes = vfs.readDir('/Disk C/desktop');
       const newIcons = nodes.map(node => {
         let icon = '📄';
         let target = '';
@@ -49,7 +50,7 @@ export function DesktopPage() {
     };
 
     updateIcons();
-    return vfs.subscribe('/desktop', updateIcons);
+    return vfs.subscribe('/Disk C/desktop', updateIcons);
   }, []);
 
   useEffect(() => {
@@ -63,11 +64,35 @@ export function DesktopPage() {
 
   const handleIconClick = (icon: DesktopIconData) => {
     if (icon.target) {
+      // Link file - open target
       openWindow(icon.target as any);
-    } else if (icon.id.endsWith('.txt')) {
-      openWindow('help'); // Mapping everything to Help for now
     } else {
-      openWindow('explorer'); // Fallback
+      // Regular file - find node and open with appropriate viewer
+      const nodes = vfs.readDir('/Disk C/desktop');
+      const node = nodes.find(n => n.name === icon.id);
+      
+      if (node && node.type === 'file') {
+        // Resolve app for file using AppRegistry
+        const appId = appRegistry.resolveAppForFile(node.name);
+        if (appId) {
+          const fullPath = `/Disk C/desktop/${node.name}`;
+          // Pass node and path to the viewer
+          openWindow(appId, {
+            content: {
+              node: node,
+              path: fullPath
+            },
+            title: node.name
+          });
+        } else {
+          console.warn(`No app registered for file: ${node.name}`);
+          // Fallback to explorer
+          openWindow('explorer');
+        }
+      } else {
+        // Not a file or not found - fallback to explorer
+        openWindow('explorer');
+      }
     }
   };
 
@@ -84,6 +109,7 @@ export function DesktopPage() {
     >
       {/* Desktop icons grid */}
       <div
+        data-testid="desktop-icons"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
