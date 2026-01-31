@@ -1,5 +1,4 @@
 import { useAuth, UserRole } from "../../contexts/AuthContext";
-import { buttons, colors, spacing, typography } from "../../ui/win95/tokens";
 
 type UserPanelAppProps = {
   onClose?: () => void;
@@ -7,7 +6,7 @@ type UserPanelAppProps = {
 
 /**
  * UserPanelApp - Windows 95 styled user panel window.
- * 
+ *
  * Displays:
  * - Username
  * - Role (Guest / Participant / Organizer)
@@ -17,7 +16,7 @@ type UserPanelAppProps = {
 export function UserPanelApp({ onClose }: UserPanelAppProps) {
   const auth = useAuth();
   const user = auth.user;
-  const role: UserRole = user?.role || (user?.isSuperAdmin ? 'Organizer' : 'Guest');
+  const role: UserRole = user?.role || (user?.isSuperAdmin ? "Organizer" : "Guest");
 
   const handleLogout = () => {
     auth.logout();
@@ -30,74 +29,37 @@ export function UserPanelApp({ onClose }: UserPanelAppProps) {
   };
 
   return (
-    <div
-      data-testid="user-panel-window"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: spacing.md,
-        padding: spacing.md,
-        minHeight: "200px",
-      }}
-    >
+    <div data-testid="user-panel-window" className="user-panel-container">
       {/* User Info Section */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: spacing.sm,
-          padding: spacing.md,
-          ...{
-            borderTop: `1px solid ${colors.grayDark}`,
-            borderLeft: `1px solid ${colors.grayDark}`,
-            borderRight: `1px solid ${colors.white}`,
-            borderBottom: `1px solid ${colors.white}`,
-            boxShadow: `inset 1px 1px 0 ${colors.black}`,
-          },
-          backgroundColor: colors.white,
-        }}
-      >
-        <div style={{ fontSize: typography.fontSize.normal, fontWeight: typography.fontWeight.bold }}>
-          User Information
-        </div>
+      <div className="user-panel-info">
+        <div className="user-panel-title">User Information</div>
         {user ? (
           <>
-            <div style={{ fontSize: typography.fontSize.normal }}>
+            <div className="user-panel-field">
               <strong>Username:</strong> {user.login}
             </div>
-            <div style={{ fontSize: typography.fontSize.normal }}>
+            <div className="user-panel-field">
               <strong>Role:</strong> {role}
             </div>
             {user.email && (
-              <div style={{ fontSize: typography.fontSize.normal }}>
+              <div className="user-panel-field">
                 <strong>Email:</strong> {user.email}
               </div>
             )}
           </>
         ) : (
-          <div style={{ fontSize: typography.fontSize.normal, color: colors.textDisabled }}>
-            Not logged in
-          </div>
+          <div className="user-panel-disabled">Not logged in</div>
         )}
       </div>
 
       {/* Actions Section */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: spacing.sm,
-        }}
-      >
+      <div className="user-panel-actions">
         {/* Management Functions (Organizer only) */}
-        {role === 'Organizer' && (
+        {role === "Organizer" && (
           <button
             type="button"
             onClick={handleManagement}
-            style={{
-              ...buttons.default,
-              alignSelf: "flex-start",
-            }}
+            className="win-btn-default user-panel-button"
           >
             Management Functions (stub)
           </button>
@@ -108,10 +70,7 @@ export function UserPanelApp({ onClose }: UserPanelAppProps) {
           data-testid="user-logout"
           type="button"
           onClick={handleLogout}
-          style={{
-            ...buttons.default,
-            alignSelf: "flex-start",
-          }}
+          className="win-btn-default user-panel-button"
         >
           Log out
         </button>

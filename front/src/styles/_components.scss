@@ -12,16 +12,18 @@
  * - docs/style/GUIDE_STYLE.md: Style guide rules
  */
 
-@import './tokens';
-@import './mixins';
+@import "./tokens";
+@import "./mixins";
 
 // ============================================================================
 // Window Component
 // ============================================================================
 
 .win-window-base {
-  background: $win-gray;
+  background: var(--win-gray, #c0c0c0);
+
   @include window-frame;
+
   display: flex;
   flex-direction: column;
 }
@@ -37,33 +39,26 @@
   width: auto;
   height: auto;
   min-height: auto;
-  box-shadow: 2px 2px 0 0 $win-black, inset 1px 1px $win-white, inset -1px -1px $win-gray-darker;
-}
-
-.win-titlebar {
-  @include window-titlebar;
-  
-  .title {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
+  box-shadow:
+    2px 2px 0 0 var(--win-black, #000),
+    inset 1px 1px var(--win-white, #fff),
+    inset -1px -1px var(--win-gray-darker, #404040);
 }
 
 .win-window-controls {
   display: flex;
-  gap: $window-controls-gap;
-  
+  gap: var(--window-controls-gap, 2px);
+
   .control-button {
     @include window-control-button;
-    
+
     &:active {
       @include window-control-button-active;
     }
-    
+
     &.close:hover {
-      background-color: $win-red;
-      color: $win-white;
+      background-color: var(--win-red, #f00);
+      color: var(--win-white, #fff);
     }
   }
 }
@@ -76,38 +71,117 @@
   flex-direction: column;
 }
 
+// WindowFrame positioning and layout
+.win-window-frame {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+// WindowFrame titlebar cursor states
+.win-titlebar {
+  @include window-titlebar;
+
+  touch-action: none;
+
+  &.win-titlebar-dragging {
+    cursor: grabbing;
+  }
+
+  &:not(.win-titlebar-dragging) {
+    cursor: grab;
+  }
+
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+// WindowFrame content container
+.win-window-content {
+  padding: 0;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 // ============================================================================
 // Taskbar Component
 // ============================================================================
 
 .win-taskbar {
-  height: $taskbar-height;
-  background-color: $win-gray;
-  border-top: 2px solid $win-white;
-  border-bottom: 2px solid $win-gray-dark;
-  padding: $taskbar-padding;
-  z-index: $z-taskbar;
+  height: var(--taskbar-height, 40px);
+  background-color: var(--win-gray, #c0c0c0);
+  border-top: 2px solid var(--win-white, #fff);
+  border-bottom: 2px solid var(--win-gray-dark, #808080);
+  padding: var(--taskbar-padding, 0 8px);
+  z-index: var(--z-taskbar, 10000);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
+// Taskbar fixed positioning (position, bottom, left, right stay inline for computed values)
+.win-taskbar-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--win-gray, #c0c0c0);
+  border-top: 2px solid var(--win-white, #fff);
+  border-bottom: 2px solid var(--win-gray-dark, #808080);
+  display: flex;
+  align-items: center;
+  padding: var(--taskbar-padding, 0 8px);
+  box-sizing: border-box;
+}
+
+.win-taskbar-window-list {
+  flex: 1;
+}
+
 .win-taskbar-tray {
   display: flex;
   align-items: center;
-  gap: $taskbar-tray-gap;
-  padding: 0 $spacing-sm;
-  
+  gap: var(--taskbar-tray-gap, 8px);
+  padding: 0 var(--spacing-sm, 4px);
+
   .tray-icon {
-    width: $taskbar-tray-icon-size;
-    height: $taskbar-tray-icon-size;
+    width: var(--taskbar-tray-icon-size, 24px);
+    height: var(--taskbar-tray-icon-size, 24px);
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--win-gray, #c0c0c0);
+    border: 1px solid var(--win-black, #000);
+    border-color: var(--win-white, #fff) var(--win-black, #000) var(--win-black, #000)
+      var(--win-white, #fff);
+    box-shadow:
+      1px 1px 0 var(--win-black, #000),
+      inset -1px -1px 0 var(--win-gray-dark, #808080);
+    font-size: 14px;
+    user-select: none;
+
+    &.tray-icon-logged-in {
+      background-color: var(--win-blue, #000080);
+    }
   }
-  
+
   .tray-clock {
-    font-size: $font-size-normal;
-    color: $win-text;
-    padding: 0 $spacing-sm;
+    font-size: var(--font-size-normal, 11px);
+    color: var(--win-text, #000);
+    padding: 0 var(--spacing-sm, 4px);
+    font-family: monospace;
+    user-select: none;
   }
 }
 
@@ -118,79 +192,125 @@
 .win-explorer {
   display: flex;
   height: 100%;
-  
+  gap: var(--spacing-sm, 4px);
+
+  // Tree View (Left)
   .explorer-tree {
-    width: $explorer-tree-width;
-    min-width: $explorer-tree-min-width;
-    max-width: $explorer-tree-max-width;
-    background-color: $win-gray;
-    padding: $spacing-sm;
+    width: var(--explorer-tree-width, 200px);
+    min-width: var(--explorer-tree-min-width, 150px);
+    background-color: var(--win-gray, #c0c0c0);
+    padding: var(--spacing-sm, 4px);
+
     @include bevel-inset;
-    overflow-y: auto;
-    
+
+    overflow: auto;
+
     .tree-item {
-      font-size: $font-size-normal;
-      padding: 2px $spacing-sm;
+      font-size: var(--font-size-normal, 11px);
+      padding: 2px var(--spacing-sm, 4px);
+      // Computed paddingLeft via CSS variable (set inline: --tree-level)
+      padding-left: calc(4px + var(--tree-level, 0) * 16px);
       cursor: pointer;
-      color: $win-text;
-      line-height: $line-height-normal;
-      
+      color: var(--win-text, #000);
+      line-height: var(--line-height-normal, 1.4);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm, 4px);
+      background-color: transparent;
+
       &:hover {
-        background-color: $win-blue;
-        color: $win-text-inverse;
+        background-color: var(--win-blue, #000080);
+        color: var(--win-text-inverse, #fff);
       }
-      
+
       &.selected {
-        background-color: $win-blue;
-        color: $win-text-inverse;
+        background-color: var(--win-blue, #000080);
+        color: var(--win-text-inverse, #fff);
       }
     }
+
+    .tree-expand-icon {
+      font-size: var(--font-size-small, 10px);
+    }
+
+    .tree-spacer {
+      width: 10px;
+    }
   }
-  
+
   .explorer-divider {
-    width: $explorer-divider-width;
-    background-color: $win-gray;
+    width: var(--explorer-divider-width, 4px);
+    background-color: var(--win-gray, #c0c0c0);
     cursor: col-resize;
   }
-  
-  .explorer-grid {
+
+  // Grid View Container (Right)
+  .explorer-grid-container {
+    display: flex;
+    flex-direction: column;
     flex: 1;
-    background-color: $win-white;
-    padding: $spacing-md;
+    gap: var(--spacing-sm, 4px);
+  }
+
+  // Toolbar
+  .explorer-toolbar {
+    display: flex;
+    gap: var(--spacing-sm, 4px);
+    padding: var(--spacing-sm, 4px);
+    background-color: var(--win-white, #fff);
+
     @include bevel-inset;
-    overflow-y: auto;
+
+    .explorer-up-button {
+      min-width: 30px;
+    }
+
+    .explorer-path {
+      flex: 1;
+      padding: 2px var(--spacing-sm, 4px);
+      border: 1px solid var(--win-gray-dark, #808080);
+    }
+  }
+
+  // Grid View
+  .explorer-grid-view {
+    flex: 1;
+    background-color: var(--win-white, #fff);
+    overflow: auto;
+    padding: var(--spacing-md, 8px);
+
+    @include bevel-inset;
+  }
+
+  .explorer-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax($explorer-grid-item-width, 1fr));
-    gap: $spacing-sm;
-    
-    .grid-item {
-      padding: $spacing-sm;
+    grid-template-columns: repeat(auto-fill, minmax(var(--explorer-grid-item-width, 64px), 1fr));
+    gap: var(--spacing-xl, 16px);
+
+    .explorer-grid-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       cursor: pointer;
       text-align: center;
-      
-      &:hover {
-        background-color: $win-blue;
-        color: $win-text-inverse;
+
+      .explorer-icon {
+        font-size: 24px;
+        margin-bottom: var(--spacing-sm, 4px);
       }
-      
-      &.selected {
-        background-color: $win-blue;
-        color: $win-text-inverse;
-      }
-      
-      .grid-item-icon {
-        width: $explorer-grid-item-icon-size;
-        height: $explorer-grid-item-icon-size;
-        margin-bottom: $spacing-xs;
-      }
-      
-      .grid-item-label {
-        font-size: $font-size-normal;
-        color: $win-text;
+
+      .explorer-filename {
+        font-size: var(--font-size-normal, 11px);
         word-break: break-word;
-        line-height: $line-height-tight;
       }
     }
+  }
+
+  // Status Bar
+  .explorer-status {
+    margin-top: var(--spacing-sm, 4px);
+    font-size: var(--font-size-normal, 11px);
+    color: var(--win-gray-dark, #808080);
   }
 }
 
@@ -198,65 +318,436 @@
 // Desktop Icons Component
 // ============================================================================
 
-.win-desktop-icons {
+.desktop-icons-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax($desktop-icon-size, 1fr));
-  column-gap: $desktop-icon-grid-column-gap;
-  row-gap: $desktop-icon-grid-row-gap;
-  padding: $desktop-icon-padding;
-  
-  .desktop-icon {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: $desktop-icon-padding;
-    cursor: pointer;
-    
-    .icon-container {
-      width: $desktop-icon-size;
-      height: $desktop-icon-size;
-      background-color: $win-gray;
-      border: 2px outset $win-gray-light;
-      margin-bottom: $spacing-sm;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .icon-label {
-      font-size: $font-size-normal;
-      text-align: center;
-      max-width: $desktop-icon-label-max-width;
-      color: $win-text;
-      line-height: $line-height-tight;
-    }
-    
-    &:hover,
-    &.selected {
-      .icon-container {
-        background-color: $win-blue;
-      }
-      
-      .icon-label {
-        color: $win-text-inverse;
-      }
-    }
-  }
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.desktop-icon-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px;
+  position: relative;
+}
+
+.desktop-icon-box {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--win-gray, #c0c0c0);
+  border: 2px outset var(--win-gray-light, #dfdfdf);
+  margin-bottom: 4px;
+}
+
+.desktop-icon-label {
+  font-size: 11px;
+  text-align: center;
+  max-width: 64px;
+}
+
+// Tooltip - transform stays inline (whitelist for centering)
+.desktop-icon-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-bottom: 4px;
+  padding: 4px 8px;
+  background-color: var(--win-yellow, #ff0);
+  border: 1px solid var(--win-gray-dark, #808080);
+  font-size: 10px;
+  white-space: nowrap;
+  z-index: 1000;
+  // transform: translateX(-50%) stays inline (whitelist)
 }
 
 // ============================================================================
 // Desktop (Wallpaper)
 // ============================================================================
 
-.win-desktop {
-  background-color: $win-teal;
-  // Classic dithered background (can be replaced with image URL)
-  background-image:
-    linear-gradient(45deg, #000000 25%, transparent 25%, transparent 75%, #000000 75%, #000000),
-    linear-gradient(45deg, #000000 25%, transparent 25%, transparent 75%, #000000 75%, #000000);
-  background-size: 2px 2px;
-  background-position: 0 0, 1px 1px;
-  background-blend-mode: overlay;
-  min-height: 100vh;
-  padding: $desktop-icon-padding;
+.desktop-background {
+  width: 100vw;
+  height: 100vh;
+  background-color: #008080;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgb(0 0 0 / 3%) 2px,
+    rgb(0 0 0 / 3%) 4px
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+// ============================================================================
+// WindowManager Component
+// ============================================================================
+
+// WindowManager content wrapper
+.win-content-wrapper {
+  padding: var(--spacing-lg, 12px);
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  &.win-content-wrapper-game {
+    padding: 0;
+  }
+}
+
+// WindowManager drag overlay (WHITELIST - fixed position overlay for drag)
+// Note: position, top, left, right, bottom, zIndex stay inline for computed values
+
+// ============================================================================
+// Viewers Component (ImageViewer, VideoViewer, Notepad, InternetExplorer, AppHost)
+// ============================================================================
+
+// Common viewer states (shared across all viewers)
+.viewer-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.viewer-loading {
+  @extend .viewer-container;
+
+  background-color: var(--win-white, #fff);
+}
+
+.viewer-error {
+  padding: var(--spacing-xl, 20px);
+  color: var(--win-red, #f00);
+  background-color: var(--win-white, #fff);
+}
+
+.viewer-empty {
+  padding: var(--spacing-xl, 20px);
+  color: var(--win-gray-dark, #808080);
+  background-color: var(--win-white, #fff);
+}
+
+// ImageViewer
+.viewer-image-container {
+  @extend .viewer-container;
+
+  background-color: var(--win-gray, #c0c0c0);
+  overflow: auto;
+  padding: var(--spacing-md, 8px);
+}
+
+.viewer-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+// VideoViewer
+.viewer-video-container {
+  @extend .viewer-container;
+
+  background-color: var(--win-black, #000);
+  padding: var(--spacing-md, 8px);
+}
+
+.viewer-video {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+// Notepad
+.notepad-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--win-white, #fff);
+}
+
+.notepad-preview {
+  flex: 1;
+  padding: var(--spacing-md, 8px);
+  overflow: auto;
+  font-family: var(--font-family, "MS Sans Serif", "Tahoma", sans-serif);
+  font-size: var(--font-size-normal, 11px);
+  line-height: var(--line-height-relaxed, 1.5);
+  color: var(--win-text, #000);
+}
+
+.notepad-textarea {
+  flex: 1;
+  padding: var(--spacing-md, 8px);
+  border: none;
+  outline: none;
+  font-family: var(--win-font-mono, "Courier New", monospace);
+  font-size: var(--font-size-normal, 11px);
+  line-height: var(--line-height-relaxed, 1.5);
+  color: var(--win-text, #000);
+  background-color: var(--win-white, #fff);
+  resize: none;
+  overflow: auto;
+}
+
+// InternetExplorer
+.viewer-ie-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: var(--win-white, #fff);
+}
+
+.viewer-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+
+  &.viewer-iframe-hidden {
+    display: none;
+  }
+}
+
+// AppHost (Executor)
+.apphost-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.apphost-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--win-white, #fff);
+  z-index: 1;
+}
+
+.apphost-error {
+  padding: var(--spacing-xl, 20px);
+  color: var(--win-red, #f00);
+}
+
+.apphost-iframe {
+  flex: 1;
+  border: none;
+  width: 100%;
+  height: 100%;
+  display: block;
+
+  &.apphost-iframe-hidden {
+    display: none;
+  }
+}
+
+// ============================================================================
+// UserPanelApp Component
+// ============================================================================
+
+.user-panel-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md, 8px);
+  padding: var(--spacing-md, 8px);
+  min-height: 200px;
+}
+
+.user-panel-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm, 4px);
+  padding: var(--spacing-md, 8px);
+
+  @include bevel-inset;
+
+  background-color: var(--win-white, #fff);
+}
+
+.user-panel-title {
+  font-size: var(--font-size-normal, 11px);
+  font-weight: var(--font-weight-bold, bold);
+}
+
+.user-panel-field {
+  font-size: var(--font-size-normal, 11px);
+}
+
+.user-panel-disabled {
+  font-size: var(--font-size-normal, 11px);
+  color: var(--win-text-disabled, #808080);
+}
+
+.user-panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm, 4px);
+}
+
+.user-panel-button {
+  align-self: flex-start;
+}
+
+// ============================================================================
+// Header Component
+// ============================================================================
+
+.win-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--win-gray, #c0c0c0);
+  border-bottom: 2px solid var(--win-black, #000);
+  padding: var(--spacing-sm, 4px) var(--spacing-md, 8px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  // Note: z-index stays inline for computed values
+}
+
+.win-header-buttons {
+  display: flex;
+  gap: var(--spacing-md, 8px);
+  align-items: center;
+}
+
+.win-header-user-menu {
+  position: relative;
+}
+
+.win-header-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: var(--spacing-sm, 4px);
+  min-width: 120px;
+  // Note: z-index stays inline for computed values
+}
+
+.win-header-spacer {
+  height: 40px;
+}
+
+// ============================================================================
+// Button Component Classes
+// ============================================================================
+
+.win-btn {
+  @include button-default;
+
+  &:active {
+    @include button-active;
+  }
+
+  &:disabled {
+    @include button-disabled;
+  }
+}
+
+.win-btn-default {
+  @include button-default;
+
+  &:active {
+    @include button-active;
+  }
+
+  &:disabled {
+    @include button-disabled;
+  }
+}
+
+// ============================================================================
+// Mobile Components
+// ============================================================================
+
+.mobile-container {
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--win-teal, #008080);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.mobile-header {
+  background-color: var(--win-gray, #c0c0c0);
+  border-bottom: 2px solid var(--win-gray-dark, #808080);
+  padding: var(--spacing-md, 8px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mobile-date {
+  font-size: var(--font-size-medium, 12px);
+  font-weight: var(--font-weight-bold, bold);
+}
+
+.mobile-menu-button {
+  padding: var(--spacing-sm, 4px) var(--spacing-md, 8px);
+}
+
+.mobile-menu {
+  position: absolute;
+  top: 40px;
+  right: var(--spacing-md, 8px);
+  background-color: var(--win-gray, #c0c0c0);
+
+  @include bevel-outset;
+
+  z-index: 1000;
+  min-width: 150px;
+  // Note: z-index stays inline for computed values if needed
+}
+
+.mobile-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--spacing-md, 8px);
+}
+
+.mobile-icons-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-xl, 16px);
+  padding: var(--spacing-xl, 16px);
+  flex: 1;
+  overflow: auto;
+}
+
+.mobile-window-container {
+  flex: 1;
+  position: relative;
+}
+
+// MobileShell stub (minimal styles)
+.mobile-shell {
+  padding: var(--spacing-xl, 20px);
+  text-align: center;
+  color: var(--win-white, #fff);
+  background: var(--win-black, #000);
+  height: 100vh;
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useWindowRegistry } from "../os/wm/WindowRegistry";
 import { vfs, VFSNode } from "../os/fs/VirtualFileSystem";
 import { appRegistry } from "../os/apps/AppRegistry";
@@ -14,7 +14,7 @@ interface TreeItemProps {
 function TreeItem({ node, path, currentPath, onSelect, level }: TreeItemProps) {
   const [expanded, setExpanded] = useState(level === 0); // Root level expanded by default
   const isSelected = currentPath === path;
-  const isDir = node.type === 'dir';
+  const isDir = node.type === "dir";
   const hasChildren = isDir && node.children && node.children.length > 0;
 
   const handleClick = () => {
@@ -30,28 +30,18 @@ function TreeItem({ node, path, currentPath, onSelect, level }: TreeItemProps) {
     <div>
       <div
         onClick={handleClick}
-        style={{
-          padding: '2px 4px',
-          paddingLeft: `${4 + level * 16}px`,
-          cursor: 'pointer',
-          backgroundColor: isSelected ? 'var(--win-blue)' : 'transparent',
-          color: isSelected ? 'var(--win-white)' : 'var(--win-text)',
-          fontSize: '11px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
-        }}
+        className={`tree-item ${isSelected ? "selected" : ""}`}
+        // inline-style: allowed (reason: layout-calc)
+        style={{ "--tree-level": level } as React.CSSProperties & { "--tree-level": number }}
       >
-        {isDir && (
-          <span style={{ fontSize: '10px' }}>{expanded ? '▼' : '▶'}</span>
-        )}
-        {!isDir && <span style={{ width: '10px' }} />}
-        <span>{node.name || 'My Computer'}</span>
+        {isDir && <span className="tree-expand-icon">{expanded ? "▼" : "▶"}</span>}
+        {!isDir && <span className="tree-spacer" />}
+        <span>{node.name || "My Computer"}</span>
       </div>
       {isDir && expanded && hasChildren && (
         <div>
           {node.children!.map((child) => {
-            const childPath = path === '/' ? `/${child.name}` : `${path}/${child.name}`;
+            const childPath = path === "/" ? `/${child.name}` : `${path}/${child.name}`;
             return (
               <TreeItem
                 key={child.name}
@@ -95,20 +85,20 @@ export function ExplorerWindow() {
 
   // Helper to get full path of a node
   const getNodePath = (node: VFSNode, basePath: string): string => {
-    if (basePath === '/') {
+    if (basePath === "/") {
       return `/${node.name}`;
     }
     return `${basePath}/${node.name}`;
   };
 
   const handleOpen = (node: VFSNode) => {
-    if (node.type === 'dir') {
+    if (node.type === "dir") {
       // Navigate
-      const newPath = currentPath === '/' ? `/${node.name}` : `${currentPath}/${node.name}`;
+      const newPath = currentPath === "/" ? `/${node.name}` : `${currentPath}/${node.name}`;
       setCurrentPath(newPath);
     } else {
       // Open file using AppRegistry
-      if (node.name.endsWith('.url')) {
+      if (node.name.endsWith(".url")) {
         // Special handling for .url link files
         try {
           const data = JSON.parse(node.content as string);
@@ -116,7 +106,7 @@ export function ExplorerWindow() {
             openWindow(data.target);
           }
         } catch (e) {
-          console.error('Failed to parse link');
+          console.error("Failed to parse link");
         }
       } else {
         // Resolve app for file using AppRegistry
@@ -127,9 +117,9 @@ export function ExplorerWindow() {
           openWindow(appId, {
             content: {
               node: node,
-              path: fullPath
+              path: fullPath,
             },
-            title: node.name
+            title: node.name,
           });
         } else {
           console.warn(`No app registered for file: ${node.name}`);
@@ -140,33 +130,22 @@ export function ExplorerWindow() {
   };
 
   const handleUp = () => {
-    if (currentPath === '/') return;
-    const parts = currentPath.split('/').filter(p => p);
+    if (currentPath === "/") return;
+    const parts = currentPath.split("/").filter((p) => p);
     parts.pop();
-    const newPath = parts.length > 0 ? '/' + parts.join('/') : '/';
+    const newPath = parts.length > 0 ? "/" + parts.join("/") : "/";
     setCurrentPath(newPath);
   };
 
-  const rootNode = vfs.stat('/');
+  const rootNode = vfs.stat("/");
   if (!rootNode) {
     return <div>Error: Root not found</div>;
   }
 
   return (
-    <div style={{ display: 'flex', height: '100%', gap: '4px' }}>
+    <div className="win-explorer">
       {/* Tree View (Left) */}
-      <div 
-        data-testid="explorer-tree"
-        className="win-inset" 
-        style={{ 
-          width: '200px', 
-          minWidth: '150px',
-          backgroundColor: 'var(--win-gray)', 
-          overflow: 'auto', 
-          padding: '4px',
-          border: '1px inset var(--win-gray-dark)'
-        }}
-      >
+      <div data-testid="explorer-tree" className="explorer-tree">
         <TreeItem
           node={rootNode}
           path="/"
@@ -177,61 +156,58 @@ export function ExplorerWindow() {
       </div>
 
       {/* Grid View (Right) */}
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '4px' }}>
+      <div className="explorer-grid-container">
         {/* Toolbar */}
-        <div className="win-inset" style={{ display: 'flex', gap: '4px', padding: '4px', backgroundColor: 'var(--win-white)' }}>
-          <button onClick={handleUp} disabled={currentPath === '/'} style={{ minWidth: '30px' }}>↑</button>
-          <div data-testid="explorer-path" style={{ flex: 1, padding: '2px 4px', border: '1px solid var(--win-gray-dark)' }}>
-            {currentPath === '/' ? 'My Computer' : currentPath}
+        <div className="explorer-toolbar">
+          <button onClick={handleUp} disabled={currentPath === "/"} className="explorer-up-button">
+            ↑
+          </button>
+          <div data-testid="explorer-path" className="explorer-path">
+            {currentPath === "/" ? "My Computer" : currentPath}
           </div>
         </div>
 
         {/* Grid View */}
-        <div data-testid="explorer-grid" className="win-inset" style={{ flex: 1, backgroundColor: 'var(--win-white)', overflow: 'auto', padding: '8px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '16px' }}>
+        <div data-testid="explorer-grid" className="explorer-grid-view">
+          <div className="explorer-grid">
             {files.map((node) => {
-               let icon = '📄';
-               if (node.type === 'dir') icon = '📁';
-               else if (node.name.endsWith('.url')) icon = '🔗';
-               
-               // Try to get icon from metadata if link
-               if (node.name.endsWith('.url')) {
-                 try {
-                   const data = JSON.parse(node.content as string);
-                   if (data.icon) icon = data.icon;
-                 } catch(e) {}
-               }
+              let icon = "📄";
+              if (node.type === "dir") icon = "📁";
+              else if (node.name.endsWith(".url")) icon = "🔗";
 
-               return (
-                 <div 
-                   key={node.name}
-                   onDoubleClick={() => handleOpen(node)}
-                   onClick={() => {
-                     if (node.type === 'dir') {
-                       const newPath = currentPath === '/' ? `/${node.name}` : `${currentPath}/${node.name}`;
-                       setCurrentPath(newPath);
-                     }
-                   }}
-                   style={{ 
-                     display: 'flex', 
-                     flexDirection: 'column', 
-                     alignItems: 'center', 
-                     cursor: 'pointer',
-                     textAlign: 'center'
-                   }}
-                 >
-                   <div style={{ fontSize: '24px', marginBottom: '4px' }}>{icon}</div>
-                   <div style={{ fontSize: '11px', wordBreak: 'break-word' }}>{node.name}</div>
-                 </div>
-               );
+              // Try to get icon from metadata if link
+              if (node.name.endsWith(".url")) {
+                try {
+                  const data = JSON.parse(node.content as string);
+                  if (data.icon) icon = data.icon;
+                } catch {
+                  // Ignore parse errors
+                }
+              }
+
+              return (
+                <div
+                  key={node.name}
+                  onDoubleClick={() => handleOpen(node)}
+                  onClick={() => {
+                    if (node.type === "dir") {
+                      const newPath =
+                        currentPath === "/" ? `/${node.name}` : `${currentPath}/${node.name}`;
+                      setCurrentPath(newPath);
+                    }
+                  }}
+                  className="explorer-grid-item"
+                >
+                  <div className="explorer-icon">{icon}</div>
+                  <div className="explorer-filename">{node.name}</div>
+                </div>
+              );
             })}
           </div>
         </div>
-        
+
         {/* Status Bar */}
-        <div style={{ marginTop: '4px', fontSize: '11px', color: 'var(--win-gray-dark)' }}>
-          {files.length} item(s)
-        </div>
+        <div className="explorer-status">{files.length} item(s)</div>
       </div>
     </div>
   );

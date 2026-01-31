@@ -34,35 +34,14 @@ export function MobilePage() {
   const currentWindow = windows.length > 0 ? windows[windows.length - 1] : null;
 
   return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        backgroundColor: "#008080",
-        display: "flex",
-        flexDirection: "column",
-        position: "relative",
-      }}
-    >
+    <div className="mobile-container">
       {/* Calendar/Header */}
-      <div
-        style={{
-          backgroundColor: "var(--win-gray)",
-          borderBottom: "2px solid var(--win-gray-dark)",
-          padding: "8px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <div style={{ fontSize: "12px", fontWeight: "bold" }}>
-          {new Date().toLocaleDateString()}
-        </div>
+      <div className="mobile-header">
+        <div className="mobile-date">{new Date().toLocaleDateString()}</div>
         <button
-          className="win-btn"
+          className="win-btn mobile-menu-button"
           type="button"
           onClick={() => setMenuOpen(!menuOpen)}
-          style={{ padding: "4px 8px" }}
         >
           ☰
         </button>
@@ -70,27 +49,16 @@ export function MobilePage() {
 
       {/* Burger menu */}
       {menuOpen && (
-        <div
-          style={{
-            position: "absolute",
-            top: "40px",
-            right: "8px",
-            backgroundColor: "var(--win-gray)",
-            border: "2px outset var(--win-gray-light)",
-            zIndex: 1000,
-            minWidth: "150px",
-          }}
-        >
+        <div className="mobile-menu">
           {icons.map((icon) => (
             <button
               key={icon.id}
-              className="win-btn"
+              className="win-btn mobile-menu-item"
               type="button"
               onClick={() => {
                 icon.onClick();
                 setMenuOpen(false);
               }}
-              style={{ display: "block", width: "100%", textAlign: "left", padding: "8px" }}
             >
               {icon.icon} {icon.label}
             </button>
@@ -100,16 +68,7 @@ export function MobilePage() {
 
       {/* Icons grid/list */}
       {!currentWindow && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "16px",
-            padding: "16px",
-            flex: 1,
-            overflow: "auto",
-          }}
-        >
+        <div className="mobile-icons-grid">
           {icons.map((icon) => (
             <DesktopIcon
               key={icon.id}
@@ -124,7 +83,7 @@ export function MobilePage() {
 
       {/* Single window in mobile mode */}
       {currentWindow && (
-        <div style={{ flex: 1, position: "relative" }}>
+        <div className="mobile-window-container">
           <WindowManager />
         </div>
       )}

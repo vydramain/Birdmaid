@@ -1,6 +1,6 @@
 /**
  * FP7 Taskbar Tray Test
- * 
+ *
  * Validates that Taskbar Tray displays User Icon and Clock.
  */
 
@@ -12,16 +12,16 @@ describe("Taskbar Tray", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
-    
+
     // Reset and setup mockApi
-    if (mockApi && typeof mockApi.reset === 'function') {
+    if (mockApi && typeof mockApi.reset === "function") {
       mockApi.reset();
       mockApi.setupDefaults();
     }
-    
+
     // Mock API endpoints
-    if (mockApi && typeof mockApi.get === 'function') {
-      mockApi.get('/jam/current', () => fetchMock.json(null));
+    if (mockApi && typeof mockApi.get === "function") {
+      mockApi.get("/jam/current", () => fetchMock.json(null));
     }
   });
 
@@ -30,8 +30,8 @@ describe("Taskbar Tray", () => {
 
     // Wait for taskbar to render
     await waitFor(() => {
-      // Taskbar should be present
-      const taskbar = document.querySelector('[style*="position: fixed"][style*="bottom: 0"]');
+      // Taskbar should be present (now uses CSS class instead of inline styles)
+      const taskbar = document.querySelector(".win-taskbar-fixed");
       expect(taskbar).toBeTruthy();
     });
 
@@ -43,9 +43,10 @@ describe("Taskbar Tray", () => {
 
     // User Icon should be visible
     await waitFor(() => {
-      const userIcon = document.querySelector('[title*="logged"]') || 
-                      document.querySelector('[title*="User"]') ||
-                      document.querySelector('[style*="cursor: pointer"]');
+      const userIcon =
+        document.querySelector('[title*="logged"]') ||
+        document.querySelector('[title*="User"]') ||
+        document.querySelector('[style*="cursor: pointer"]');
       expect(userIcon).toBeTruthy();
     });
   });
@@ -56,9 +57,9 @@ describe("Taskbar Tray", () => {
     await waitFor(() => {
       const clock = screen.getByText(/\d{2}:\d{2}:\d{2}/);
       expect(clock).toBeTruthy();
-      
+
       // Verify format: HH:MM:SS (24-hour format)
-      const timeText = clock.textContent || '';
+      const timeText = clock.textContent || "";
       const timeRegex = /^\d{2}:\d{2}:\d{2}$/;
       expect(timeRegex.test(timeText)).toBe(true);
     });
@@ -75,7 +76,7 @@ describe("Taskbar Tray", () => {
     const initialTime = screen.getByText(/\d{2}:\d{2}:\d{2}/).textContent;
 
     // Wait for clock update (at least 1 second)
-    await new Promise(resolve => setTimeout(resolve, 1100));
+    await new Promise((resolve) => setTimeout(resolve, 1100));
 
     await waitFor(() => {
       const updatedTime = screen.getByText(/\d{2}:\d{2}:\d{2}/).textContent;
@@ -86,14 +87,16 @@ describe("Taskbar Tray", () => {
 
   it("should show logged-in status on User Icon when authenticated", async () => {
     // Mock authenticated user
-    const mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJsb2dpbiI6InRlc3R1c2VyIiwicm9sZSI6Ikd1ZXN0In0.test";
+    const mockToken =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJsb2dpbiI6InRlc3R1c2VyIiwicm9sZSI6Ikd1ZXN0In0.test";
     localStorage.setItem("birdmaid_token", mockToken);
 
     renderAppRoot({ platform: "desktop" });
 
     await waitFor(() => {
-      const userIcon = document.querySelector('[title*="Logged in"]') || 
-                      document.querySelector('[title*="testuser"]');
+      const userIcon =
+        document.querySelector('[title*="Logged in"]') ||
+        document.querySelector('[title*="testuser"]');
       expect(userIcon).toBeTruthy();
     });
   });
@@ -104,8 +107,9 @@ describe("Taskbar Tray", () => {
     renderAppRoot({ platform: "desktop" });
 
     await waitFor(() => {
-      const userIcon = document.querySelector('[title*="Not logged in"]') ||
-                      document.querySelector('[title*="logged"]');
+      const userIcon =
+        document.querySelector('[title*="Not logged in"]') ||
+        document.querySelector('[title*="logged"]');
       expect(userIcon).toBeTruthy();
     });
   });

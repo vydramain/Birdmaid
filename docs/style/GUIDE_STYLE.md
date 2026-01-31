@@ -13,13 +13,39 @@
 
 ```
 front/src/styles/
-  ├── _tokens.scss          # Design tokens (colors, spacing, borders, z-index, typography)
-  ├── _mixins.scss          # Reusable mixins (bevel, window frame, titlebar, buttons)
-  ├── _components.scss       # Component classes (window, taskbar, explorer, icons)
-  ├── _utilities.scss       # Utility classes (layout/text helpers)
-  ├── index.scss            # Main entry point
-  └── guide.md              # Гайд "когда делать mixin vs component class"
+  ├── themes/
+  │   ├── _win95-default.scss        # Default theme (Chicago95 palette)
+  │   ├── _win95-high-contrast.scss  # High contrast theme (accessibility)
+  │   └── _index.scss                # Theme entry point
+  ├── tokens/
+  │   ├── _colors.scss              # Color tokens
+  │   ├── _spacing.scss             # Spacing tokens
+  │   ├── _borders.scss             # Border tokens
+  │   ├── _typography.scss          # Typography tokens
+  │   └── _zindex.scss              # Z-index tokens
+  ├── mixins/
+  │   ├── _bevel.scss               # Bevel mixins (inset/outset)
+  │   ├── _window-frame.scss        # Window frame mixins
+  │   ├── _taskbar.scss             # Taskbar mixins
+  │   └── _icons.scss               # Icon mixins
+  ├── components/
+  │   ├── _window.scss              # Window component classes
+  │   ├── _explorer.scss            # Explorer component classes
+  │   ├── _desktop-icons.scss       # Desktop icons component classes
+  │   ├── _buttons.scss             # Button component classes
+  │   └── _inputs.scss              # Input component classes
+  ├── utilities/
+  │   ├── _layout.scss              # Layout utilities
+  │   └── _text.scss                # Text utilities
+  ├── _tokens.scss                  # Legacy: aggregated tokens (deprecated, use tokens/)
+  ├── _mixins.scss                  # Legacy: aggregated mixins (deprecated, use mixins/)
+  ├── _components.scss              # Legacy: aggregated components (deprecated, use components/)
+  ├── _utilities.scss               # Legacy: aggregated utilities (deprecated, use utilities/)
+  ├── index.scss                    # Main entry point
+  └── guide.md                      # Гайд "когда делать mixin vs component class"
 ```
+
+**Примечание:** Текущая структура использует агрегированные файлы (`_tokens.scss`, `_mixins.scss`, etc.). Целевая структура (tokens/, mixins/, components/, utilities/) будет реализована в процессе миграции. Темы уже реализованы в `themes/`.
 
 ## Обязательные Tokens для FP7
 
@@ -134,6 +160,37 @@ front/src/styles/
 
 **Подробнее:** См. `front/src/styles/guide.md`
 
+## Theme System
+
+Темы реализованы через CSS custom properties (CSS variables) и data-attribute на root элементе. Подробнее см. [THEME_CONTRACT.md](./THEME_CONTRACT.md).
+
+### Quick Start
+
+```typescript
+// Переключение темы
+document.documentElement.setAttribute('data-theme', 'win95-high-contrast');
+
+// Возврат к default
+document.documentElement.setAttribute('data-theme', 'win95-default');
+// или
+document.documentElement.removeAttribute('data-theme');
+```
+
+### Available Themes
+
+- `win95-default` — Default Windows 95 theme (Chicago95 palette)
+- `win95-high-contrast` — High contrast theme (accessibility)
+
+### Usage in SCSS
+
+```scss
+.win-window-base {
+  background: var(--win-gray);
+  color: var(--win-text);
+  border: 1px solid var(--win-gray-dark);
+}
+```
+
 ## Policy: Inline Styles & !important
 
 ### Inline Styles Policy
@@ -176,6 +233,111 @@ Inline styles разрешены **только** для следующих сл
 - ❌ `padding`, `margin` — используй классы/utilities
 - ❌ `boxShadow` — используй mixins (кроме динамических теней для z-index)
 - ❌ `cursor` — используй классы (кроме динамических состояний drag)
+
+### Migration Rules: Inline Styles → SCSS Classes
+
+**Правило 1: Визуальные свойства → Классы**
+
+Все визуальные свойства (цвета, бордеры, шрифты, отступы) должны быть вынесены в SCSS классы:
+
+```typescript
+// ❌ Было (inline style)
+<div style={{
+  color: '#000000',
+  padding: '8px',
+  backgroundColor: '#c0c0c0',
+  border: '1px solid #808080'
+}} />
+
+// ✅ Стало (SCSS класс)
+<div className="win-window-base" />
+```
+
+```scss
+.win-window-base {
+  color: var(--win-text);
+  padding: var(--spacing-md);
+  background: var(--win-gray);
+  border: 1px solid var(--win-gray-dark);
+}
+```
+
+**Правило 2: Повторяющиеся паттерны → Mixins**
+
+Повторяющиеся паттерны (bevels, buttons, window frame) должны быть вынесены в mixins:
+
+```typescript
+// ❌ Было (inline style в каждом компоненте)
+<div style={{
+  borderTop: '1px solid #808080',
+  borderLeft: '1px solid #808080',
+  borderRight: '1px solid #ffffff',
+  borderBottom: '1px solid #ffffff',
+  boxShadow: 'inset 1px 1px 0 #000000'
+}} />
+
+// ✅ Стало (SCSS mixin)
+<div className="input-field" />
+```
+
+```scss
+.input-field {
+  @include bevel-inset;
+}
+```
+
+**Правило 3: Фиксированные структуры → Component Classes**
+
+Фиксированные структуры компонентов (window, taskbar, explorer) должны использовать component classes:
+
+```typescript
+// ❌ Было (inline style для структуры окна)
+<div style={{
+  height: '20px',
+  padding: '2px 4px',
+  background: 'linear-gradient(90deg, #000080 0%, #1084d0 100%)',
+  color: '#ffffff'
+}}>
+  Window Title
+</div>
+
+// ✅ Стало (component class)
+<div className="win-titlebar">
+  Window Title
+</div>
+```
+
+**Правило 4: Одноразовые стили → Utility Classes**
+
+Одноразовые стили (spacing, text alignment) должны использовать utility classes:
+
+```typescript
+// ❌ Было (inline style)
+<div style={{ marginTop: '8px', textAlign: 'center' }} />
+
+// ✅ Стало (utility class)
+<div className="mt-md text-center" />
+```
+
+**Правило 5: Динамические значения → Inline Styles с allow-tag**
+
+Динамические значения (drag/resize positioning, layout calculations) могут оставаться в inline styles с allow-tag:
+
+```typescript
+// ✅ Разрешено (drag/resize)
+// inline-style: allowed (reason: drag/resize)
+<div style={{ 
+  transform: `translate3d(${state.x}px, ${state.y}px, 0)`,
+  zIndex: state.zIndex 
+}} />
+
+// ✅ Разрешено (layout-calc)
+// inline-style: allowed (reason: layout-calc)
+<div style={{ 
+  width: `${viewportWidth - 40}px`,
+  maxHeight: `${viewportHeight - 100}px` 
+}} />
+```
 
 **Примеры:**
 
@@ -318,9 +480,38 @@ node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-st
 # Должен пройти
 ```
 
+## Migration Checklist
+
+### Wave 1: Theme Tokens System (Foundation)
+- [x] Создать структуру `themes/` с `win95-default.scss` и `win95-high-contrast.scss`
+- [x] Определить CSS custom properties для всех обязательных токенов
+- [ ] Обновить `_tokens.scss` для использования CSS variables как fallback
+- [ ] Обновить `_mixins.scss` для использования `var()` вместо SCSS переменных
+- [ ] Обновить `_components.scss` для использования `var()` вместо SCSS переменных
+- [ ] Обновить `index.scss` для импорта themes
+- [ ] Протестировать переключение тем без изменения компонентов
+
+### Wave 2-5: Component Migration (5-10 компонентов за PR)
+- [ ] Мигрировать WindowFrame: inline styles → SCSS классы
+- [ ] Мигрировать WindowManager: inline styles → SCSS классы
+- [ ] Мигрировать DesktopIcon: inline styles → SCSS классы
+- [ ] Мигрировать Explorer: inline styles → SCSS классы
+- [ ] Мигрировать Taskbar: inline styles → SCSS классы
+- [ ] Мигрировать Viewers (ImageViewer, VideoViewer, Notepad, InternetExplorer): inline styles → SCSS классы
+- [ ] Мигрировать MobileShell: inline styles → SCSS классы
+- [ ] Обновить тесты/селекторы для мигрированных компонентов
+- [ ] Проверить: `npm run test` + `npm run lint` зеленые
+
+### Wave 6: Documentation & Examples
+- [x] Создать `THEME_CONTRACT.md` с описанием механизма переключения тем
+- [x] Обновить `GUIDE_STYLE.md` с информацией о темах и правилами миграции
+- [ ] Создать examples: "как добавить новый компонент правильно"
+- [ ] Создать migration guide: "как мигрировать inline styles → SCSS"
+
 ## Ссылки
 
-- **FP7.md:** [Phase 9: Style Guardrails](../fps/FP7.md#phase-9-style-guardrails) — обязательное правило
+- **FP7.md:** [M6: Style System Refactor](../fps/FP7.md#m6-style-system-refactor) — Style System Refactor
+- **THEME_CONTRACT.md:** [Theme contract](./THEME_CONTRACT.md) — Theme system contract
 - **WIN95_TOKENS_RULES.md:** Token rules
 - **WIN95_UI_KIT.md:** Design requirements
 - **front/src/ui/win95/tokens.ts:** TypeScript tokens

@@ -920,6 +920,69 @@ front/__tests__/fp7/
 - [ ] Контент открывается правильно
 - [ ] Тесты: `shell.boot.mobile.test.tsx` зеленые
 
+### M6: Style System Refactor
+
+**Цель:** Миграция всех inline styles в SCSS, создание theme tokens системы, организация стилей как style guide система.
+
+**Outcome:**
+- Все inline styles вынесены в scss/sass/styl (кроме whitelist: drag/resize geometry)
+- Стили организованы как style guide система: tokens + mixins + components + utilities
+- Поддерживаются темы (theme A/B) без изменения компонентов (только смена token-layer)
+- Есть документация "как добавлять стили правильно", иначе команда/агенты снова всё сломают
+
+**Scope IN:**
+- Создание/закрепление структуры `styles/`
+- Введение theme tokens и механизма переключения темы
+- Миграция всех компонентов фронта (desktop + mobile) от inline styles к классам
+- Обновление тестов/селекторов, если они зависели от inline styles
+
+**Scope OUT:**
+- Полная переработка UI/UX логики
+- Перерисовка всего дизайна (мы переносим в классы, не меняя поведение)
+
+**Tasks:**
+
+**Wave 1: Theme Tokens System (Foundation)**
+1. Создать theme tokens структуру в `_tokens.scss`:
+   - Базовые tokens (colors, spacing, typography, z-index) уже есть
+   - Добавить theme layer: `_theme-default.scss`, `_theme-high-contrast.scss`
+   - Реализовать механизм переключения темы (CSS custom properties или SCSS переменные)
+2. Создать документацию по использованию theme tokens
+3. Настроить механизм переключения темы (без изменения компонентов)
+
+**Wave 2-5: Component Migration (5-10 компонентов за PR)**
+4. Миграция компонентов "волнами":
+   - Wave 2: WindowFrame, WindowManager, DesktopIcon (5-7 компонентов)
+   - Wave 3: Explorer, Taskbar, DesktopPage (5-7 компонентов)
+   - Wave 4: Viewers (ImageViewer, VideoViewer, Notepad, InternetExplorer) (4-5 компонентов)
+   - Wave 5: MobileShell, MobilePage, остальные компоненты (5-10 компонентов)
+5. Для каждой волны:
+   - Заменить inline styles на SCSS классы/mixins
+   - Использовать theme tokens вместо хардкода
+   - Обновить тесты/селекторы, если они зависели от inline styles
+   - Проверить: `npm run test` + `npm run lint` зеленые
+
+**Wave 6: Documentation & Examples**
+6. Создать/обновить документацию:
+   - `docs/style/GUIDE_STYLE.md` — обновить с примерами theme tokens
+   - `front/src/styles/guide.md` — обновить с примерами миграции
+   - Создать examples: "как добавить новый компонент правильно"
+7. Создать migration guide: "как мигрировать inline styles → SCSS"
+
+**DoD:**
+- [ ] Репозиторий содержит 0 inline style usages (кроме whitelist с allow-tag)
+- [ ] Линтеры блокируют новые inline styles и `!important`
+- [ ] Есть минимум 2 темы (например default + high-contrast) переключаемые без перезаливки кода
+- [ ] Документация + examples готовы
+- [ ] Все тесты зеленые (`npm run test`)
+- [ ] Все линтеры зеленые (`npm run lint`)
+- [ ] Coverage не упал (проверить после миграции)
+
+**Risks:**
+- Миграция может сломать визуальное поведение (mitigation: тесты + визуальная проверка)
+- Большой объем работы (289 inline style usages в 27 файлах) (mitigation: волновая миграция, 5-10 компонентов за PR)
+- Тесты могут зависеть от inline styles (mitigation: обновить селекторы тестов)
+
 ## Risks & Mitigations
 
 | # | Risk | Probability | Impact | Mitigation | Status |
@@ -934,6 +997,9 @@ front/__tests__/fp7/
 | 8 | S3 провайдер может измениться | Low | Low | Абстракция S3 Service позволяет менять провайдера | open |
 | 9 | Роли Guest/Participant/Organizer могут быть недостаточными | Medium | Low | Расширяемость заложена через интерфейсы | open |
 | 10 | Полный reset тестов может скрыть регрессии | Medium | Medium | Сохранить старые тесты как legacy, постепенно мигрировать | open |
+| 11 | Style System Refactor может сломать визуальное поведение | Medium | High | Тесты + визуальная проверка, волновая миграция (5-10 компонентов за PR) | open |
+| 12 | Большой объем миграции (289 inline styles в 27 файлах) | High | Medium | Волновая миграция, 5-10 компонентов за PR, постепенная проверка | open |
+| 13 | Тесты могут зависеть от inline styles | Medium | Medium | Обновить селекторы тестов после миграции компонентов | open |
 
 ## Evidence Checklist
 
@@ -964,6 +1030,16 @@ front/__tests__/fp7/
 - [ ] **CUTLIST:** Список удаленного кода задокументирован
 - [ ] **Rewrite Checklist:** Чеклист переписывания выполнен
 - [ ] **Style Guardrails:** Документация и guardrails настроены
+- [ ] **Style System Refactor:** Документация по theme tokens и миграции готова
+
+### Style System Refactor Proof
+
+- [ ] **Inline Styles:** 0 inline style usages (кроме whitelist с allow-tag)
+- [ ] **Linters:** Линтеры блокируют новые inline styles и `!important`
+- [ ] **Theme System:** Минимум 2 темы (default + high-contrast) переключаемые без перезаливки кода
+- [ ] **Documentation:** Документация + examples готовы ("как добавлять стили правильно")
+- [ ] **Tests:** Все тесты зеленые после миграции
+- [ ] **Coverage:** Coverage не упал после миграции
 
 ## Cutline / Migration Notes
 
@@ -1088,6 +1164,60 @@ front/__tests__/fp7/
 - [ ] pre-commit реально падает на `!important`
 - [ ] pre-commit реально падает на inline style без allow-tag
 - [ ] Док с правилами существует и однозначен
+
+### Phase 10: Style System Refactor (M6)
+
+**Wave 1: Theme Tokens System (Foundation)**
+- [ ] Создать theme tokens структуру (`_theme-default.scss`, `_theme-high-contrast.scss`)
+- [ ] Реализовать механизм переключения темы (CSS custom properties или SCSS переменные)
+- [ ] Создать документацию по использованию theme tokens
+
+**Wave 2: Component Migration (WindowFrame, WindowManager, DesktopIcon, etc.)**
+- [ ] Мигрировать WindowFrame: inline styles → SCSS классы
+- [ ] Мигрировать WindowManager: inline styles → SCSS классы
+- [ ] Мигрировать DesktopIcon: inline styles → SCSS классы
+- [ ] Мигрировать DesktopPage: inline styles → SCSS классы
+- [ ] Мигрировать остальные компоненты из Wave 2 (5-7 компонентов)
+- [ ] Обновить тесты/селекторы для мигрированных компонентов
+- [ ] Проверить: `npm run test` + `npm run lint` зеленые
+
+**Wave 3: Component Migration (Explorer, Taskbar, DesktopPage)**
+- [ ] Мигрировать Explorer: inline styles → SCSS классы
+- [ ] Мигрировать Taskbar: inline styles → SCSS классы
+- [ ] Мигрировать остальные компоненты из Wave 3 (5-7 компонентов)
+- [ ] Обновить тесты/селекторы для мигрированных компонентов
+- [ ] Проверить: `npm run test` + `npm run lint` зеленые
+
+**Wave 4: Component Migration (Viewers)**
+- [ ] Мигрировать ImageViewer: inline styles → SCSS классы
+- [ ] Мигрировать VideoViewer: inline styles → SCSS классы
+- [ ] Мигрировать Notepad: inline styles → SCSS классы
+- [ ] Мигрировать InternetExplorer: inline styles → SCSS классы
+- [ ] Мигрировать остальные компоненты из Wave 4 (4-5 компонентов)
+- [ ] Обновить тесты/селекторы для мигрированных компонентов
+- [ ] Проверить: `npm run test` + `npm run lint` зеленые
+
+**Wave 5: Component Migration (MobileShell, MobilePage, остальные)**
+- [ ] Мигрировать MobileShell: inline styles → SCSS классы
+- [ ] Мигрировать MobilePage: inline styles → SCSS классы
+- [ ] Мигрировать остальные компоненты из Wave 5 (5-10 компонентов)
+- [ ] Обновить тесты/селекторы для мигрированных компонентов
+- [ ] Проверить: `npm run test` + `npm run lint` зеленые
+
+**Wave 6: Documentation & Examples**
+- [ ] Обновить `docs/style/GUIDE_STYLE.md` с примерами theme tokens
+- [ ] Обновить `front/src/styles/guide.md` с примерами миграции
+- [ ] Создать examples: "как добавить новый компонент правильно"
+- [ ] Создать migration guide: "как мигрировать inline styles → SCSS"
+
+**DoD:**
+- [ ] Репозиторий содержит 0 inline style usages (кроме whitelist с allow-tag)
+- [ ] Линтеры блокируют новые inline styles и `!important`
+- [ ] Есть минимум 2 темы (default + high-contrast) переключаемые без перезаливки кода
+- [ ] Документация + examples готовы
+- [ ] Все тесты зеленые (`npm run test`)
+- [ ] Все линтеры зеленые (`npm run lint`)
+- [ ] Coverage не упал (проверить после миграции)
 
 ---
 
@@ -1214,4 +1344,33 @@ front/__tests__/fp7/
 - Никаких !important (правильная специфичность селекторов)
 - Минимальные изменения, строгий контракт, "tests-red → implement → tests-green"
 
-**End of FP7 v2.3 Contract Spec**
+### Version 2.4 (2026-01-22)
+
+**Добавлено:**
+
+1. **Style System Refactor (M6):**
+   - Добавлен milestone M6: Style System Refactor в Plan
+   - **Outcome:** Все inline styles вынесены в SCSS (кроме whitelist), стили организованы как style guide система (tokens + mixins + components + utilities), поддерживаются темы (theme A/B) без изменения компонентов
+   - **Scope IN:** Создание/закрепление структуры `styles/`, введение theme tokens и механизма переключения темы, миграция всех компонентов фронта от inline styles к классам, обновление тестов/селекторов
+   - **Scope OUT:** Полная переработка UI/UX логики, перерисовка всего дизайна
+   - **Tasks:** Волновая миграция (5-10 компонентов за PR):
+     - Wave 1: Theme Tokens System (Foundation)
+     - Wave 2-5: Component Migration (WindowFrame, Explorer, Viewers, MobileShell, etc.)
+     - Wave 6: Documentation & Examples
+   - **DoD:** 0 inline style usages (кроме whitelist), линтеры блокируют новые inline styles и `!important`, минимум 2 темы переключаемые без перезаливки кода, документация + examples готовы
+   - **Раздел изменён:** Plan → M6: Style System Refactor, Evidence Checklist → Style System Refactor Proof, Appendix → Phase 10: Style System Refactor
+
+2. **Risks & Mitigations:**
+   - Добавлены риски для Style System Refactor:
+     - Risk #11: Style System Refactor может сломать визуальное поведение (mitigation: тесты + визуальная проверка, волновая миграция)
+     - Risk #12: Большой объем миграции (289 inline styles в 27 файлах) (mitigation: волновая миграция, 5-10 компонентов за PR)
+     - Risk #13: Тесты могут зависеть от inline styles (mitigation: обновить селекторы тестов после миграции)
+   - **Раздел изменён:** Risks & Mitigations
+
+**Почему:**
+- Style System Refactor необходим для обеспечения единообразного стиля системы и предотвращения возврата к inline styles
+- Волновая миграция (5-10 компонентов за PR) позволяет постепенно переносить стили без риска сломать весь проект
+- Theme tokens система обеспечивает поддержку тем без изменения компонентов
+- Документация и examples предотвращают повторение ошибок командой/агентами
+
+**End of FP7 v2.4 Contract Spec**

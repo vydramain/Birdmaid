@@ -32,7 +32,7 @@ export function ImageViewer({ content }: ImageViewerProps) {
         }
 
         // If VFS node provided, create blob URL
-        if (content?.node && content.node.type === 'file') {
+        if (content?.node && content.node.type === "file") {
           const fileContent = content.node.content;
           if (fileContent instanceof Blob) {
             const blobUrl = URL.createObjectURL(fileContent);
@@ -41,7 +41,7 @@ export function ImageViewer({ content }: ImageViewerProps) {
             return () => {
               URL.revokeObjectURL(blobUrl);
             };
-          } else if (typeof fileContent === 'string') {
+          } else if (typeof fileContent === "string") {
             // If it's a string (URL or base64), use it directly
             setImageSrc(fileContent);
             setLoading(false);
@@ -72,63 +72,26 @@ export function ImageViewer({ content }: ImageViewerProps) {
 
   if (loading) {
     return (
-      <div style={{ 
-        width: "100%", 
-        height: "100%", 
-        display: "flex", 
-        justifyContent: "center", 
-        alignItems: "center",
-        backgroundColor: "var(--win-white)"
-      }}>
+      <div className="viewer-loading">
         <HourglassLoader />
       </div>
     );
   }
 
   if (error) {
-    return (
-      <div style={{ 
-        padding: "20px", 
-        color: "var(--win-red)",
-        backgroundColor: "var(--win-white)"
-      }}>
-        Error: {error}
-      </div>
-    );
+    return <div className="viewer-error">Error: {error}</div>;
   }
 
   if (!imageSrc) {
-    return (
-      <div style={{ 
-        padding: "20px", 
-        color: "var(--win-gray-dark)",
-        backgroundColor: "var(--win-white)"
-      }}>
-        No image to display
-      </div>
-    );
+    return <div className="viewer-empty">No image to display</div>;
   }
 
   return (
-    <div style={{ 
-      width: "100%", 
-      height: "100%", 
-      display: "flex", 
-      justifyContent: "center", 
-      alignItems: "center",
-      backgroundColor: "var(--win-gray)",
-      overflow: "auto",
-      padding: "8px"
-    }}>
+    <div className="viewer-image-container">
       <img
         src={imageSrc}
         alt={content?.node?.name || "Image"}
-        style={{
-          maxWidth: "100%",
-          maxHeight: "100%",
-          objectFit: "contain", // Fit-to-window: maintain aspect ratio, fit within container
-          imageRendering: "auto"
-        }}
+        className="viewer-image"
         onLoad={() => setLoading(false)}
         onError={() => {
           setError("Failed to load image");

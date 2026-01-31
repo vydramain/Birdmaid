@@ -15,7 +15,8 @@ export function WindowManager() {
   return (
     <>
       {isDragging && (
-        <div 
+        <div
+          // inline-style: allowed (reason: drag/resize)
           style={{
             position: "fixed",
             top: 0,
@@ -24,25 +25,25 @@ export function WindowManager() {
             bottom: 0,
             zIndex: 9999,
             backgroundColor: "transparent",
-            pointerEvents: "auto"
-          }} 
+            pointerEvents: "auto",
+          }}
         />
       )}
       {windows.map((win) => {
         const app = appRegistry.get(win.appId);
         let ContentComponent = null;
-        
+
         if (app) {
           ContentComponent = app.component;
         }
 
-        const isGame = win.appId === 'executor';
+        const isGame = win.appId === "executor";
         const contentProps = { ...win.content, onClose: () => closeWindow(win.id) };
 
         return (
-          <WindowFrame 
-            key={win.id} 
-            id={win.id} 
+          <WindowFrame
+            key={win.id}
+            id={win.id}
             title={win.title}
             onClose={() => {
               if (win.appId === "landing") {
@@ -51,8 +52,16 @@ export function WindowManager() {
               closeWindow(win.id);
             }}
           >
-            <div style={{ padding: isGame ? 0 : '12px', height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              {ContentComponent ? <ContentComponent {...contentProps} /> : <div>Unknown App: {win.appId}</div>}
+            <div
+              className={
+                isGame ? "win-content-wrapper win-content-wrapper-game" : "win-content-wrapper"
+              }
+            >
+              {ContentComponent ? (
+                <ContentComponent {...contentProps} />
+              ) : (
+                <div>Unknown App: {win.appId}</div>
+              )}
             </div>
           </WindowFrame>
         );

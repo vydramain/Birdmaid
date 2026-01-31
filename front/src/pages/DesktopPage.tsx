@@ -19,38 +19,38 @@ export function DesktopPage() {
   // VFS Sync - Desktop Icons читаются строго из /Disk C/desktop
   useEffect(() => {
     const updateIcons = () => {
-      const nodes = vfs.readDir('/Disk C/desktop');
-      const newIcons = nodes.map(node => {
-        let icon = '📄';
-        let target = '';
+      const nodes = vfs.readDir("/Disk C/desktop");
+      const newIcons = nodes.map((node) => {
+        let icon = "📄";
+        let target = "";
         let label = node.name;
 
-        if (node.name.endsWith('.url')) {
+        if (node.name.endsWith(".url")) {
           // Parse link file
           try {
             const data = JSON.parse(node.content as string);
-            icon = data.icon || '🔗';
+            icon = data.icon || "🔗";
             target = data.target;
             label = data.label || node.name;
           } catch (e) {
-            console.error('Failed to parse link:', node.name);
+            console.error("Failed to parse link:", node.name);
           }
-        } else if (node.name.endsWith('.txt') || node.name.endsWith('.md')) {
-          icon = '📝';
+        } else if (node.name.endsWith(".txt") || node.name.endsWith(".md")) {
+          icon = "📝";
         }
 
         return {
           id: node.name,
           label,
           icon,
-          target
+          target,
         };
       });
       setIcons(newIcons);
     };
 
     updateIcons();
-    return vfs.subscribe('/Disk C/desktop', updateIcons);
+    return vfs.subscribe("/Disk C/desktop", updateIcons);
   }, []);
 
   useEffect(() => {
@@ -68,10 +68,10 @@ export function DesktopPage() {
       openWindow(icon.target as any);
     } else {
       // Regular file - find node and open with appropriate viewer
-      const nodes = vfs.readDir('/Disk C/desktop');
-      const node = nodes.find(n => n.name === icon.id);
-      
-      if (node && node.type === 'file') {
+      const nodes = vfs.readDir("/Disk C/desktop");
+      const node = nodes.find((n) => n.name === icon.id);
+
+      if (node && node.type === "file") {
         // Resolve app for file using AppRegistry
         const appId = appRegistry.resolveAppForFile(node.name);
         if (appId) {
@@ -80,49 +80,26 @@ export function DesktopPage() {
           openWindow(appId, {
             content: {
               node: node,
-              path: fullPath
+              path: fullPath,
             },
-            title: node.name
+            title: node.name,
           });
         } else {
           console.warn(`No app registered for file: ${node.name}`);
           // Fallback to explorer
-          openWindow('explorer');
+          openWindow("explorer");
         }
       } else {
         // Not a file or not found - fallback to explorer
-        openWindow('explorer');
+        openWindow("explorer");
       }
     }
   };
 
   return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        backgroundColor: "#008080",
-        backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px)",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
+    <div className="desktop-background">
       {/* Desktop icons grid */}
-      <div
-        data-testid="desktop-icons"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
-          gap: "16px",
-          padding: "16px",
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 1,
-        }}
-      >
+      <div data-testid="desktop-icons" className="desktop-icons-grid">
         {icons.map((icon) => (
           <DesktopIcon
             key={icon.id}

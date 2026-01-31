@@ -9,10 +9,10 @@
   --win-blue: #000080;
   --win-blue-light: #1084d0;
   --win-teal: #008080;
-  --win-white: #ffffff;
-  --win-black: #000000;
-  --win-red: #ff0000;
-  --win-yellow: #ffff00;
+  --win-white: #fff;
+  --win-black: #000;
+  --win-red: #f00;
+  --win-yellow: #ff0;
 }
 
 * {
@@ -21,16 +21,20 @@
 
 body {
   margin: 0;
-  font-family: "MS Sans Serif", "Tahoma", sans-serif;
+  font-family: "MS Sans Serif", Tahoma, sans-serif;
   color: var(--win-black);
   background-color: var(--win-teal);
+
   /* Classic Dithered Background */
   background-image:
-    linear-gradient(45deg, #000000 25%, transparent 25%, transparent 75%, #000000 75%, #000000),
-    linear-gradient(45deg, #000000 25%, transparent 25%, transparent 75%, #000000 75%, #000000);
+    linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000),
+    linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000);
   background-size: 2px 2px;
-  background-position: 0 0, 1px 1px;
+  background-position:
+    0 0,
+    1px 1px;
   background-blend-mode: overlay;
+
   /* Use pixel font for "retro" feel if MS Sans Serif missing, but prefer system fonts for readability */
   -webkit-font-smoothing: none;
 }
@@ -50,23 +54,23 @@ button {
 
 .win-window-base {
   background: var(--win-gray);
+
   /* Classic 3D Window Border */
-  box-shadow: 
-    inset 1px 1px var(--win-gray-light), 
-    inset -1px -1px var(--win-gray-darker),
-    1px 1px 0 0 var(--win-black); /* Outer thin black line */
+
+  /* Outer thin black line */
   border-top: 1px solid var(--win-gray-light);
   border-left: 1px solid var(--win-gray-light);
   border-right: 1px solid var(--win-gray-dark);
   border-bottom: 1px solid var(--win-gray-dark);
+
   /* Outer border handled by wrapper or shadow for simplicity */
   border: 2px solid var(--win-gray); /* Reset */
-  border-top-color: var(--win-gray-light);
-  border-left-color: var(--win-gray-light);
-  border-right-color: var(--win-gray-dark);
-  border-bottom-color: var(--win-gray-dark);
-  box-shadow: 1px 1px 0 0 var(--win-black), inset 1px 1px var(--win-white), inset -1px -1px var(--win-gray-dark);
-  
+  border-color: var(--win-gray-light) var(--win-gray-dark) var(--win-gray-dark)
+    var(--win-gray-light);
+  box-shadow:
+    1px 1px 0 0 var(--win-black),
+    inset 1px 1px var(--win-white),
+    inset -1px -1px var(--win-gray-dark);
   display: flex;
   flex-direction: column;
 }
@@ -84,7 +88,10 @@ button {
   width: auto;
   height: auto;
   min-height: auto;
-  box-shadow: 2px 2px 0 0 var(--win-black), inset 1px 1px var(--win-white), inset -1px -1px var(--win-gray-dark);
+  box-shadow:
+    2px 2px 0 0 var(--win-black),
+    inset 1px 1px var(--win-white),
+    inset -1px -1px var(--win-gray-dark);
 }
 
 .win-titlebar {
@@ -117,12 +124,10 @@ button {
   background: var(--win-gray);
   color: var(--win-black);
   border: 1px solid var(--win-black); /* Fallback */
-  border-top-color: var(--win-white);
-  border-left-color: var(--win-white);
-  border-right-color: var(--win-black);
-  border-bottom-color: var(--win-black);
-  box-shadow: 1px 1px 0 var(--win-black), inset -1px -1px 0 var(--win-gray-dark);
-  
+  border-color: var(--win-white) var(--win-black) var(--win-black) var(--win-white);
+  box-shadow:
+    1px 1px 0 var(--win-black),
+    inset -1px -1px 0 var(--win-gray-dark);
   padding: 4px 12px;
   font-size: 11px;
   cursor: pointer;
@@ -131,10 +136,7 @@ button {
 }
 
 .win-btn:active {
-  border-top-color: var(--win-black);
-  border-left-color: var(--win-black);
-  border-right-color: var(--win-white);
-  border-bottom-color: var(--win-white);
+  border-color: var(--win-black) var(--win-white) var(--win-white) var(--win-black);
   box-shadow: none; /* Flatten */
   transform: translate(1px, 1px);
 }
@@ -150,10 +152,7 @@ button {
 .win-inset {
   background: var(--win-white);
   border: 1px solid var(--win-gray-dark);
-  border-top-color: var(--win-gray-dark);
-  border-left-color: var(--win-gray-dark);
-  border-right-color: var(--win-white);
-  border-bottom-color: var(--win-white);
+  border-color: var(--win-gray-dark) var(--win-white) var(--win-white) var(--win-gray-dark);
   box-shadow: inset 1px 1px 0 var(--win-black);
   padding: 2px;
 }
@@ -161,10 +160,7 @@ button {
 .win-outset {
   background: var(--win-gray);
   border: 1px solid var(--win-white);
-  border-top-color: var(--win-white);
-  border-left-color: var(--win-white);
-  border-right-color: var(--win-gray-dark);
-  border-bottom-color: var(--win-gray-dark);
+  border-color: var(--win-white) var(--win-gray-dark) var(--win-gray-dark) var(--win-white);
   box-shadow: 1px 1px 0 var(--win-black);
   padding: 6px;
 }
@@ -229,7 +225,7 @@ button {
 
 /* --- Responsive --- */
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
   .win-window {
     min-height: 100vh;
     border: none; /* Full screen on mobile */

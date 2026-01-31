@@ -1,0 +1,18 @@
+/**
+ * Windows 95 UI Themes - Main Entry Point
+ * 
+ * Imports all theme definitions.
+ * 
+ * Usage:
+ *   @import '@/styles/themes';
+ * 
+ * Themes:
+ *   - win95-default: Default Windows 95 theme (Chicago95 palette)
+ *   - win95-high-contrast: High contrast theme (accessibility)
+ * 
+ * References:
+ *   - docs/style/THEME_CONTRACT.md: Theme contract
+ */
+
+@import "./win95-default";
+@import "./win95-high-contrast";

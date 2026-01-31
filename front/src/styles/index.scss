@@ -10,6 +10,7 @@
  *   import '@/styles';
  * 
  * Structure:
+ *   - themes/: Theme definitions (CSS custom properties)
  *   - _tokens.scss: Design tokens (colors, spacing, typography, z-index)
  *   - _mixins.scss: Reusable mixins (bevels, buttons, window frame)
  *   - _components.scss: Component classes (window, taskbar, explorer, icons)
@@ -17,13 +18,18 @@
  * 
  * References:
  *   - docs/style/GUIDE_STYLE.md: Style guide rules
+ *   - docs/style/THEME_CONTRACT.md: Theme contract
  *   - front/src/ui/win95/tokens.ts: TypeScript tokens (mirror)
  */
 
-@import './tokens';
-@import './mixins';
-@import './components';
-@import './utilities';
+// Import themes first (defines CSS custom properties)
+@import "./themes";
+
+// Import tokens, mixins, components, utilities (use CSS variables from themes)
+@import "./tokens";
+@import "./mixins";
+@import "./components";
+@import "./utilities";
 
 // ============================================================================
 // Global Base Styles
@@ -35,9 +41,9 @@
 
 body {
   margin: 0;
-  font-family: $font-family;
-  color: $win-text;
-  background-color: $win-teal;
+  font-family: var(--font-family, "MS Sans Serif", "Tahoma", sans-serif);
+  color: var(--win-text, #000);
+  background-color: var(--win-teal, #008080);
   -webkit-font-smoothing: none;
 }
 

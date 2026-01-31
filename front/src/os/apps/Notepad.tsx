@@ -32,7 +32,7 @@ export function Notepad({ content }: NotepadProps) {
       try {
         // Check if editable (Organizer only)
         const userRole = vfs.getUserRole();
-        setIsEditable(userRole === 'Organizer');
+        setIsEditable(userRole === "Organizer");
 
         // If direct text provided, use it
         if (content?.text) {
@@ -43,14 +43,14 @@ export function Notepad({ content }: NotepadProps) {
         }
 
         // If VFS node provided, read content
-        if (content?.node && content.node.type === 'file') {
+        if (content?.node && content.node.type === "file") {
           const fileContent = content.node.content;
           const fileName = content.node.name;
-          
-          // Check if it's markdown
-          setIsMarkdown(fileName.endsWith('.md'));
 
-          if (typeof fileContent === 'string') {
+          // Check if it's markdown
+          setIsMarkdown(fileName.endsWith(".md"));
+
+          if (typeof fileContent === "string") {
             setText(fileContent);
             setLoading(false);
             return;
@@ -67,13 +67,13 @@ export function Notepad({ content }: NotepadProps) {
         if (content?.path) {
           try {
             const node = vfs.stat(content.path);
-            if (node && node.type === 'file') {
+            if (node && node.type === "file") {
               const fileContent = vfs.readFile(content.path);
               const fileName = node.name;
-              
-              setIsMarkdown(fileName.endsWith('.md'));
 
-              if (typeof fileContent === 'string') {
+              setIsMarkdown(fileName.endsWith(".md"));
+
+              if (typeof fileContent === "string") {
                 setText(fileContent);
               } else if (fileContent instanceof Blob) {
                 const textContent = await fileContent.text();
@@ -107,67 +107,38 @@ export function Notepad({ content }: NotepadProps) {
     // Very basic markdown rendering - only safe elements
     // No script execution, no dangerous HTML
     let html = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`(.*?)`/g, '<code>$1</code>')
-      .replace(/\n/g, '<br>');
-    
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/^# (.*$)/gim, "<h1>$1</h1>")
+      .replace(/^## (.*$)/gim, "<h2>$1</h2>")
+      .replace(/^### (.*$)/gim, "<h3>$1</h3>")
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      .replace(/`(.*?)`/g, "<code>$1</code>")
+      .replace(/\n/g, "<br>");
+
     return html;
   };
 
   if (loading) {
     return (
-      <div style={{ 
-        width: "100%", 
-        height: "100%", 
-        display: "flex", 
-        justifyContent: "center", 
-        alignItems: "center",
-        backgroundColor: "var(--win-white)"
-      }}>
+      <div className="viewer-loading">
         <HourglassLoader />
       </div>
     );
   }
 
   if (error) {
-    return (
-      <div style={{ 
-        padding: "20px", 
-        color: "var(--win-red)",
-        backgroundColor: "var(--win-white)"
-      }}>
-        Error: {error}
-      </div>
-    );
+    return <div className="viewer-error">Error: {error}</div>;
   }
 
   return (
-    <div style={{ 
-      width: "100%", 
-      height: "100%", 
-      display: "flex", 
-      flexDirection: "column",
-      backgroundColor: "var(--win-white)"
-    }}>
+    <div className="notepad-container">
       {isMarkdown && !isEditable ? (
         // Markdown preview (read-only)
         <div
-          style={{
-            flex: 1,
-            padding: "8px",
-            overflow: "auto",
-            fontFamily: "var(--win-font)",
-            fontSize: "12px",
-            lineHeight: "1.5",
-            color: "var(--win-text)"
-          }}
+          className="notepad-preview"
           dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
         />
       ) : (
@@ -176,19 +147,7 @@ export function Notepad({ content }: NotepadProps) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           readOnly={!isEditable}
-          style={{
-            flex: 1,
-            padding: "8px",
-            border: "none",
-            outline: "none",
-            fontFamily: "var(--win-font-mono, 'Courier New', monospace)",
-            fontSize: "12px",
-            lineHeight: "1.5",
-            color: "var(--win-text)",
-            backgroundColor: "var(--win-white)",
-            resize: "none",
-            overflow: "auto"
-          }}
+          className="notepad-textarea"
         />
       )}
     </div>

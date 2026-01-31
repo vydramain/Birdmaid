@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, ReactNode } from "react";
+import React, { useRef, useEffect, useState, ReactNode } from "react";
 import { windowStore } from "./WindowStore";
 import { useWindowRegistry } from "./WindowRegistry";
 
@@ -12,7 +12,7 @@ type WindowFrameProps = {
 export function WindowFrame({ id, title, children, onClose }: WindowFrameProps) {
   const { focusWindow, closeWindow } = useWindowRegistry();
   const windowRef = useRef<HTMLDivElement>(null);
-  
+
   // 1. Subscribe to React State (Registry/Meta)
   const [state, setState] = useState(() => windowStore.get(id));
 
@@ -37,7 +37,7 @@ export function WindowFrame({ id, title, children, onClose }: WindowFrameProps) 
     if (!(e.target as HTMLElement).closest(".win-titlebar")) return;
     if ((e.target as HTMLElement).closest(".win-window-controls")) return;
 
-    e.preventDefault(); 
+    e.preventDefault();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     focusWindow(id);
     windowStore.startDrag(id, e.clientX, e.clientY);
@@ -67,26 +67,18 @@ export function WindowFrame({ id, title, children, onClose }: WindowFrameProps) 
   return (
     <div
       ref={windowRef}
-      className="win-window-base win-window"
+      className="win-window-base win-window win-window-frame"
+      // inline-style: allowed (reason: drag/resize)
       style={{
-        position: "absolute",
-        left: 0, 
-        top: 0,
         transform: `translate3d(${state.x}px, ${state.y}px, 0)`,
         zIndex: state.zIndex,
         width: state.width,
-        display: "flex",
-        flexDirection: "column",
-        minWidth: "300px",
-        maxWidth: "90vw",
-        maxHeight: "90vh",
         boxShadow: state.zIndex > 10 ? "4px 4px 10px rgba(0,0,0,0.5)" : undefined,
       }}
       onMouseDown={() => focusWindow(id)}
     >
       <header
-        className="win-titlebar"
-        style={{ cursor: state.isDragging ? "grabbing" : "grab", touchAction: "none" }}
+        className={`win-titlebar ${state.isDragging ? "win-titlebar-dragging" : ""}`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -96,19 +88,12 @@ export function WindowFrame({ id, title, children, onClose }: WindowFrameProps) 
           <span>{title}</span>
         </div>
         <div className="win-window-controls">
-          <button 
-            className="win-btn" 
-            type="button" 
-            onClick={handleClose}
-            aria-label="Close window"
-          >
+          <button className="win-btn" type="button" onClick={handleClose} aria-label="Close window">
             ×
           </button>
         </div>
       </header>
-      <div className="content" style={{ padding: "0", flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-        {children}
-      </div>
+      <div className="win-window-content">{children}</div>
     </div>
   );
 }
