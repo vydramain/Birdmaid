@@ -398,6 +398,19 @@ Inline styles разрешены **только** для следующих сл
 **Проверка:**
 - Stylelint правило `declaration-no-important: true` блокирует `!important` в CSS/SCSS
 - Pre-commit hook проверяет наличие `!important` перед коммитом
+- CI проверяет все стили при push
+
+### Style Guardrails Summary
+
+**Запрещено:**
+- ❌ `!important` — используй правильную специфичность селекторов
+- ❌ Абсолютные единицы (`px`, `pt`, `pc`, `in`, `cm`, `mm`, `q`, `Q`) — используй относительные единицы (`rem`, `em`, `%`, `vh`, `vw`, `vmin`, `vmax`, `ch`, `ex`)
+- ❌ Inline styles для визуальных свойств (без allow-tag) — используй классы/SCSS
+
+**Разрешено:**
+- ✅ Относительные единицы (`rem`, `em`, `%`, `vh`, `vw`, `vmin`, `vmax`, `ch`, `ex`)
+- ✅ Unitless `0` (например, `margin: 0`)
+- ✅ Inline styles с allow-tag для drag/resize/layout-calc/performance случаев
 
 ## Правила
 
@@ -415,6 +428,121 @@ Inline styles разрешены **только** для следующих сл
 1. Заменить inline styles на mixins
 2. Заменить повторяющиеся паттерны на component classes
 3. Использовать utility classes для одноразовых стилей
+
+## Unit Policy: Запрет абсолютных единиц
+
+**Общее правило:** Все абсолютные единицы измерения запрещены в стилях. Stylelint блокирует коммиты с абсолютными единицами.
+
+### Запрещённые единицы (absolute units)
+
+❌ **Запрещено:**
+- `px` (pixels)
+- `pt` (points)
+- `pc` (picas)
+- `in` (inches)
+- `cm` (centimeters)
+- `mm` (millimeters)
+- `q` / `Q` (quarter-millimeters)
+
+**Почему запрещены:**
+- Абсолютные единицы не масштабируются с пользовательскими настройками браузера
+- Ухудшают доступность для пользователей с увеличенным размером шрифта
+- Не адаптируются к различным размерам экранов
+
+### Разрешённые единицы (relative units)
+
+✅ **Разрешено:**
+- `rem` — для typography, spacing, borders, размеров элементов
+- `em` — для относительных размеров внутри компонентов
+- `%` — для относительных размеров внутри контейнера
+- `vh` / `vw` — для viewport-dependent размеров
+- `vmin` / `vmax` — для минимальных/максимальных размеров viewport
+- `ch` — для ширины символов (typography)
+- `ex` — для высоты символов (typography)
+
+**Unitless `0`:**
+- Разрешено использовать `0` без единиц измерения (например, `margin: 0`, `padding: 0`)
+- Запрещено использовать `0px`, `0pt` и т.д. — используй просто `0`
+
+### Когда использовать какие единицы
+
+1. **rem** — для typography, spacing, borders, размеров элементов
+   - Root font-size: 16px (если не задано — зафиксируй явно на app root)
+   - Conversion: `rem = px / 16`
+   - Округление: до 3 знаков (пример: 11px → 0.688rem)
+
+2. **vh/vw** — для viewport-dependent размеров
+   - Fullscreen overlays / shell root: `width: 100vw`, `height: 100vh`
+   - Окна: `max-width: calc(100vw - 2rem)` и т.п. (где уместно)
+
+3. **%** — для относительных размеров внутри контейнера
+   - Используй где уместно (например, `width: 100%` внутри контейнера)
+
+4. **em** — для относительных размеров внутри компонентов
+   - Используй когда размер должен зависеть от размера шрифта родителя
+
+5. **ch/ex** — для typography
+   - Используй для точного позиционирования текста относительно символов
+
+### Conversion Table
+
+Таблица конвертации стандартных значений:
+
+| px | rem | Примечание |
+|----|-----|------------|
+| 1px | 0.0625rem | Hairline border |
+| 2px | 0.125rem | Minimal spacing |
+| 4px | 0.25rem | Small spacing |
+| 6px | 0.375rem | - |
+| 8px | 0.5rem | Medium spacing |
+| 10px | 0.625rem | Small font |
+| 11px | 0.688rem | Normal font (Win95) |
+| 12px | 0.75rem | Medium font |
+| 14px | 0.875rem | Large font |
+| 16px | 1rem | Base unit, XL spacing |
+| 18px | 1.125rem | Window controls |
+| 20px | 1.25rem | Titlebar height |
+| 24px | 1.5rem | Icon size |
+| 30px | 1.875rem | - |
+| 32px | 2rem | - |
+| 40px | 2.5rem | Taskbar height |
+| 48px | 3rem | Desktop icon size |
+| 64px | 4rem | - |
+| 80px | 5rem | - |
+| 120px | 7.5rem | - |
+| 150px | 9.375rem | - |
+| 200px | 12.5rem | - |
+| 300px | 18.75rem | - |
+| 400px | 25rem | - |
+| 1440px | 90rem | Max window width |
+
+### Проверка
+
+Stylelint автоматически проверяет отсутствие абсолютных единиц:
+- Pre-commit hook блокирует коммиты с абсолютными единицами (`px`, `pt`, `pc`, `in`, `cm`, `mm`, `q`, `Q`)
+- CI проверяет все стили при push
+- Правило применяется ко всем CSS/SCSS/SASS/STYL файлам
+- Проверка работает внутри `calc()` и `var()` выражений
+
+**Команда проверки:**
+```bash
+npx stylelint "front/**/*.{css,scss,sass,styl}" --max-warnings=0
+```
+
+**Примеры ошибок:**
+```css
+/* ❌ Запрещено */
+width: 10px;
+height: 2cm;
+margin: 1pt;
+padding: calc(10px + 2rem); /* px внутри calc() тоже запрещено */
+
+/* ✅ Разрешено */
+width: 0.625rem; /* 10px → 0.625rem */
+height: 2rem;
+margin: 0; /* unitless 0 */
+padding: calc(2rem + 1vh);
+```
 
 ## Миграция из retro.css
 
@@ -441,7 +569,7 @@ Style guardrails проверяются автоматически через pr
 ### Проверки
 
 1. **ESLint:** Проверяет inline styles в `.ts` и `.tsx` файлах
-2. **Stylelint:** Проверяет `!important` в `.css` и `.scss` файлах
+2. **Stylelint:** Проверяет `!important` и запрещает `px` в `.css` и `.scss` файлах
 3. **Custom Script:** `scripts/check-inline-styles.cjs` проверяет allow-tag комментарии для inline styles
 
 ### Команды проверки
@@ -461,19 +589,34 @@ npm run lint:staged  # Проверка staged файлов (через lint-sta
 Canary тесты в `front/__tests__/style-guardrails/` проверяют, что guardrails работают:
 
 - `canary-important.test.css` — должен падать при коммите (содержит `!important`)
+- `canary-absolute-units.test.css` — должен падать при коммите (содержит абсолютные единицы: `px`, `pt`, `pc`, `in`, `cm`, `mm`, `q`, `Q`)
 - `canary-inline-style.test.tsx` — должен падать при коммите (inline style без allow-tag)
+- `canary-inline-absolute-units.test.tsx` — должен падать при коммите (inline style с абсолютными единицами)
 - `canary-inline-style-allowed.test.tsx` — должен проходить (inline style с allow-tag)
 
 **Проверка canary тестов:**
 ```bash
-# Проверка !important
+# Проверка всех canary тестов
 cd front
+npm run test:canary
+
+# Отдельные проверки:
+
+# Проверка !important
 npx stylelint __tests__/style-guardrails/canary-important.test.css
-# Должен упасть с ошибкой
+# Должен упасть с ошибкой "Unexpected !important"
+
+# Проверка абсолютных единиц в CSS
+npx stylelint __tests__/style-guardrails/canary-absolute-units.test.css
+# Должен упасть с ошибкой "Unexpected unit"
 
 # Проверка inline style без allow-tag
 node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-style.test.tsx
-# Должен упасть с ошибкой
+# Должен упасть с ошибкой "Inline style found without allow-tag"
+
+# Проверка абсолютных единиц в inline styles
+node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-absolute-units.test.tsx
+# Должен упасть с ошибкой "Absolute units found in inline style"
 
 # Проверка inline style с allow-tag
 node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-style-allowed.test.tsx
