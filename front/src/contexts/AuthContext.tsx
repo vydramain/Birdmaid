@@ -1,11 +1,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { apiClient } from "../api/client";
 
+export type UserRole = 'Guest' | 'Participant' | 'Organizer';
+
 type User = {
   id: string;
   email: string;
   login: string;
-  isSuperAdmin: boolean;
+  isSuperAdmin: boolean; // deprecated, use role instead
+  role?: UserRole; // 'Guest' | 'Participant' | 'Organizer', defaults to 'Guest' if not set
 };
 
 type AuthContextType = {
@@ -33,11 +36,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Decode token to get user info (simple base64 decode)
       try {
         const payload = JSON.parse(atob(storedToken.split(".")[1]));
+        // Determine role: use role field if set, otherwise fallback to isSuperAdmin -> Organizer, else Guest
+        const role: UserRole = payload.role || (payload.isSuperAdmin ? 'Organizer' : 'Guest');
         setUser({
           id: payload.userId,
           email: payload.email,
           login: payload.login,
           isSuperAdmin: payload.isSuperAdmin || false,
+          role: role,
         });
       } catch {
         // Invalid token, clear it
@@ -53,7 +59,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       body: JSON.stringify({ identifier, password }),
     });
-    setUser(response.user);
+    // Determine role from response
+    const role: UserRole = response.user.role || (response.user.isSuperAdmin ? 'Organizer' : 'Guest');
+    setUser({
+      ...response.user,
+      role: role,
+    });
     setToken(response.token);
     localStorage.setItem("birdmaid_token", response.token);
   };
@@ -63,7 +74,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       body: JSON.stringify({ email, login, password }),
     });
-    setUser(response.user);
+    // Determine role from response
+    const role: UserRole = response.user.role || (response.user.isSuperAdmin ? 'Organizer' : 'Guest');
+    setUser({
+      ...response.user,
+      role: role,
+    });
     setToken(response.token);
     localStorage.setItem("birdmaid_token", response.token);
   };
@@ -90,11 +106,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("birdmaid_token", response.token);
     // Reload user from token
     const payload = JSON.parse(atob(response.token.split(".")[1]));
+    const role: UserRole = payload.role || (payload.isSuperAdmin ? 'Organizer' : 'Guest');
     setUser({
       id: payload.userId,
       email: payload.email,
       login: payload.login,
       isSuperAdmin: payload.isSuperAdmin || false,
+      role: role,
     });
   };
 

@@ -17,6 +17,14 @@ Restructuring was done to:
 ```
 Birdmaid/
 ├── front/                          # Frontend source code (React + Vite + TypeScript)
+│   ├── apps/                       # Separate application builds
+│   │   └── mobile/                 # Mobile app (Windows Mobile 6.0 style)
+│   │       ├── main-mobile.tsx     # Mobile entry point
+│   │       ├── MobileApp.tsx       # Main mobile app component
+│   │       ├── Launcher.tsx         # WM6 app launcher
+│   │       └── viewers/            # Mobile content viewers
+│   ├── src/                        # Desktop app source code
+│   └── index-mobile.html           # Mobile app HTML entry
 ├── back/                           # Backend source code (NestJS + MongoDB)
 │
 ├── ai/                             # AI agents and roles

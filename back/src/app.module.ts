@@ -7,9 +7,10 @@ import { GamesModule } from "./games/games.module";
 import { UsersModule } from "./users/users.module";
 import { JamModule } from "./jam/jam.module";
 import { HelpModule } from "./help/help.module";
+import { VfsModule } from "./vfs/vfs.module";
 
 @Module({
-  imports: [AuthModule, TeamsModule, CommentsModule, GamesModule, UsersModule, JamModule, HelpModule],
+  imports: [AuthModule, TeamsModule, CommentsModule, GamesModule, UsersModule, JamModule, HelpModule, VfsModule],
   controllers: [AppController],
 })
 export class AppModule {}

@@ -11,8 +11,14 @@ export function AppHost({ src, title, sandbox }: AppHostProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Default secure sandbox
-  const sandboxAttr = sandbox || "allow-scripts allow-forms allow-same-origin allow-popups";
+  // Strict sandbox policy for Executor/AppHost (webapp/game content)
+  // allow-scripts: Required for game/webapp logic
+  // allow-same-origin: Required for access to assets/localStorage
+  // allow-forms: Allow form submissions
+  // allow-popups: Allow popups (but not top-level navigation)
+  // NO allow-top-navigation: Prevent iframe from navigating parent window
+  // NO allow-modals: Prevent alert/confirm dialogs
+  const sandboxAttr = sandbox || "allow-scripts allow-same-origin allow-forms allow-popups";
 
   return (
     <div style={{ width: "100%", height: "100%", position: "relative", display: "flex", flexDirection: "column" }}>

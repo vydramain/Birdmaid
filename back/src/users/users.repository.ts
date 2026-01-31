@@ -1,12 +1,15 @@
 import { MongoClient } from "mongodb";
 import { randomUUID } from "crypto";
 
+export type UserRole = 'Guest' | 'Participant' | 'Organizer';
+
 export type UserDoc = {
   _id: string;
   email: string;
   login: string;
   password: string; // hashed
-  isSuperAdmin: boolean;
+  isSuperAdmin: boolean; // deprecated, use role instead
+  role?: UserRole; // 'Guest' | 'Participant' | 'Organizer', defaults to 'Guest' if not set
   recoveryCode?: { code: string; createdAt: Date };
   createdAt: Date;
   updatedAt: Date;

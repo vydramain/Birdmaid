@@ -334,6 +334,133 @@ export const shadows = {
 } as const;
 
 // ============================================================================
+// Explorer (Tree + Grid View)
+// ============================================================================
+
+export const explorer = {
+  // Split pane divider
+  divider: {
+    width: 4,                   // 4px divider width
+    backgroundColor: colors.gray,
+    cursor: 'col-resize',
+  },
+  
+  // Tree view (left pane)
+  tree: {
+    width: 200,                 // Default 200px width
+    minWidth: 150,              // Minimum 150px
+    maxWidth: 400,              // Maximum 400px
+    backgroundColor: colors.gray,
+    padding: spacing.sm,        // 4px padding
+    ...borderInset,
+  },
+  
+  // Tree item
+  treeItem: {
+    fontSize: typography.fontSize.normal, // 11px
+    padding: '2px 4px',
+    cursor: 'pointer',
+    color: colors.text,
+    lineHeight: typography.lineHeight.normal, // 1.4
+  },
+  
+  // Tree item selected
+  treeItemSelected: {
+    backgroundColor: colors.blue,
+    color: colors.textInverse,
+  },
+  
+  // Grid view (right pane)
+  grid: {
+    backgroundColor: colors.white,
+    padding: spacing.md,        // 8px padding
+    ...borderInset,
+  },
+  
+  // Grid item (file/folder icon)
+  gridItem: {
+    width: 64,                  // 64px width per item
+    padding: spacing.sm,        // 4px padding
+    cursor: 'pointer',
+    textAlign: 'center' as const,
+  },
+  
+  // Grid item icon
+  gridItemIcon: {
+    width: 32,                  // 32x32px icon
+    height: 32,
+    marginBottom: spacing.xs,   // 2px gap to label
+  },
+  
+  // Grid item label
+  gridItemLabel: {
+    fontSize: typography.fontSize.normal, // 11px
+    color: colors.text,
+    wordBreak: 'break-word' as const,
+    lineHeight: typography.lineHeight.tight, // 1.2
+  },
+  
+  // Grid item selected
+  gridItemSelected: {
+    backgroundColor: colors.blue,
+    color: colors.textInverse,
+  },
+} as const;
+
+// ============================================================================
+// Scrollbar (Win95 style)
+// ============================================================================
+
+export const scrollbar = {
+  // Scrollbar track
+  track: {
+    width: 16,                  // 16px scrollbar width
+    backgroundColor: colors.gray,
+    ...borderInset,
+  },
+  
+  // Scrollbar thumb
+  thumb: {
+    backgroundColor: colors.grayDark,
+    minHeight: 20,              // Minimum 20px thumb height
+    ...borderOutset,
+    cursor: 'pointer',
+  },
+  
+  // Scrollbar button (up/down arrows)
+  button: {
+    width: 16,
+    height: 16,
+    backgroundColor: colors.gray,
+    ...borderOutset,
+    cursor: 'pointer',
+    fontSize: '8px',
+    textAlign: 'center' as const,
+  },
+  
+  // Scrollbar button active (pressed)
+  buttonActive: {
+    ...borderInset,
+    transform: 'translate(1px, 1px)',
+  },
+} as const;
+
+// ============================================================================
+// Desktop (Wallpaper)
+// ============================================================================
+
+export const desktop = {
+  // Wallpaper background
+  wallpaper: {
+    backgroundColor: colors.teal, // Classic dithered teal
+    // Note: Can be replaced with image URL if needed
+  },
+  
+  // Desktop padding (for icons)
+  padding: spacing.md,         // 8px padding from edges
+} as const;
+
+// ============================================================================
 // Export all tokens
 // ============================================================================
 
@@ -353,6 +480,9 @@ export const win95Tokens = {
   typography,
   spacing,
   shadows,
+  explorer,
+  scrollbar,
+  desktop,
 } as const;
 
 export default win95Tokens;

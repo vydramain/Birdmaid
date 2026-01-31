@@ -1,7 +1,7 @@
-import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from "@nestjs/common";
+import { Injectable, UnauthorizedException, BadRequestException, ConflictException, ForbiddenException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
-import { UsersRepository } from "../users/users.repository";
+import { UsersRepository, UserRole } from "../users/users.repository";
 import { EmailService } from "./email.service";
 
 @Injectable()
@@ -21,12 +21,16 @@ export class AuthService {
     return bcrypt.compare(password, hash);
   }
 
-  async generateToken(user: { id: string; email: string; login: string; isSuperAdmin: boolean }): Promise<string> {
+  async generateToken(user: { id: string; email: string; login: string; isSuperAdmin: boolean; role?: UserRole }): Promise<string> {
+    // Determine role: use role field if set, otherwise fallback to isSuperAdmin -> Organizer, else Guest
+    const role: UserRole = user.role || (user.isSuperAdmin ? 'Organizer' : 'Guest');
+    
     const payload = {
       userId: user.id,
       email: user.email,
       login: user.login,
-      isSuperAdmin: user.isSuperAdmin,
+      isSuperAdmin: user.isSuperAdmin, // keep for backward compatibility
+      role: role,
     };
     return this.jwtService.signAsync(payload);
   }
@@ -52,6 +56,7 @@ export class AuthService {
       login,
       password: hashedPassword,
       isSuperAdmin: false,
+      role: 'Guest', // default role for new users
     });
 
     const token = await this.generateToken({
@@ -59,6 +64,7 @@ export class AuthService {
       email: user.email,
       login: user.login,
       isSuperAdmin: user.isSuperAdmin,
+      role: user.role,
     });
 
     return {
@@ -87,7 +93,11 @@ export class AuthService {
       email: user.email,
       login: user.login,
       isSuperAdmin: user.isSuperAdmin,
+      role: user.role,
     });
+
+    // Determine role for response
+    const role: UserRole = user.role || (user.isSuperAdmin ? 'Organizer' : 'Guest');
 
     return {
       user: {
@@ -95,9 +105,56 @@ export class AuthService {
         email: user.email,
         login: user.login,
         isSuperAdmin: user.isSuperAdmin,
+        role: role,
       },
       token,
     };
+  }
+
+  /**
+   * DEV MODE auth: выдаёт JWT без проверки Telegram signature
+   * ЗАПРЕЩЁН в production (AUTH_MODE !== 'dev')
+   */
+  async devAuth(userId?: string, role?: UserRole) {
+    // Fail-fast: проверка AUTH_MODE
+    const authMode = process.env.AUTH_MODE || 'telegram';
+    if (authMode !== 'dev') {
+      throw new ForbiddenException('DEV MODE auth is only available when AUTH_MODE=dev');
+    }
+
+    // If userId provided, find existing user
+    if (userId) {
+      const user = await this.usersRepo.findById(userId);
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+      
+      // Use provided role or user's role, or default to Guest
+      const userRole: UserRole = role || user.role || (user.isSuperAdmin ? 'Organizer' : 'Guest');
+      
+      const token = await this.generateToken({
+        id: user._id,
+        email: user.email,
+        login: user.login,
+        isSuperAdmin: user.isSuperAdmin,
+        role: userRole,
+      });
+
+      return {
+        user: {
+          id: user._id,
+          email: user.email,
+          login: user.login,
+          isSuperAdmin: user.isSuperAdmin,
+          role: userRole,
+        },
+        token,
+      };
+    }
+
+    // Create temporary user for dev mode (if needed)
+    // For simplicity, we'll require userId or create a default dev user
+    throw new BadRequestException('userId is required for dev auth');
   }
 
   async requestRecovery(email: string) {
@@ -141,6 +198,7 @@ export class AuthService {
       email: user.email,
       login: user.login,
       isSuperAdmin: user.isSuperAdmin,
+      role: user.role,
     });
 
     return {

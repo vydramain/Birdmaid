@@ -5,12 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mobile": "vite --mode mobile",
     "build": "vite build",
+    "build:mobile": "vite build --mode mobile",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ci": "! grep -rE '\\.skip|\\.only|test\\.todo|describe\\.todo' __tests__ && vitest run --coverage",
     "coverage": "vitest run --coverage",
-    "preview": "node server.js"
+    "preview": "node server.js",
+    "preview:mobile": "vite preview --mode mobile"
   },
   "dependencies": {
     "@mui/material": "^5.15.0",
