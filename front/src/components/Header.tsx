@@ -11,50 +11,37 @@ export function Header() {
   return (
     <>
       <div
+        className="win-header"
+        // inline-style: allowed (reason: layout-calc)
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
           zIndex: 100,
-          backgroundColor: "var(--win-gray)",
-          borderBottom: "2px solid var(--win-black)",
-          padding: "4px 8px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
         }}
       >
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <div className="win-header-buttons">
           {auth.user ? (
-            <div style={{ position: "relative" }}>
+            <div className="win-header-user-menu">
               <Win95Button
                 type="button"
                 onClick={() => setMenuOpen(!menuOpen)}
-                style={{ minWidth: "120px" }}
+                className="min-w-120"
               >
                 {auth.user.login}
               </Win95Button>
               {menuOpen && (
                 <div
-                  className="win-outset"
+                  className="win-outset win-header-dropdown"
+                  // inline-style: allowed (reason: layout-calc)
                   style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    marginTop: "4px",
-                    minWidth: "120px",
                     zIndex: 101,
                   }}
                 >
                   <button
-                    className="win-btn"
+                    className="win-btn w-full"
                     type="button"
                     onClick={() => {
                       auth.logout();
                       setMenuOpen(false);
                     }}
-                    style={{ width: "100%" }}
                   >
                     Logout
                   </button>
@@ -68,9 +55,8 @@ export function Header() {
           )}
         </div>
       </div>
-      <div style={{ height: "40px" }} /> {/* Spacer for fixed header */}
+      <div className="win-header-spacer" /> {/* Spacer for fixed header */}
       <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </>
   );
 }
-

@@ -1,13 +1,14 @@
 /**
  * Windows 95 UI Tokens (SCSS)
  * 
- * Source of truth for Win95 styling tokens in SCSS format.
- * Mirrors TypeScript tokens from ui/win95/tokens.ts for SCSS usage.
+ * SCSS variables that use CSS custom properties (CSS variables) from themes as fallback.
+ * This allows theme switching without changing component code.
  * 
  * References:
  * - front/src/ui/win95/tokens.ts: TypeScript tokens
  * - docs/design/WIN95_TOKENS_RULES.md: Token rules
  * - docs/fps/FP7.md: UX Rules Desktop Win95
+ * - docs/style/THEME_CONTRACT.md: Theme contract
  */
 
 // ============================================================================
@@ -15,109 +16,110 @@
 // ============================================================================
 
 // Base grays (Chicago95 palette)
-$win-gray: #c0c0c0;           // Main window background
-$win-gray-light: #dfdfdf;     // Top/left borders (raised)
-$win-gray-dark: #808080;      // Bottom/right borders (sunken)
-$win-gray-darker: #404040;    // Deepest shadows
+// Fallback to default values if CSS variables not available
+$win-gray: var(--win-gray, #c0c0c0); // Main window background
+$win-gray-light: var(--win-gray-light, #dfdfdf); // Top/left borders (raised)
+$win-gray-dark: var(--win-gray-dark, #808080); // Bottom/right borders (sunken)
+$win-gray-darker: var(--win-gray-darker, #404040); // Deepest shadows
 
 // System colors
-$win-white: #ffffff;          // Text on dark, top/left highlights
-$win-black: #000000;          // Text, outer borders
+$win-white: var(--win-white, #fff); // Text on dark, top/left highlights
+$win-black: var(--win-black, #000); // Text, outer borders
 
 // Accent colors
-$win-blue: #000080;            // Title bar background (start)
-$win-blue-light: #1084d0;     // Title bar background (end gradient)
-$win-teal: #008080;           // Desktop background (classic dithered)
-$win-red: #ff0000;            // Error states, close button hover
-$win-yellow: #ffff00;         // Tooltips, highlights
+$win-blue: var(--win-blue, #000080); // Title bar background (start)
+$win-blue-light: var(--win-blue-light, #1084d0); // Title bar background (end gradient)
+$win-teal: var(--win-teal, #008080); // Desktop background (classic dithered)
+$win-red: var(--win-red, #f00); // Error states, close button hover
+$win-yellow: var(--win-yellow, #ff0); // Tooltips, highlights
 
 // Text colors
-$win-text: #000000;            // Default text
-$win-text-inverse: #ffffff;   // Text on dark backgrounds (title bar)
-$win-text-disabled: #808080;  // Disabled text (with text-shadow)
+$win-text: var(--win-text, #000); // Default text
+$win-text-inverse: var(--win-text-inverse, #fff); // Text on dark backgrounds (title bar)
+$win-text-disabled: var(--win-text-disabled, #808080); // Disabled text (with text-shadow)
 
 // ============================================================================
 // Spacing
 // ============================================================================
 
-$spacing-xs: 2px;             // Minimal spacing
-$spacing-sm: 4px;              // Small spacing
-$spacing-md: 8px;              // Medium spacing
-$spacing-lg: 12px;             // Large spacing
-$spacing-xl: 16px;             // Extra large spacing
+$spacing-xs: var(--spacing-xs, 2px); // Minimal spacing
+$spacing-sm: var(--spacing-sm, 4px); // Small spacing
+$spacing-md: var(--spacing-md, 8px); // Medium spacing
+$spacing-lg: var(--spacing-lg, 12px); // Large spacing
+$spacing-xl: var(--spacing-xl, 16px); // Extra large spacing
 
 // ============================================================================
 // Typography
 // ============================================================================
 
-$font-family: "MS Sans Serif", "Tahoma", sans-serif;
+$font-family: var(--font-family, "MS Sans Serif", "Tahoma", sans-serif);
 
-$font-size-small: 10px;       // Tooltips, small labels
-$font-size-normal: 11px;      // Default text, buttons, inputs
-$font-size-medium: 12px;      // Title bar, menu items
-$font-size-large: 14px;       // Headings (if needed)
+$font-size-small: var(--font-size-small, 10px); // Tooltips, small labels
+$font-size-normal: var(--font-size-normal, 11px); // Default text, buttons, inputs
+$font-size-medium: var(--font-size-medium, 12px); // Title bar, menu items
+$font-size-large: var(--font-size-large, 14px); // Headings (if needed)
 
-$font-weight-normal: normal;
-$font-weight-bold: bold;
+$font-weight-normal: var(--font-weight-normal, normal);
+$font-weight-bold: var(--font-weight-bold, bold);
 
-$line-height-tight: 1.2;      // Icons, compact
-$line-height-normal: 1.4;     // Default
-$line-height-relaxed: 1.6;    // Readable text
+$line-height-tight: var(--line-height-tight, 1.2); // Icons, compact
+$line-height-normal: var(--line-height-normal, 1.4); // Default
+$line-height-relaxed: var(--line-height-relaxed, 1.6); // Readable text
 
 // ============================================================================
 // Z-Index Layers
 // ============================================================================
 
-$z-desktop: 1;                // Desktop background
-$z-window: 10;                // Base window z-index
-$z-window-focused: 20;        // Focused window (higher)
-$z-taskbar: 10000;            // Taskbar (always on top)
-$z-modal: 10001;              // Modal overlays (above taskbar)
+$z-desktop: var(--z-desktop, 1); // Desktop background
+$z-window: var(--z-window, 10); // Base window z-index
+$z-window-focused: var(--z-window-focused, 20); // Focused window (higher)
+$z-taskbar: var(--z-taskbar, 10000); // Taskbar (always on top)
+$z-modal: var(--z-modal, 10001); // Modal overlays (above taskbar)
 
 // ============================================================================
 // Window Dimensions
 // ============================================================================
 
-$window-titlebar-height: 20px;
-$window-titlebar-padding: 2px 4px;
-$window-titlebar-margin: 2px;
-$window-controls-size: 18px;
-$window-controls-gap: 2px;
+$window-titlebar-height: var(--window-titlebar-height, 20px);
+$window-titlebar-padding: var(--window-titlebar-padding, 2px 4px);
+$window-titlebar-margin: var(--window-titlebar-margin, 2px);
+$window-controls-size: var(--window-controls-size, 18px);
+$window-controls-gap: var(--window-controls-gap, 2px);
 
 // ============================================================================
 // Taskbar Dimensions
 // ============================================================================
 
-$taskbar-height: 40px;
-$taskbar-padding: 0 8px;
-$taskbar-tray-gap: 8px;
-$taskbar-tray-icon-size: 24px;
+$taskbar-height: var(--taskbar-height, 40px);
+$taskbar-padding: var(--taskbar-padding, 0 8px);
+$taskbar-tray-gap: var(--taskbar-tray-gap, 8px);
+$taskbar-tray-icon-size: var(--taskbar-tray-icon-size, 24px);
 
 // ============================================================================
 // Desktop Icons
 // ============================================================================
 
-$desktop-icon-size: 48px;
-$desktop-icon-label-max-width: 64px;
-$desktop-icon-grid-column-gap: 8px;
-$desktop-icon-grid-row-gap: 16px;
-$desktop-icon-padding: 8px;
+$desktop-icon-size: var(--desktop-icon-size, 48px);
+$desktop-icon-label-max-width: var(--desktop-icon-label-max-width, 64px);
+$desktop-icon-grid-column-gap: var(--desktop-icon-grid-column-gap, 8px);
+$desktop-icon-grid-row-gap: var(--desktop-icon-grid-row-gap, 16px);
+$desktop-icon-padding: var(--desktop-icon-padding, 8px);
 
 // ============================================================================
 // Explorer
 // ============================================================================
 
-$explorer-divider-width: 4px;
-$explorer-tree-width: 200px;
-$explorer-tree-min-width: 150px;
-$explorer-tree-max-width: 400px;
-$explorer-grid-item-width: 64px;
-$explorer-grid-item-icon-size: 32px;
+$explorer-divider-width: var(--explorer-divider-width, 4px);
+$explorer-tree-width: var(--explorer-tree-width, 200px);
+$explorer-tree-min-width: var(--explorer-tree-min-width, 150px);
+$explorer-tree-max-width: var(--explorer-tree-max-width, 400px);
+$explorer-grid-item-width: var(--explorer-grid-item-width, 64px);
+$explorer-grid-item-icon-size: var(--explorer-grid-item-icon-size, 32px);
 
 // ============================================================================
 // Scrollbar
 // ============================================================================
 
-$scrollbar-width: 16px;
-$scrollbar-thumb-min-height: 20px;
-$scrollbar-button-size: 16px;
+$scrollbar-width: var(--scrollbar-width, 16px);
+$scrollbar-thumb-min-height: var(--scrollbar-thumb-min-height, 20px);
+$scrollbar-button-size: var(--scrollbar-button-size, 16px);

@@ -32,7 +32,7 @@ export function VideoViewer({ content }: VideoViewerProps) {
         }
 
         // If VFS node provided, create blob URL
-        if (content?.node && content.node.type === 'file') {
+        if (content?.node && content.node.type === "file") {
           const fileContent = content.node.content;
           if (fileContent instanceof Blob) {
             const blobUrl = URL.createObjectURL(fileContent);
@@ -41,7 +41,7 @@ export function VideoViewer({ content }: VideoViewerProps) {
             return () => {
               URL.revokeObjectURL(blobUrl);
             };
-          } else if (typeof fileContent === 'string') {
+          } else if (typeof fileContent === "string") {
             // If it's a string (URL), use it directly
             setVideoSrc(fileContent);
             setLoading(false);
@@ -71,63 +71,26 @@ export function VideoViewer({ content }: VideoViewerProps) {
 
   if (loading) {
     return (
-      <div style={{ 
-        width: "100%", 
-        height: "100%", 
-        display: "flex", 
-        justifyContent: "center", 
-        alignItems: "center",
-        backgroundColor: "var(--win-white)"
-      }}>
+      <div className="viewer-loading">
         <HourglassLoader />
       </div>
     );
   }
 
   if (error) {
-    return (
-      <div style={{ 
-        padding: "20px", 
-        color: "var(--win-red)",
-        backgroundColor: "var(--win-white)"
-      }}>
-        Error: {error}
-      </div>
-    );
+    return <div className="viewer-error">Error: {error}</div>;
   }
 
   if (!videoSrc) {
-    return (
-      <div style={{ 
-        padding: "20px", 
-        color: "var(--win-gray-dark)",
-        backgroundColor: "var(--win-white)"
-      }}>
-        No video to display
-      </div>
-    );
+    return <div className="viewer-empty">No video to display</div>;
   }
 
   return (
-    <div style={{ 
-      width: "100%", 
-      height: "100%", 
-      display: "flex", 
-      justifyContent: "center", 
-      alignItems: "center",
-      backgroundColor: "var(--win-black)",
-      padding: "8px"
-    }}>
+    <div className="viewer-video-container">
       <video
         src={videoSrc}
         controls
-        style={{
-          maxWidth: "100%",
-          maxHeight: "100%",
-          width: "100%",
-          height: "100%",
-          objectFit: "contain"
-        }}
+        className="viewer-video"
         onLoadedData={() => setLoading(false)}
         onError={() => {
           setError("Failed to load video");

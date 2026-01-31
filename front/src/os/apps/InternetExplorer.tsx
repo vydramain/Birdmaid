@@ -35,7 +35,7 @@ export function InternetExplorer({ content }: InternetExplorerProps) {
         }
 
         // If VFS node provided, create blob URL
-        if (content?.node && content.node.type === 'file') {
+        if (content?.node && content.node.type === "file") {
           const fileContent = content.node.content;
           if (fileContent instanceof Blob) {
             const blobUrl = URL.createObjectURL(fileContent);
@@ -44,9 +44,9 @@ export function InternetExplorer({ content }: InternetExplorerProps) {
             return () => {
               URL.revokeObjectURL(blobUrl);
             };
-          } else if (typeof fileContent === 'string') {
+          } else if (typeof fileContent === "string") {
             // If it's a string (URL or HTML), create blob URL
-            const blob = new Blob([fileContent], { type: 'text/html' });
+            const blob = new Blob([fileContent], { type: "text/html" });
             const blobUrl = URL.createObjectURL(blob);
             setHtmlSrc(blobUrl);
             setLoading(false);
@@ -78,41 +78,18 @@ export function InternetExplorer({ content }: InternetExplorerProps) {
 
   if (loading) {
     return (
-      <div style={{ 
-        width: "100%", 
-        height: "100%", 
-        display: "flex", 
-        justifyContent: "center", 
-        alignItems: "center",
-        backgroundColor: "var(--win-white)"
-      }}>
+      <div className="viewer-loading">
         <HourglassLoader />
       </div>
     );
   }
 
   if (error) {
-    return (
-      <div style={{ 
-        padding: "20px", 
-        color: "var(--win-red)",
-        backgroundColor: "var(--win-white)"
-      }}>
-        Error: {error}
-      </div>
-    );
+    return <div className="viewer-error">Error: {error}</div>;
   }
 
   if (!htmlSrc) {
-    return (
-      <div style={{ 
-        padding: "20px", 
-        color: "var(--win-gray-dark)",
-        backgroundColor: "var(--win-white)"
-      }}>
-        No HTML content to display
-      </div>
-    );
+    return <div className="viewer-empty">No HTML content to display</div>;
   }
 
   // Strict sandbox policy for HTML content
@@ -125,22 +102,12 @@ export function InternetExplorer({ content }: InternetExplorerProps) {
   const sandboxPolicy = "allow-scripts allow-same-origin allow-forms allow-popups";
 
   return (
-    <div style={{ 
-      width: "100%", 
-      height: "100%", 
-      position: "relative",
-      backgroundColor: "var(--win-white)"
-    }}>
+    <div className="viewer-ie-container">
       <iframe
         src={htmlSrc}
         title={content?.node?.name || "HTML Content"}
         sandbox={sandboxPolicy}
-        style={{
-          width: "100%",
-          height: "100%",
-          border: "none",
-          display: loading ? "none" : "block"
-        }}
+        className="viewer-iframe"
         onLoad={() => setLoading(false)}
         onError={() => {
           setError("Failed to load HTML content");

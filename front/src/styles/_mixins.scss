@@ -12,7 +12,7 @@
  * - docs/style/GUIDE_STYLE.md: Style guide rules
  */
 
-@import './tokens';
+@import "./tokens";
 
 // ============================================================================
 // 3D Bevel Mixins
@@ -26,11 +26,11 @@
  *   @include bevel-inset;
  */
 @mixin bevel-inset {
-  border-top: 1px solid $win-gray-dark;
-  border-left: 1px solid $win-gray-dark;
-  border-right: 1px solid $win-white;
-  border-bottom: 1px solid $win-white;
-  box-shadow: inset 1px 1px 0 $win-black;
+  border-top: 1px solid var(--win-gray-dark, #808080);
+  border-left: 1px solid var(--win-gray-dark, #808080);
+  border-right: 1px solid var(--win-white, #fff);
+  border-bottom: 1px solid var(--win-white, #fff);
+  box-shadow: inset 1px 1px 0 var(--win-black, #000);
 }
 
 /**
@@ -41,11 +41,11 @@
  *   @include bevel-outset;
  */
 @mixin bevel-outset {
-  border-top: 1px solid $win-white;
-  border-left: 1px solid $win-white;
-  border-right: 1px solid $win-gray-dark;
-  border-bottom: 1px solid $win-gray-dark;
-  box-shadow: 1px 1px 0 $win-black;
+  border-top: 1px solid var(--win-white, #fff);
+  border-left: 1px solid var(--win-white, #fff);
+  border-right: 1px solid var(--win-gray-dark, #808080);
+  border-bottom: 1px solid var(--win-gray-dark, #808080);
+  box-shadow: 1px 1px 0 var(--win-black, #000);
 }
 
 /**
@@ -56,11 +56,14 @@
  *   @include window-frame;
  */
 @mixin window-frame {
-  border-top: 1px solid $win-gray-light;
-  border-left: 1px solid $win-gray-light;
-  border-right: 1px solid $win-gray-dark;
-  border-bottom: 1px solid $win-gray-dark;
-  box-shadow: 1px 1px 0 $win-black, inset 1px 1px $win-white, inset -1px -1px $win-gray-darker;
+  border-top: 1px solid var(--win-gray-light, #dfdfdf);
+  border-left: 1px solid var(--win-gray-light, #dfdfdf);
+  border-right: 1px solid var(--win-gray-dark, #808080);
+  border-bottom: 1px solid var(--win-gray-dark, #808080);
+  box-shadow:
+    1px 1px 0 var(--win-black, #000),
+    inset 1px 1px var(--win-white, #fff),
+    inset -1px -1px var(--win-gray-darker, #404040);
 }
 
 // ============================================================================
@@ -74,14 +77,18 @@
  *   @include window-titlebar;
  */
 @mixin window-titlebar {
-  height: $window-titlebar-height;
-  padding: $window-titlebar-padding;
-  margin: $window-titlebar-margin;
-  font-size: $font-size-medium;
-  font-weight: $font-weight-bold;
+  height: var(--window-titlebar-height, 20px);
+  padding: var(--window-titlebar-padding, 2px 4px);
+  margin: var(--window-titlebar-margin, 2px);
+  font-size: var(--font-size-medium, 12px);
+  font-weight: var(--font-weight-bold, bold);
   letter-spacing: 0.5px;
-  background: linear-gradient(90deg, $win-blue 0%, $win-blue-light 100%);
-  color: $win-text-inverse;
+  background: linear-gradient(
+    90deg,
+    var(--win-blue, #000080) 0%,
+    var(--win-blue-light, #1084d0) 100%
+  );
+  color: var(--win-text-inverse, #fff);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -98,17 +105,17 @@
  *   @include button-default;
  */
 @mixin button-default {
-  padding: $spacing-sm $spacing-lg;
-  font-size: $font-size-normal;
+  padding: var(--spacing-sm, 4px) var(--spacing-lg, 12px);
+  font-size: var(--font-size-normal, 11px);
   min-width: 20px;
-  border: 1px solid $win-black;
-  border-top-color: $win-white;
-  border-left-color: $win-white;
-  border-right-color: $win-black;
-  border-bottom-color: $win-black;
-  box-shadow: 1px 1px 0 $win-black, inset -1px -1px 0 $win-gray-dark;
-  background: $win-gray;
-  color: $win-text;
+  border: 1px solid var(--win-black, #000);
+  border-color: var(--win-white, #fff) var(--win-black, #000) var(--win-black, #000)
+    var(--win-white, #fff);
+  box-shadow:
+    1px 1px 0 var(--win-black, #000),
+    inset -1px -1px 0 var(--win-gray-dark, #808080);
+  background: var(--win-gray, #c0c0c0);
+  color: var(--win-text, #000);
   cursor: pointer;
   text-align: center;
 }
@@ -122,10 +129,7 @@
  *   }
  */
 @mixin button-active {
-  border-top-color: $win-black;
-  border-left-color: $win-black;
-  border-right-color: $win-white;
-  border-bottom-color: $win-white;
+  border-color: $win-black $win-white $win-white $win-black;
   box-shadow: none;
   transform: translate(1px, 1px);
 }
@@ -139,8 +143,8 @@
  *   }
  */
 @mixin button-disabled {
-  color: $win-text-disabled;
-  text-shadow: 1px 1px $win-white;
+  color: var(--win-text-disabled, #808080);
+  text-shadow: 1px 1px var(--win-white, #fff);
   cursor: not-allowed;
 }
 
@@ -155,11 +159,13 @@
  *   @include input-text;
  */
 @mixin input-text {
-  padding: $spacing-sm 6px;
-  font-size: $font-size-normal;
-  background: $win-white;
+  padding: var(--spacing-sm, 4px) 6px;
+  font-size: var(--font-size-normal, 11px);
+  background: var(--win-white, #fff);
+
   @include bevel-inset;
-  color: $win-text;
+
+  color: var(--win-text, #000);
 }
 
 // ============================================================================
@@ -173,21 +179,21 @@
  *   @include window-control-button;
  */
 @mixin window-control-button {
-  width: $window-controls-size;
-  height: $window-controls-size;
+  width: var(--window-controls-size, 18px);
+  height: var(--window-controls-size, 18px);
   padding: 0;
-  font-size: $font-size-medium;
-  line-height: $window-controls-size;
+  font-size: var(--font-size-medium, 12px);
+  line-height: var(--window-controls-size, 18px);
   text-align: center;
   cursor: pointer;
-  border: 1px solid $win-black;
-  border-top-color: $win-white;
-  border-left-color: $win-white;
-  border-right-color: $win-black;
-  border-bottom-color: $win-black;
-  box-shadow: 1px 1px 0 $win-black, inset -1px -1px 0 $win-gray-dark;
-  background: $win-gray;
-  color: $win-text;
+  border: 1px solid var(--win-black, #000);
+  border-color: var(--win-white, #fff) var(--win-black, #000) var(--win-black, #000)
+    var(--win-white, #fff);
+  box-shadow:
+    1px 1px 0 var(--win-black, #000),
+    inset -1px -1px 0 var(--win-gray-dark, #808080);
+  background: var(--win-gray, #c0c0c0);
+  color: var(--win-text, #000);
 }
 
 /**
@@ -199,10 +205,7 @@
  *   }
  */
 @mixin window-control-button-active {
-  border-top-color: $win-black;
-  border-left-color: $win-black;
-  border-right-color: $win-white;
-  border-bottom-color: $win-white;
+  border-color: $win-black $win-white $win-white $win-black;
   box-shadow: none;
   transform: translate(1px, 1px);
 }

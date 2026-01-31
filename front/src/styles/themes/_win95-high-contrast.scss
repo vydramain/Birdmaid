@@ -1,0 +1,122 @@
+/**
+ * Windows 95 High Contrast Theme
+ * 
+ * High contrast theme for Windows 95 UI (accessibility).
+ * Defines CSS custom properties for theme tokens with higher contrast.
+ * 
+ * Usage:
+ *   Theme is applied via data-theme="win95-high-contrast" on root element.
+ * 
+ * References:
+ *   - docs/style/THEME_CONTRACT.md: Theme contract
+ *   - docs/fps/FP7.md: UX Rules Desktop Win95
+ */
+
+:root[data-theme="win95-high-contrast"] {
+  // ============================================================================
+  // Colors (High Contrast Palette)
+  // ============================================================================
+
+  // Higher contrast grays (more extreme contrast)
+  --win-gray: #fff; // White background instead of gray
+  --win-gray-light: #fff;
+  --win-gray-dark: #000; // Pure black borders
+  --win-gray-darker: #000;
+  --win-white: #fff;
+  --win-black: #000;
+
+  // Higher contrast accent colors (brighter, more saturated)
+  --win-blue: #00f; // Pure blue
+  --win-blue-light: #0080ff;
+  --win-teal: #0ff; // Bright cyan instead of teal
+  --win-red: #f00;
+  --win-yellow: #ff0;
+
+  // Text colors (higher contrast)
+  --win-text: #000;
+  --win-text-inverse: #fff;
+  --win-text-disabled: #808080;
+
+  // ============================================================================
+  // Spacing (same as default)
+  // ============================================================================
+
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --spacing-xl: 16px;
+
+  // ============================================================================
+  // Typography (same as default, but can be adjusted for readability)
+  // ============================================================================
+
+  --font-family: "MS Sans Serif", "Tahoma", sans-serif;
+  --font-size-small: 10px;
+  --font-size-normal: 11px;
+  --font-size-medium: 12px;
+  --font-size-large: 14px;
+  --font-weight-normal: normal;
+  --font-weight-bold: bold;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.4;
+  --line-height-relaxed: 1.6;
+
+  // ============================================================================
+  // Z-Index Layers (same as default)
+  // ============================================================================
+
+  --z-desktop: 1;
+  --z-window: 10;
+  --z-window-focused: 20;
+  --z-taskbar: 10000;
+  --z-modal: 10001;
+
+  // ============================================================================
+  // Window Dimensions (same as default)
+  // ============================================================================
+
+  --window-titlebar-height: 20px;
+  --window-titlebar-padding: 2px 4px;
+  --window-titlebar-margin: 2px;
+  --window-controls-size: 18px;
+  --window-controls-gap: 2px;
+
+  // ============================================================================
+  // Taskbar Dimensions (same as default)
+  // ============================================================================
+
+  --taskbar-height: 40px;
+  --taskbar-padding: 0 8px;
+  --taskbar-tray-gap: 8px;
+  --taskbar-tray-icon-size: 24px;
+
+  // ============================================================================
+  // Desktop Icons (same as default)
+  // ============================================================================
+
+  --desktop-icon-size: 48px;
+  --desktop-icon-label-max-width: 64px;
+  --desktop-icon-grid-column-gap: 8px;
+  --desktop-icon-grid-row-gap: 16px;
+  --desktop-icon-padding: 8px;
+
+  // ============================================================================
+  // Explorer (same as default)
+  // ============================================================================
+
+  --explorer-divider-width: 4px;
+  --explorer-tree-width: 200px;
+  --explorer-tree-min-width: 150px;
+  --explorer-tree-max-width: 400px;
+  --explorer-grid-item-width: 64px;
+  --explorer-grid-item-icon-size: 32px;
+
+  // ============================================================================
+  // Scrollbar (same as default)
+  // ============================================================================
+
+  --scrollbar-width: 16px;
+  --scrollbar-thumb-min-height: 20px;
+  --scrollbar-button-size: 16px;
+}

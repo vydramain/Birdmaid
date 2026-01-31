@@ -12,49 +12,19 @@ export function DesktopIcon({ icon, label, onClick, tooltip }: DesktopIconProps)
 
   return (
     <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        cursor: "pointer",
-        padding: "8px",
-        position: "relative",
-      }}
+      className="desktop-icon-container"
       onClick={onClick}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      <div
-        style={{
-          width: "48px",
-          height: "48px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "var(--win-gray)",
-          border: "2px outset var(--win-gray-light)",
-          marginBottom: "4px",
-        }}
-      >
-        {icon}
-      </div>
-      <span style={{ fontSize: "11px", textAlign: "center", maxWidth: "64px" }}>
-        {label}
-      </span>
+      <div className="desktop-icon-box">{icon}</div>
+      <span className="desktop-icon-label">{label}</span>
       {showTooltip && tooltip && (
         <div
+          className="desktop-icon-tooltip"
+          // inline-style: allowed (reason: layout-calc)
           style={{
-            position: "absolute",
-            bottom: "100%",
-            left: "50%",
             transform: "translateX(-50%)",
-            marginBottom: "4px",
-            padding: "4px 8px",
-            backgroundColor: "var(--win-yellow)",
-            border: "1px solid var(--win-gray-dark)",
-            fontSize: "10px",
-            whiteSpace: "nowrap",
-            zIndex: 1000,
           }}
         >
           {tooltip}

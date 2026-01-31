@@ -21,42 +21,21 @@ export function AppHost({ src, title, sandbox }: AppHostProps) {
   const sandboxAttr = sandbox || "allow-scripts allow-same-origin allow-forms allow-popups";
 
   return (
-    <div style={{ width: "100%", height: "100%", position: "relative", display: "flex", flexDirection: "column" }}>
+    <div className="apphost-container">
       {loading && (
-        <div 
-          style={{ 
-            position: "absolute", 
-            top: 0, 
-            left: 0, 
-            width: "100%", 
-            height: "100%", 
-            display: "flex", 
-            justifyContent: "center", 
-            alignItems: "center",
-            backgroundColor: "var(--win-white)",
-            zIndex: 1 
-          }}
-        >
+        <div className="apphost-loading-overlay">
           <HourglassLoader />
         </div>
       )}
-      
+
       {error ? (
-        <div style={{ padding: "20px", color: "var(--win-red)" }}>
-          Error loading application: {error}
-        </div>
+        <div className="apphost-error">Error loading application: {error}</div>
       ) : (
         <iframe
           src={src}
           title={title || "Application"}
           sandbox={sandboxAttr}
-          style={{
-            flex: 1,
-            border: "none",
-            width: "100%",
-            height: "100%",
-            display: loading ? "none" : "block"
-          }}
+          className={`apphost-iframe ${loading ? "apphost-iframe-hidden" : ""}`}
           onLoad={() => setLoading(false)}
           onError={() => {
             setLoading(false);

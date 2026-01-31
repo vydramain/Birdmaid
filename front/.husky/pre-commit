@@ -8,4 +8,27 @@ FRONT_DIR="$GIT_ROOT/front"
 # Run lint-staged from git root (lint-staged automatically detects git root)
 # but use config from front/package.json
 cd "$GIT_ROOT" 2>/dev/null || exit 1
-cd "$FRONT_DIR" && npx lint-staged
+cd "$FRONT_DIR" || exit 1
+
+echo "🔍 Running style guardrails checks..."
+
+# Run lint-staged (includes inline styles check, eslint, stylelint)
+npx lint-staged
+
+# Exit code from lint-staged
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo ""
+  echo "❌ Style guardrails check failed!"
+  echo ""
+  echo "Common issues:"
+  echo "  - Inline styles without allow-tag: Add // inline-style: allowed (reason: drag/resize|layout-calc|performance)"
+  echo "  - !important in CSS/SCSS: Remove !important, use proper CSS specificity"
+  echo ""
+  echo "See docs/style/GUIDE_STYLE.md for details."
+  exit $EXIT_CODE
+fi
+
+echo "✅ Style guardrails check passed"
+exit 0

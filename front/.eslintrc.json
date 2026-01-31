@@ -32,13 +32,7 @@
     {
       "files": ["*.tsx", "*.ts"],
       "rules": {
-        "no-restricted-syntax": [
-          "error",
-          {
-            "selector": "JSXAttribute[name.name='style']",
-            "message": "Inline styles are not allowed. Use CSS classes or SCSS mixins instead. For whitelist cases, add a comment: // inline-style: allowed (reason: drag/resize|layout-calc|performance)"
-          }
-        ]
+        "no-restricted-syntax": "off"
       }
     }
   ]
