@@ -1,5 +1,11 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-cd "$(dirname -- "$0")/.." 2>/dev/null || cd front 2>/dev/null || true
-npx lint-staged
+# Get git root directory
+GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+FRONT_DIR="$GIT_ROOT/front"
+
+# Run lint-staged from git root (lint-staged automatically detects git root)
+# but use config from front/package.json
+cd "$GIT_ROOT" 2>/dev/null || exit 1
+cd "$FRONT_DIR" && npx lint-staged
