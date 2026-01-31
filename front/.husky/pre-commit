@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+cd "$(dirname -- "$0")/.." 2>/dev/null || cd front 2>/dev/null || true
 npx lint-staged
