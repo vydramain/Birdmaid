@@ -1,7 +1,9 @@
-import { useState, ReactNode } from "react";
+import { useState } from "react";
+import { Icon } from "../ui/icons";
+import type { IconType } from "../ui/icons";
 
 type DesktopIconProps = {
-  icon: ReactNode;
+  icon: IconType;
   label: string;
   onClick: () => void;
   tooltip?: string;
@@ -16,8 +18,11 @@ export function DesktopIcon({ icon, label, onClick, tooltip }: DesktopIconProps)
       onClick={onClick}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
+      data-testid={`desktop-icon-${label}`}
     >
-      <div className="desktop-icon-box">{icon}</div>
+      <div className="desktop-icon-box">
+        <Icon type={icon} size="48x48" />
+      </div>
       <span className="desktop-icon-label">{label}</span>
       {showTooltip && tooltip && (
         <div

@@ -30,14 +30,12 @@ describe('Desktop Icons Read from Desktop Only', () => {
     // Create icons in /Disk C/desktop (correct location)
     vfs.writeFile('/Disk C/desktop/My Computer.url', JSON.stringify({
       type: 'link',
-      icon: '💻',
       label: 'My Computer',
       target: 'explorer'
     }));
     
     vfs.writeFile('/Disk C/desktop/Explorer.url', JSON.stringify({
       type: 'link',
-      icon: '📁',
       label: 'Explorer',
       target: 'explorer'
     }));
@@ -75,7 +73,6 @@ describe('Desktop Icons Read from Desktop Only', () => {
     // Add new icon to desktop
     vfs.writeFile('/Disk C/desktop/NewIcon.url', JSON.stringify({
       type: 'link',
-      icon: '🆕',
       label: 'New Icon',
       target: 'explorer'
     }));

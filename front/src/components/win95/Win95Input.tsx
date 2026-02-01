@@ -1,7 +1,8 @@
 import { InputHTMLAttributes } from "react";
+import { Input } from "../../ui/primitives";
 
 type Win95InputProps = InputHTMLAttributes<HTMLInputElement>;
 
 export function Win95Input({ className = "", ...props }: Win95InputProps) {
-  return <input className={`win95-input win-inset ${className}`} style={{ padding: "4px 6px", width: "100%" }} {...props} />;
+  return <Input className={`win95-input ${className}`} {...props} />;
 }

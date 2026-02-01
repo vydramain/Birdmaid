@@ -52,7 +52,7 @@ $spacing-xl: var(--spacing-xl, 1rem); // Extra large spacing (16px)
 // Typography
 // ============================================================================
 
-$font-family: var(--font-family, "MS Sans Serif", "Tahoma", sans-serif);
+$font-family: var(--font-family, "Liberation Sans", "Noto Sans", "MS Sans Serif", "Tahoma", system-ui, -apple-system, sans-serif);
 
 $font-size-small: var(--font-size-small, 0.625rem); // Tooltips, small labels (10px)
 $font-size-normal: var(--font-size-normal, 0.688rem); // Default text, buttons, inputs (11px)
@@ -65,6 +65,9 @@ $font-weight-bold: var(--font-weight-bold, bold);
 $line-height-tight: var(--line-height-tight, 1.2); // Icons, compact
 $line-height-normal: var(--line-height-normal, 1.4); // Default
 $line-height-relaxed: var(--line-height-relaxed, 1.6); // Readable text
+
+$letter-spacing-default: var(--letter-spacing-default, 0); // Normal text
+$letter-spacing-titlebar: var(--letter-spacing-titlebar, 0.0313rem); // 0.5px for title bar
 
 // ============================================================================
 // Z-Index Layers

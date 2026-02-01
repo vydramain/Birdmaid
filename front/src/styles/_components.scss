@@ -50,18 +50,18 @@
 .win-window-controls {
   display: flex;
   gap: var(--window-controls-gap, 0.125rem); // 2px
+}
 
-  .control-button {
-    @include window-control-button;
+.win-caption-button {
+  @include window-control-button;
 
-    &:active {
-      @include window-control-button-active;
-    }
+  &:active {
+    @include window-control-button-active;
+  }
 
-    &.close:hover {
-      background-color: var(--win-red, #f00);
-      color: var(--win-white, #fff);
-    }
+  &.win-caption-button-close:hover {
+    background-color: var(--win-red, #f00);
+    color: var(--win-white, #fff);
   }
 }
 
@@ -461,7 +461,18 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  // Use auto for regular images (photos, etc.)
+  // For pixel art, use: image-rendering: pixelated;
   image-rendering: auto;
+}
+
+// Pixelated assets (icons, pixel art) should use pixelated rendering
+// This is already handled by .icon class, but can be extended here if needed
+.pixelated-asset {
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 // VideoViewer
@@ -684,6 +695,130 @@
 
   &:disabled {
     @include button-disabled;
+  }
+}
+
+.win-btn-primary {
+  @include button-default;
+  background: linear-gradient(
+    90deg,
+    var(--win-blue, #000080) 0%,
+    var(--win-blue-light, #1084d0) 100%
+  );
+  color: var(--win-text-inverse, #fff);
+
+  &:active {
+    @include button-active;
+  }
+
+  &:disabled {
+    @include button-disabled;
+  }
+}
+
+// ============================================================================
+// Input Component Classes
+// ============================================================================
+
+.win-input {
+  @include input-text;
+  width: 100%;
+}
+
+.win-textarea {
+  @include input-text;
+  width: 100%;
+  min-height: 5rem; // 80px
+  resize: vertical;
+}
+
+// ============================================================================
+// MenuBar Component
+// ============================================================================
+
+.win-menubar {
+  height: var(--window-titlebar-height, 1.25rem); // 20px
+  background-color: var(--win-gray, #c0c0c0);
+  border-bottom: 0.0625rem solid var(--win-gray-dark, #808080); // 1px
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-sm, 0.25rem); // 0 4px
+}
+
+.win-menubar-item {
+  padding: var(--spacing-sm, 0.25rem) var(--spacing-md, 0.5rem); // 4px 8px
+  font-size: var(--font-size-medium, 0.75rem); // 12px
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--win-text, #000);
+
+  &:hover {
+    background-color: var(--win-blue, #000080);
+    color: var(--win-text-inverse, #fff);
+  }
+
+  &:disabled {
+    color: var(--win-text-disabled, #808080);
+    cursor: not-allowed;
+  }
+}
+
+// ============================================================================
+// StatusBar Component
+// ============================================================================
+
+.win-statusbar {
+  height: var(--window-titlebar-height, 1.25rem); // 20px
+  background-color: var(--win-gray, #c0c0c0);
+  border-top: 0.0625rem solid var(--win-gray-dark, #808080); // 1px
+  padding: var(--spacing-xs, 0.125rem) var(--spacing-sm, 0.25rem); // 2px 4px
+  font-size: var(--font-size-normal, 0.688rem); // 11px
+  color: var(--win-text, #000);
+  display: flex;
+  align-items: center;
+}
+
+// ============================================================================
+// ListSelection Component
+// ============================================================================
+
+.win-list-selection {
+  background-color: var(--win-white, #fff);
+  @include bevel-inset;
+  overflow: auto;
+}
+
+.win-list-item {
+  padding: var(--spacing-xs, 0.125rem) var(--spacing-sm, 0.25rem); // 2px 4px
+  font-size: var(--font-size-normal, 0.688rem); // 11px
+  color: var(--win-text, #000);
+  cursor: pointer;
+  background-color: transparent;
+
+  &:hover {
+    background-color: var(--win-blue, #000080);
+    color: var(--win-text-inverse, #fff);
+  }
+
+  &.win-list-item-selected {
+    background-color: var(--win-blue, #000080);
+    color: var(--win-text-inverse, #fff);
+  }
+}
+
+// ============================================================================
+// Scrollbar Component
+// ============================================================================
+
+.win-scrollbar {
+  width: var(--scrollbar-width, 1rem); // 16px
+  background-color: var(--win-gray, #c0c0c0);
+  @include bevel-inset;
+
+  &.win-scrollbar-horizontal {
+    height: var(--scrollbar-width, 1rem); // 16px
+    width: auto;
   }
 }
 

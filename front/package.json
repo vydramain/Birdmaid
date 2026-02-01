@@ -16,15 +16,16 @@
     "coverage": "vitest run --coverage",
     "preview": "node server.js",
     "preview:mobile": "vite preview --mode mobile",
-    "lint": "eslint . --ext .ts,.tsx && stylelint '**/*.css' '**/*.scss' && node scripts/check-inline-styles.cjs",
-    "lint:js": "eslint . --ext .ts,.tsx",
+    "lint": "eslint . && stylelint '**/*.css' '**/*.scss' && node scripts/check-inline-styles.cjs && node ../scripts/check-asset-provenance.cjs",
+    "lint:js": "eslint .",
     "lint:css": "stylelint '**/*.css' '**/*.scss'",
+    "lint:assets": "node ../scripts/check-asset-provenance.cjs",
     "lint:staged": "lint-staged",
     "lint:canary": "node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-style.test.tsx && npx stylelint __tests__/style-guardrails/canary-important.test.css",
     "lint:canary:should-fail": "node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-style.test.tsx 2>&1 | grep -q 'Inline style found' && echo '✅ Canary inline-style test correctly fails' || (echo '❌ Canary inline-style test should fail but passed' && exit 1)",
     "lint:canary:should-pass": "node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-style-allowed.test.tsx 2>&1 | grep -q 'No inline styles' && echo '✅ Canary inline-style-allowed test correctly passes' || (echo '❌ Canary inline-style-allowed test should pass but failed' && exit 1)",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix && stylelint '**/*.css' '**/*.scss' --fix",
-    "prepare": "husky install"
+    "lint:fix": "eslint . --fix && stylelint '**/*.css' '**/*.scss' --fix",
+    "prepare": "husky install || true"
   },
   "dependencies": {
     "@mui/material": "^5.15.0",
@@ -32,17 +33,19 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@testing-library/jest-dom": "^6.1.0",
     "@testing-library/react": "^14.1.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
     "@vitejs/plugin-react": "^4.2.0",
-    "@vitest/coverage-v8": "^1.6.1",
-    "eslint": "^8.57.0",
-    "eslint-plugin-react": "^7.33.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "eslint": "^9.39.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.3.0",
     "http-server": "^14.1.1",
     "husky": "^8.0.3",
     "jsdom": "^24.0.0",
@@ -53,7 +56,8 @@
     "stylelint": "^15.11.0",
     "stylelint-config-standard": "^34.0.0",
     "typescript": "^5.4.0",
-    "vite": "^5.1.0",
-    "vitest": "^1.3.0"
+    "typescript-eslint": "^8.54.0",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
   }
 }

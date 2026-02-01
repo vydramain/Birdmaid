@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useWindowRegistry } from "../os/wm/WindowRegistry";
 import { DesktopIcon } from "../components/DesktopIcon";
 import { WindowManager } from "../os/wm/WindowManager";
+import { resolveIconForApp } from "../ui/icons";
+import type { IconType } from "../ui/icons";
+import { Icon } from "../ui/icons";
 
 export function MobilePage() {
   const { openWindow, windows } = useWindowRegistry();
@@ -11,7 +14,7 @@ export function MobilePage() {
     {
       id: "games",
       label: "Игры",
-      icon: "🎮",
+      icon: resolveIconForApp("executor") as IconType,
       onClick: () => {
         window.location.href = "/";
       },
@@ -19,13 +22,13 @@ export function MobilePage() {
     {
       id: "explorer",
       label: "Explorer",
-      icon: "📁",
+      icon: resolveIconForApp("explorer") as IconType,
       onClick: () => openWindow("explorer"),
     },
     {
       id: "help",
       label: "HELP.TXT",
-      icon: "❓",
+      icon: resolveIconForApp("help") as IconType,
       onClick: () => openWindow("help"),
     },
   ];
@@ -60,7 +63,7 @@ export function MobilePage() {
                 setMenuOpen(false);
               }}
             >
-              {icon.icon} {icon.label}
+              <Icon type={icon.icon} size="16x16" /> {icon.label}
             </button>
           ))}
         </div>

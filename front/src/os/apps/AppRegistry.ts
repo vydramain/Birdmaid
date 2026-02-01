@@ -1,9 +1,10 @@
 import React, { ComponentType } from "react";
+import type { IconType } from "../../ui/icons";
 
 export type AppDefinition = {
   id: string;
   name: string;
-  icon: string;
+  icon: IconType;
   component: ComponentType<any>;
   defaultWidth?: number;
   defaultHeight?: number;

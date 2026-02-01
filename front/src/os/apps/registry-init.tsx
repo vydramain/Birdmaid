@@ -5,9 +5,11 @@ import { VideoViewer } from "./VideoViewer";
 import { Notepad } from "./Notepad";
 import { InternetExplorer } from "./InternetExplorer";
 import { UserPanelApp } from "./UserPanelApp";
+import { StyleGuideApp } from "./StyleGuideApp";
 import { ExplorerWindow } from "../../components/ExplorerWindow";
 import { HelpWindow } from "../../components/HelpWindow";
 import { LandingWindow } from "../../components/LandingWindow";
+import { resolveIconForApp } from "../../ui/icons";
 
 // Helper to wrap legacy components
 const wrap = (Component: React.ComponentType<any>) => (props: any) => <Component {...props} />;
@@ -17,7 +19,7 @@ export function initApps() {
   appRegistry.register({
     id: "explorer",
     name: "Explorer",
-    icon: "📁",
+    icon: resolveIconForApp("explorer"),
     component: wrap(ExplorerWindow),
     defaultWidth: 600,
     defaultHeight: 400,
@@ -28,7 +30,7 @@ export function initApps() {
   appRegistry.register({
     id: "imageviewer",
     name: "Image Viewer",
-    icon: "🖼️",
+    icon: resolveIconForApp("imageviewer"),
     component: (props: any) => <ImageViewer content={props.content} />,
     defaultWidth: 600,
     defaultHeight: 500,
@@ -39,7 +41,7 @@ export function initApps() {
   appRegistry.register({
     id: "videoviewer",
     name: "Video Viewer",
-    icon: "🎬",
+    icon: resolveIconForApp("videoviewer"),
     component: (props: any) => <VideoViewer content={props.content} />,
     defaultWidth: 800,
     defaultHeight: 600,
@@ -50,7 +52,7 @@ export function initApps() {
   appRegistry.register({
     id: "notepad",
     name: "Notepad",
-    icon: "📝",
+    icon: resolveIconForApp("notepad"),
     component: (props: any) => <Notepad content={props.content} />,
     defaultWidth: 500,
     defaultHeight: 600,
@@ -61,7 +63,7 @@ export function initApps() {
   appRegistry.register({
     id: "internetexplorer",
     name: "Internet Explorer",
-    icon: "🌐",
+    icon: resolveIconForApp("internetexplorer"),
     component: (props: any) => <InternetExplorer content={props.content} />,
     defaultWidth: 800,
     defaultHeight: 600,
@@ -72,7 +74,7 @@ export function initApps() {
   appRegistry.register({
     id: "executor",
     name: "Application",
-    icon: "🎮",
+    icon: resolveIconForApp("executor"),
     component: (props: any) => {
       // Expect props.src or props.buildUrl
       return (
@@ -91,7 +93,7 @@ export function initApps() {
   appRegistry.register({
     id: "help",
     name: "HELP.TXT",
-    icon: "❓",
+    icon: resolveIconForApp("help"),
     component: wrap(HelpWindow),
     defaultWidth: 500,
     defaultHeight: 600,
@@ -102,7 +104,7 @@ export function initApps() {
   appRegistry.register({
     id: "landing",
     name: "Welcome",
-    icon: "👋",
+    icon: resolveIconForApp("landing"),
     component: (props: any) => (
       <LandingWindow 
         onClose={() => {
@@ -119,11 +121,22 @@ export function initApps() {
   appRegistry.register({
     id: "userpanel",
     name: "User Panel",
-    icon: "👤",
+    icon: resolveIconForApp("userpanel"),
     component: (props: any) => <UserPanelApp onClose={props.onClose} />,
     defaultWidth: 300,
     defaultHeight: 250,
     singleton: true,
+  });
+
+  // Style Guide (design reference)
+  appRegistry.register({
+    id: "styleguide",
+    name: "Style Guide",
+    icon: resolveIconForApp("styleguide"),
+    component: (props: any) => <StyleGuideApp />,
+    defaultWidth: 800,
+    defaultHeight: 900,
+    singleton: false,
   });
 
   // Register content type mappings

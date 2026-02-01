@@ -6,6 +6,8 @@ import { appRegistry } from "@/os/apps/AppRegistry";
 import { VFSNode } from "@/os/fs/VirtualFileSystem";
 import { initVFS } from "@/os/fs/vfs-init";
 import { initApps } from "@/os/apps/registry-init";
+import { resolveIconForVFSNode, resolveIconForApp } from "@/ui/icons";
+import type { IconType } from "@/ui/icons";
 
 // Initialize apps and VFS
 initApps();
@@ -22,7 +24,7 @@ initVFS();
 export function MobileApp() {
   const [currentView, setCurrentView] = useState<'launcher' | 'viewer'>('launcher');
   const [viewerContent, setViewerContent] = useState<VFSNode | null>(null);
-  const [apps, setApps] = useState<Array<{ id: string; name: string; icon: string; path: string }>>([]);
+  const [apps, setApps] = useState<Array<{ id: string; name: string; icon: IconType; path: string }>>([]);
 
   // Load apps from Desktop folder (VFS)
   useEffect(() => {
@@ -34,14 +36,19 @@ export function MobileApp() {
         const appList = nodes
           .filter(node => node.type === 'file')
           .map(node => {
-            let icon = '📄';
+            let icon: IconType = resolveIconForVFSNode(node);
             let name = node.name;
             
             // Check for .url files (links)
             if (node.name.endsWith('.url')) {
               try {
                 const data = JSON.parse(node.content as string);
-                icon = data.icon || '🔗';
+                // If link has target app, use app icon
+                if (data.target) {
+                  icon = resolveIconForApp(data.target);
+                } else {
+                  icon = 'link';
+                }
                 name = data.label || node.name;
               } catch (e) {
                 // Not a valid JSON link
@@ -49,9 +56,8 @@ export function MobileApp() {
             } else {
               // Resolve app by extension
               const appId = appRegistry.resolveAppForFile(node.name);
-              const app = appId ? appRegistry.get(appId) : null;
-              if (app) {
-                icon = app.icon;
+              if (appId) {
+                icon = resolveIconForApp(appId);
               }
               // Remove extension for display
               name = node.name.replace(/\.[^/.]+$/, '');

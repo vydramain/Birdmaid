@@ -11,14 +11,12 @@ export function initVFS() {
     // 1. Desktop Icons (in /Disk C/desktop)
     vfs.writeFile('/Disk C/desktop/My Computer.url', JSON.stringify({
       type: 'link',
-      icon: '💻',
       label: 'My Computer',
       target: 'explorer'
     }));
     
     vfs.writeFile('/Disk C/desktop/Explorer.url', JSON.stringify({
       type: 'link',
-      icon: '📁',
       label: 'Explorer',
       target: 'explorer'
     }));

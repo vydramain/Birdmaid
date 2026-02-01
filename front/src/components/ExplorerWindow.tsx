@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useWindowRegistry } from "../os/wm/WindowRegistry";
 import { vfs, VFSNode } from "../os/fs/VirtualFileSystem";
 import { appRegistry } from "../os/apps/AppRegistry";
+import { StatusBar } from "../ui/primitives";
+import { Icon } from "../ui/icons";
+import { resolveIconForVFSNode } from "../ui/icons";
 
 interface TreeItemProps {
   node: VFSNode;
@@ -33,6 +36,7 @@ function TreeItem({ node, path, currentPath, onSelect, level }: TreeItemProps) {
         className={`tree-item ${isSelected ? "selected" : ""}`}
         // inline-style: allowed (reason: layout-calc)
         style={{ "--tree-level": level } as React.CSSProperties & { "--tree-level": number }}
+        data-testid={`tree-item-${path}`}
       >
         {isDir && <span className="tree-expand-icon">{expanded ? "▼" : "▶"}</span>}
         {!isDir && <span className="tree-spacer" />}
@@ -171,19 +175,7 @@ export function ExplorerWindow() {
         <div data-testid="explorer-grid" className="explorer-grid-view">
           <div className="explorer-grid">
             {files.map((node) => {
-              let icon = "📄";
-              if (node.type === "dir") icon = "📁";
-              else if (node.name.endsWith(".url")) icon = "🔗";
-
-              // Try to get icon from metadata if link
-              if (node.name.endsWith(".url")) {
-                try {
-                  const data = JSON.parse(node.content as string);
-                  if (data.icon) icon = data.icon;
-                } catch {
-                  // Ignore parse errors
-                }
-              }
+              const iconType = resolveIconForVFSNode(node);
 
               return (
                 <div
@@ -197,8 +189,11 @@ export function ExplorerWindow() {
                     }
                   }}
                   className="explorer-grid-item"
+                  data-testid={`explorer-grid-item-${node.name}`}
                 >
-                  <div className="explorer-icon">{icon}</div>
+                  <div className="explorer-icon">
+                    <Icon type={iconType} size="32x32" />
+                  </div>
                   <div className="explorer-filename">{node.name}</div>
                 </div>
               );
@@ -207,7 +202,9 @@ export function ExplorerWindow() {
         </div>
 
         {/* Status Bar */}
-        <div className="explorer-status">{files.length} item(s)</div>
+        <StatusBar data-testid="explorer-status">
+          {files.length} item(s)
+        </StatusBar>
       </div>
     </div>
   );

@@ -1,10 +1,13 @@
+import { Icon } from "@/ui/icons";
+import type { IconType } from "@/ui/icons";
+
 /**
  * Launcher - Windows Mobile 6.0 styled app launcher.
  * 
  * Displays list of apps/content items in WM6 style.
  */
 interface LauncherProps {
-  apps: Array<{ id: string; name: string; icon: string; path: string }>;
+  apps: Array<{ id: string; name: string; icon: IconType; path: string }>;
   onOpenContent: (path: string) => void;
 }
 
@@ -73,7 +76,9 @@ export function Launcher({ apps, onOpenContent }: LauncherProps) {
                 e.currentTarget.style.boxShadow = 'inset 1px 1px 0px #000, inset -1px -1px 0px #808080';
               }}
             >
-              <span style={{ fontSize: '24px', marginRight: '12px' }}>{app.icon}</span>
+              <div style={{ marginRight: '12px', display: 'inline-flex' }}>
+                <Icon type={app.icon} size="32x32" />
+              </div>
               <span style={{ fontSize: '14px', fontWeight: 'normal' }}>{app.name}</span>
             </div>
           ))

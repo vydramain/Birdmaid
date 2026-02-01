@@ -4,11 +4,13 @@ import { DesktopIcon } from "../components/DesktopIcon";
 import { WindowManager } from "../os/wm/WindowManager";
 import { vfs, VFSNode } from "../os/fs/VirtualFileSystem";
 import { appRegistry } from "../os/apps/AppRegistry";
+import { resolveIconForVFSNode, resolveIconForApp } from "../ui/icons";
+import type { IconType } from "../ui/icons";
 
 type DesktopIconData = {
   id: string;
   label: string;
-  icon: string;
+  icon: IconType;
   target?: string;
 };
 
@@ -21,7 +23,7 @@ export function DesktopPage() {
     const updateIcons = () => {
       const nodes = vfs.readDir("/Disk C/desktop");
       const newIcons = nodes.map((node) => {
-        let icon = "📄";
+        let icon: IconType = resolveIconForVFSNode(node);
         let target = "";
         let label = node.name;
 
@@ -29,14 +31,17 @@ export function DesktopPage() {
           // Parse link file
           try {
             const data = JSON.parse(node.content as string);
-            icon = data.icon || "🔗";
+            // If link has target app, use app icon
+            if (data.target) {
+              icon = resolveIconForApp(data.target);
+            } else {
+              icon = "link";
+            }
             target = data.target;
             label = data.label || node.name;
           } catch (e) {
             console.error("Failed to parse link:", node.name);
           }
-        } else if (node.name.endsWith(".txt") || node.name.endsWith(".md")) {
-          icon = "📝";
         }
 
         return {

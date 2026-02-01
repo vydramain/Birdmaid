@@ -84,7 +84,7 @@
   margin: var(--window-titlebar-margin, 0.125rem); // 2px
   font-size: var(--font-size-medium, 0.75rem); // 12px
   font-weight: var(--font-weight-bold, bold);
-  letter-spacing: 0.0313rem; // 0.5px
+  letter-spacing: var(--letter-spacing-titlebar, 0.0313rem); // 0.5px
   background: linear-gradient(
     90deg,
     var(--win-blue, #000080) 0%,

@@ -22,6 +22,9 @@
  *   - front/src/ui/win95/tokens.ts: TypeScript tokens (mirror)
  */
 
+// Import fonts first (defines @font-face declarations)
+@import "./fonts";
+
 // Import themes first (defines CSS custom properties)
 @import "./themes";
 
@@ -29,6 +32,7 @@
 @import "./tokens";
 @import "./mixins";
 @import "./components";
+@import "./icons";
 @import "./utilities";
 
 // ============================================================================
@@ -41,10 +45,22 @@
 
 body {
   margin: 0;
-  font-family: var(--font-family, "MS Sans Serif", "Tahoma", sans-serif);
+  font-family: var(--font-family, "Liberation Sans", "Noto Sans", "MS Sans Serif", "Tahoma", system-ui, -apple-system, sans-serif);
+  font-size: var(--font-size-normal, 0.688rem); // 11px (Win95 base size)
+  line-height: var(--line-height-normal, 1.4);
+  letter-spacing: var(--letter-spacing-default, 0);
   color: var(--win-text, #000);
   background-color: var(--win-teal, #008080);
+  
+  // Font rendering: Disable anti-aliasing for pixel-perfect Win95 look
+  // Note: Applied selectively to avoid breaking readability in some browsers
+  // Tested in Chrome, Firefox, Safari - if issues occur, remove or make conditional
   -webkit-font-smoothing: none;
+  font-smooth: never;
+  
+  // Text rendering: Use optimizeSpeed for pixelated look, but not globally aggressive
+  // This gives a more "pixelated" appearance without breaking readability
+  text-rendering: optimizeSpeed;
 }
 
 button {
