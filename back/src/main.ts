@@ -15,7 +15,7 @@ async function bootstrap() {
   const allowedOrigins = corsOrigin ? corsOrigin.split(',').map(o => o.trim()) : ['*'];
   
   app.enableCors({ 
-    origin: (origin, callback) => {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       // Allow requests with no origin (like mobile apps, Postman, iframe requests with Origin: null)
       // This is important for build file requests from iframes
       if (!origin || origin === 'null') {

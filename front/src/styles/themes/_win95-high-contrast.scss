@@ -51,7 +51,7 @@
   // Typography (same as default, but can be adjusted for readability)
   // ============================================================================
 
-  --font-family: "MS Sans Serif", "Tahoma", sans-serif;
+  --font-family: "Liberation Sans", "Noto Sans", "MS Sans Serif", "Tahoma", system-ui, -apple-system, sans-serif;
   --font-size-small: 0.625rem; // 10px
   --font-size-normal: 0.688rem; // 11px
   --font-size-medium: 0.75rem; // 12px
@@ -61,6 +61,8 @@
   --line-height-tight: 1.2;
   --line-height-normal: 1.4;
   --line-height-relaxed: 1.6;
+  --letter-spacing-default: 0; // Normal text
+  --letter-spacing-titlebar: 0.0313rem; // 0.5px for title bar bold text
 
   // ============================================================================
   // Z-Index Layers (same as default)

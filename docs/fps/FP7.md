@@ -3,58 +3,237 @@
 **Status:** plan+design  
 **Created:** 2026-01-22  
 **Updated:** 2026-01-22  
-**Version:** 2.2 (Contract Spec)
+**Version:** 2.5 (Chicago95-like OS Experience Plan)
 
 **Release Gate:** [FP7_RELEASE_GATE.md](./FP7_RELEASE_GATE.md) — Gate checklist для release gate (15-минутный сценарий проверки)
 
 ## Outcome
 
-Платформа реализована как shell-only система: пользователь попадает на рабочий стол Windows 95 (desktop) или Windows Mobile 6.0 (mobile), где контент представлен как файловая система. Навигация происходит исключительно через Desktop Icons и Explorer — никакого "обычного сайта". Контент открывается в соответствующих окнах (ImageViewer, VideoViewer, Notepad, Internet Explorer, Executor). Организаторы могут создавать/размещать любой контент через VFS, синхронизированный с S3-совместимым хранилищем. Авторизация через Telegram. Окна не могут быть утащены за пределы viewport.
+**60-секундный пользовательский опыт:**
+
+За первые 60 секунд пользователь должен **почувствовать**, что он работает в аутентичной Windows 95-подобной операционной системе (Chicago95-like experience), а не на веб-сайте. Пользователь должен **уметь**:
+
+1. **Визуально воспринять:** Увидеть рабочий стол с классической Windows 95 эстетикой (серые панели, 3D bevels, пиксельно-выровненная типографика, жесткие края, без скруглений и современных эффектов).
+2. **Интерактивно взаимодействовать:** Кликнуть по Desktop Icon и увидеть аутентичную анимацию pressed state (outset → inset bevel, translate(1px, 1px)). Двойной клик открывает окно с правильным focus model (active title bar с градиентом, inactive — серый).
+3. **Навигировать:** Открыть Explorer через Desktop Icon, увидеть Tree view (слева) и Grid view (справа) с правильными 3D bevels (inset для панелей). Клик по папке в Tree → Grid обновляется мгновенно (без плавных анимаций).
+4. **Работать с окнами:** Открыть несколько окон, переключаться между ними (клик → focus, z-index меняется). Окна имеют правильные title bars (active: синий градиент, inactive: серый), control buttons (minimize/maximize/close) с pressed states.
+5. **Использовать системные элементы:** Увидеть Taskbar с правильной высотой (40px), Tray area справа (User Icon + Clock). Клик по User Icon → открывается User Panel окно (Windows 95 стилистика).
+6. **Взаимодействовать с контентом:** Двойной клик по файлу → открывается в правильном Viewer (ImageViewer, VideoViewer, Notepad, Internet Explorer) с аутентичным окном Windows 95.
+
+**Ключевое ощущение:** Пользователь не должен думать "это веб-сайт" — он должен воспринимать платформу как операционную систему с файловой структурой, окнами и системными элементами, визуально и интерактивно идентичными Windows 95 (Chicago95-like), но без эмуляции ОС и без проприетарных ассетов.
 
 ## Scope
 
-### IN (Strict)
+### IN (Strict) — Что меняем
 
-1. **Shell-only навигация:**
-   - Desktop Icons как единственный способ запуска приложений/открытия контента
-   - Explorer (Tree + Grid view) как единственный способ навигации по файловой структуре
-   - Полный отказ от react-router и любой "сайт-навигации" в продуктовой поверхности
+#### Визуальные изменения (Visual/UX)
 
-2. **Платформенная архитектура:**
-   - Desktop Shell (Windows 95 стилистика): многооконная система с Desktop Icons, Explorer, Taskbar
-   - Mobile Shell (Windows Mobile 6.0 стилистика): отдельное фронтенд-приложение, не "обычный сайт"
-   - Platform Context: автоматическое определение Desktop/Mobile на boot, фиксация на сессию
+1. **Windows 95 UI Kit (Chicago95-like):**
+   - Все компоненты используют аутентичную Windows 95 эстетику:
+     - Цветовая палитра: Chicago95 palette (gray #c0c0c0, grayLight #dfdfdf, grayDark #808080, blue #000080, blueLight #1084d0)
+     - 3D bevels: inset (sunken) и outset (raised) borders для всех панелей, кнопок, окон
+     - Типографика: пиксельно-выровненная, без сглаживания (`-webkit-font-smoothing: none`), размеры: 10px/11px/12px/14px
+     - Жесткие края: никаких скруглений (`border-radius: 0`), никаких современных эффектов (blur, glassmorphism, smooth animations)
+     - Метрики: точные размеры из WIN95_SPEC.md (title bar 20px, taskbar 40px, window controls 18x18px, etc.)
 
-3. **Виртуальная файловая система (VFS):**
-   - In-memory VFS как источник правды для Explorer и Desktop Icons
-   - Синхронизация с S3-совместимым хранилищем (list/read/upload/move/delete операции)
-   - Event-driven модель для UI обновлений
+2. **Интерактивные состояния (Interaction States):**
+   - Focus model: active window (синий градиент title bar, z-index 20) vs inactive (серый title bar, z-index 10)
+   - Pressed states: все кнопки/иконки имеют pressed state (outset → inset bevel, translate(1px, 1px))
+   - Single vs double click: Desktop Icons и Explorer Grid используют double-click для открытия, single-click для selection
+   - Taskbar pressed: кнопки в Taskbar имеют pressed state при клике
+   - Menu ESC: если есть меню (например, в Explorer), ESC закрывает меню
 
-4. **Типы контента и правила открытия:**
-   - `image` → ImageViewer окно
-   - `video` → VideoViewer окно
-   - `txt` → Notepad окно (Windows 95 стилистика)
-   - `html` → Internet Explorer окно (Windows 95 стилистика)
-   - `webapp` → Executor/AppHost окно (iframe с sandbox)
+3. **Компоненты Windows 95:**
+   - Window Frame: title bar с градиентом (active/inactive), control buttons (minimize/maximize/close) с pressed states
+   - Desktop Icons: 48x48px контейнеры с outset borders, labels под иконками
+   - Explorer: Tree view (inset bevel) + Grid view (inset bevel), divider между ними
+   - Taskbar: 40px высота, Tray area справа (User Icon + Clock)
+   - Buttons: все кнопки используют outset bevel (default) и inset bevel (pressed)
+   - Input fields: inset bevel для всех input полей
+   - Scrollbars: Windows 95 стиль (16px ширина, 3D bevel thumb)
 
-5. **Роли и права:**
-   - Guest: только просмотр (read-only VFS)
-   - Participant: расширенный доступ (определяется политикой проекта)
-   - Organizer: полный контроль контента (create/upload/move/delete папок и файлов)
+4. **Viewers (Windows 95 стилистика):**
+   - ImageViewer: окно с Windows 95 frame, правильный title bar
+   - VideoViewer: окно с Windows 95 frame, HTML5 video controls
+   - Notepad: окно "Блокнот" с Windows 95 frame, моноширинный шрифт (Courier New)
+   - Internet Explorer: окно "Internet Explorer" с Windows 95 frame
+   - User Panel: системное окно Windows 95 стилистики
 
-6. **Windowing Constraints:**
-   - Окна нельзя утащить за пределы viewport (жесткое ограничение координат)
-   - Drag/resize ограничены границами видимой области
+5. **Golden Screens (Visual Regression Baseline):**
+   - 8-10 ключевых экранов/сценариев для visual regression тестов (см. раздел "Golden Screens")
 
-7. **Авторизация:**
-   - Telegram auth как основной способ входа (production)
-   - DEV MODE auth для локальной разработки и тестов
-   - JWT токены для API доступа
-   - Win95-style системная панель управления пользователем (Taskbar Tray + User Panel)
+#### UX изменения (User Experience)
 
-8. **Storage:**
-   - S3-совместимое хранилище для файлов/пакетов/ресурсов
-   - VFS синхронизируется с S3 через API операции
+6. **Интерактивное поведение:**
+   - Все взаимодействия должны ощущаться как в Windows 95: мгновенные state changes (без плавных анимаций, или < 100ms)
+   - Правильный focus model: клик по окну → focus, z-index меняется
+   - Правильные pressed states: все кликабельные элементы имеют визуальную обратную связь
+
+### OUT (Cutline) — Что НЕ меняем
+
+1. **Архитектура платформы:**
+   - Shell-only навигация (Desktop Icons + Explorer) — уже реализовано
+   - VFS архитектура (in-memory, event-driven) — не меняем
+   - Window Manager (WindowRegistry, WindowStore) — не меняем логику, только визуал
+   - AppRegistry и правила открытия контента — не меняем
+
+2. **VFS/S3 контракт:**
+   - VFS API (read, list, upload, move, delete) — не меняем
+   - S3 синхронизация — не меняем
+   - RBAC модель (Guest/Participant/Organizer) — не меняем
+   - Immutable system folders — не меняем
+
+3. **Backend API:**
+   - Все endpoints остаются без изменений
+   - Auth API (Telegram, DEV MODE) — не меняем
+   - VFS/S3 API — не меняем
+
+4. **Функциональность:**
+   - Viewport boundary enforcement — не меняем
+   - Windowing constraints — не меняем
+   - Content opening rules — не меняем
+
+## Acceptance Criteria
+
+**10-15 измеримых критериев для Chicago95-like OS experience:**
+
+1. **Focus Model:**
+   - ✅ Active window имеет title bar с синим градиентом (`#000080` → `#1084d0`), белый текст, z-index 20
+   - ✅ Inactive window имеет title bar серого цвета (`#c0c0c0`), черный текст, z-index 10
+   - ✅ Клик по окну → окно становится active (title bar меняется, z-index повышается)
+   - ✅ Измерение: visual regression test сравнивает active vs inactive title bars
+
+2. **Pressed States:**
+   - ✅ Все кнопки (window controls, desktop icons, taskbar buttons) имеют pressed state:
+     - Default: outset bevel (top/left white, bottom/right grayDark)
+     - Pressed: inset bevel (top/left grayDark, bottom/right white) + `translate(1px, 1px)`
+   - ✅ Измерение: visual regression test сравнивает default vs pressed states для всех кнопок
+
+3. **Single vs Double Click:**
+   - ✅ Desktop Icons: single-click → selection (highlight), double-click → открытие окна
+   - ✅ Explorer Grid: single-click → selection (blue background), double-click → открытие файла
+   - ✅ Измерение: unit test проверяет, что single-click не открывает, double-click открывает
+
+4. **Taskbar Pressed:**
+   - ✅ Кнопки в Taskbar (окна) имеют pressed state при клике
+   - ✅ Измерение: visual regression test сравнивает default vs pressed taskbar button
+
+5. **Menu ESC:**
+   - ✅ Если есть меню (например, в Explorer), нажатие ESC закрывает меню
+   - ✅ Измерение: unit test проверяет, что ESC закрывает открытое меню
+
+6. **Window Control Buttons:**
+   - ✅ Minimize/Maximize/Close кнопки имеют размер 18x18px, gap 2px между ними
+   - ✅ Close button при hover (опционально) имеет красный фон (`#ff0000`)
+   - ✅ Измерение: visual regression test проверяет размеры и состояния кнопок
+
+7. **3D Bevels:**
+   - ✅ Все панели используют правильные bevels:
+     - Inset (sunken): top/left `#808080`, bottom/right `#ffffff`, inner shadow `inset 1px 1px 0 black`
+     - Outset (raised): top/left `#ffffff`, bottom/right `#808080`, outer shadow `1px 1px 0 black`
+   - ✅ Измерение: visual regression test проверяет bevels для всех компонентов (Explorer tree/grid, buttons, input fields)
+
+8. **Typography:**
+   - ✅ Все тексты используют правильные размеры: 10px (small), 11px (normal), 12px (medium), 14px (large)
+   - ✅ Title bar: bold, 12px, letter-spacing 0.5px, белый цвет на синем градиенте
+   - ✅ Font smoothing отключен: `-webkit-font-smoothing: none`, `font-smooth: never`
+   - ✅ Измерение: visual regression test проверяет размеры и рендеринг текста
+
+9. **Desktop Icons:**
+   - ✅ Иконки имеют размер 48x48px контейнер, outset border (2px), label под иконкой (11px, center aligned)
+   - ✅ Grid layout: column gap 8px, row gap 16px
+   - ✅ Измерение: visual regression test проверяет размеры и layout иконок
+
+10. **Explorer Layout:**
+    - ✅ Tree view (слева): ширина 200px (default), min 150px, max 400px, inset bevel
+    - ✅ Grid view (справа): grid items 64px width, icons 32px, inset bevel
+    - ✅ Divider между tree и grid: 4px width
+    - ✅ Измерение: visual regression test проверяет layout и размеры
+
+11. **Taskbar:**
+    - ✅ Высота: 40px, background `#c0c0c0`, border top `2px solid white`, border bottom `2px solid #808080`
+    - ✅ Tray area справа: User Icon (24x24px) + Clock (11px font), gap 8px между элементами
+    - ✅ Измерение: visual regression test проверяет высоту, layout и элементы Taskbar
+
+12. **Color Palette:**
+    - ✅ Все компоненты используют Chicago95 palette:
+      - `gray: #c0c0c0`, `grayLight: #dfdfdf`, `grayDark: #808080`, `grayDarker: #404040`
+      - `blue: #000080`, `blueLight: #1084d0`, `white: #ffffff`, `black: #000000`
+    - ✅ Измерение: visual regression test сравнивает цвета с reference screenshots
+
+13. **No Modern Effects:**
+    - ✅ Нет скруглений: `border-radius: 0` для всех элементов
+    - ✅ Нет blur эффектов: `filter: blur()`, `backdrop-filter: blur()` не используются
+    - ✅ Нет glassmorphism: прозрачные фоны с blur не используются
+    - ✅ Нет плавных анимаций: transitions < 100ms или отсутствуют
+    - ✅ Измерение: lint rules блокируют `border-radius`, `filter: blur`, `backdrop-filter`, длинные transitions
+
+14. **Viewport Boundary:**
+    - ✅ Окна нельзя утащить за пределы viewport (координаты ограничены)
+    - ✅ Измерение: unit test проверяет, что drag ограничивает координаты границами viewport
+
+15. **Golden Screens Match:**
+    - ✅ Все 8-10 golden screens проходят visual regression тесты (pixel-perfect match с baseline)
+    - ✅ Измерение: visual regression test suite сравнивает все golden screens с baseline screenshots
+
+## Golden Screens
+
+**8-10 экранов/сценариев для visual-regression baseline:**
+
+1. **Desktop Shell (Empty):**
+   - Экраны: Desktop с wallpaper, Desktop Icons (минимум 3-4 иконки), Taskbar (Tray: User Icon + Clock)
+   - Состояние: нет открытых окон
+   - Проверка: layout, цвета, размеры, bevels
+
+2. **Desktop Shell (Active Window):**
+   - Экраны: Desktop + одно активное окно (например, Explorer)
+   - Состояние: окно focused (синий градиент title bar, z-index 20)
+   - Проверка: active title bar, window frame, control buttons
+
+3. **Desktop Shell (Multiple Windows):**
+   - Экраны: Desktop + 2-3 окна (одно active, остальные inactive)
+   - Состояние: разные z-index, разные title bar цвета
+   - Проверка: focus model, z-index stacking
+
+4. **Explorer (Tree + Grid):**
+   - Экраны: Explorer окно с Tree view (слева) и Grid view (справа)
+   - Состояние: папка выбрана в Tree, Grid показывает содержимое
+   - Проверка: layout, bevels (inset для панелей), divider, file icons
+
+5. **Explorer (Selection):**
+   - Экраны: Explorer с выбранным файлом в Grid (blue background, white text)
+   - Состояние: single-click selection
+   - Проверка: selection colors, focus state
+
+6. **Notepad Window:**
+   - Экраны: Notepad окно с открытым .txt файлом
+   - Состояние: окно active, содержимое видно
+   - Проверка: window frame, title bar, моноширинный шрифт, inset bevel для textarea
+
+7. **Internet Explorer Window:**
+   - Экраны: Internet Explorer окно с открытым .html файлом
+   - Состояние: окно active, HTML контент виден
+   - Проверка: window frame, title bar, iframe/content area
+
+8. **User Panel Window:**
+   - Экраны: User Panel окно (открыто через клик по User Icon в Tray)
+   - Состояние: окно active, показывает username, роль, кнопку Log out
+   - Проверка: window frame, layout, buttons
+
+9. **Taskbar (Pressed State):**
+   - Экраны: Taskbar с нажатой кнопкой окна (pressed state)
+   - Состояние: кнопка в pressed state (inset bevel, translate(1px, 1px))
+   - Проверка: pressed state визуально корректна
+
+10. **Desktop Icon (Pressed State):**
+    - Экраны: Desktop с нажатой иконкой (pressed state)
+    - Состояние: иконка в pressed state (inset bevel, translate(1px, 1px))
+    - Проверка: pressed state визуально корректна
+
+**Формат baseline:**
+- Screenshots сохраняются в `docs/design/references/screenshots/golden/`
+- Имена файлов: `golden-<screen-name>.png`
+- Visual regression тесты сравнивают текущие screenshots с baseline
 
 ### OUT (Cutline)
 
@@ -940,6 +1119,363 @@ front/__tests__/fp7/
 - Полная переработка UI/UX логики
 - Перерисовка всего дизайна (мы переносим в классы, не меняя поведение)
 
+### M7: Chicago95-like OS Experience
+
+**Цель:** Превратить платформу в Chicago95-like OS experience (перцептивно как Windows 95), НЕ эмулируя ОС и НЕ используя проприетарные ассеты.
+
+**Outcome:**
+- Пользователь за 60 секунд воспринимает платформу как аутентичную Windows 95-подобную ОС
+- Все компоненты используют аутентичную Windows 95 эстетику (Chicago95 palette, 3D bevels, пиксельно-выровненная типографика)
+- Все интерактивные состояния работают правильно (focus model, pressed states, single vs double click)
+- Visual regression тесты проходят для всех 8-10 golden screens
+
+**Scope IN:**
+- Визуальные изменения: все компоненты используют Windows 95 UI Kit (см. WIN95_SPEC.md)
+- Интерактивные состояния: focus model, pressed states, single vs double click, taskbar pressed, menu ESC
+- Golden Screens: создание baseline screenshots для visual regression тестов
+- Open-source ассеты: использование только open-source шрифтов и иконок
+
+**Scope OUT:**
+- Эмуляция ОС (мы не эмулируем Windows 95, только визуально/интерактивно похоже)
+- Проприетарные ассеты (MS Sans Serif оригинал, Windows 95 иконки/bitmaps)
+- Изменение архитектуры платформы (VFS/S3 контракт, Window Manager логика)
+
+**PR Sequence (5-7 PR max):**
+
+#### PR #1: Foundation & Tokens (Wave 1)
+
+**Цель:** Заложить фундамент для Chicago95 стиля: tokens, typography, font smoothing.
+
+**Changes:**
+- Проверить/дополнить tokens из WIN95_SPEC.md в `front/src/styles/_tokens.scss`
+- Настроить font stack: `"Liberation Sans", "Noto Sans", "MS Sans Serif", "Tahoma", system-ui, -apple-system, sans-serif`
+- Отключить font smoothing: `-webkit-font-smoothing: none`, `font-smooth: never` в `front/src/styles/index.scss`
+- Убедиться, что все компоненты используют tokens (не хардкод цветов/размеров)
+- Проверить asset provenance: все шрифты open-source (Liberation Sans, Noto Sans)
+
+**DoD:**
+- [ ] Все tokens из WIN95_SPEC.md реализованы
+- [ ] Font stack настроен правильно
+- [ ] Font smoothing отключен глобально
+- [ ] Нет хардкода цветов/размеров (используются tokens)
+- [ ] Asset provenance check проходит: `node scripts/check-asset-provenance.cjs`
+- [ ] Unit tests зеленые: `cd front && npm test`
+- [ ] Lint проходит: `cd front && npm run lint`
+- [ ] No inline styles violation: `npm run lint` не показывает inline style errors
+
+**Команды проверки:**
+```bash
+# 1. Проверка tokens
+cd front && grep -r "#[0-9a-fA-F]\{6\}" src/ --include="*.tsx" --include="*.ts" | grep -v "//" | head -20
+# Ожидаем: минимум хардкода (только в комментариях или allow-tag)
+
+# 2. Проверка font stack
+cd front && grep -A 5 "font-family" src/styles/index.scss | grep -i "liberation\|noto\|tahoma"
+# Ожидаем: font stack содержит Liberation Sans, Noto Sans, Tahoma
+
+# 3. Проверка font smoothing
+cd front && grep -i "font-smoothing\|font-smooth" src/styles/index.scss
+# Ожидаем: -webkit-font-smoothing: none; font-smooth: never;
+
+# 4. Asset provenance check
+node scripts/check-asset-provenance.cjs
+# Ожидаем: все шрифты имеют записи в ASSET_PROVENANCE.md
+
+# 5. Tests + Lint
+cd front && npm test && npm run lint
+# Ожидаем: все тесты зеленые, lint проходит
+```
+
+#### PR #2: Focus Model & Window States (Wave 2)
+
+**Цель:** Реализовать focus model для окон (active/inactive states).
+
+**Changes:**
+- Реализовать focus model в WindowRegistry: active window (z-index 20) vs inactive (z-index 10)
+- Обновить WindowFrame: title bar с синим градиентом для active, серый для inactive
+- Обновить WindowStore: z-index управление при focus change
+- Написать unit tests: `front/__tests__/fp7/window.focus.test.tsx`
+
+**DoD:**
+- [ ] Active window имеет title bar с синим градиентом (`#000080` → `#1084d0`), белый текст
+- [ ] Inactive window имеет title bar серого цвета (`#c0c0c0`), черный текст
+- [ ] Клик по окну → окно становится active (title bar меняется, z-index повышается)
+- [ ] Z-index: active = 20, inactive = 10
+- [ ] Unit tests зеленые: `window.focus.test.tsx` проходит
+- [ ] Lint проходит: `npm run lint`
+- [ ] No inline styles violation
+
+**Команды проверки:**
+```bash
+# 1. Проверка focus model в коде
+cd front && grep -r "z-index.*20\|z-index.*10" src/os/wm/ --include="*.tsx" --include="*.ts"
+# Ожидаем: z-index 20 для active, 10 для inactive
+
+# 2. Проверка title bar градиента
+cd front && grep -A 3 "titlebar.*active\|active.*titlebar" src/styles/ --include="*.scss" | grep -i "gradient\|blue"
+# Ожидаем: градиент от #000080 до #1084d0 для active
+
+# 3. Unit tests
+cd front && npm test -- window.focus
+# Ожидаем: все тесты проходят
+
+# 4. Lint
+cd front && npm run lint
+# Ожидаем: lint проходит
+```
+
+#### PR #3: Pressed States & Interactions (Wave 3)
+
+**Цель:** Реализовать pressed states для всех кнопок и интерактивных элементов.
+
+**Changes:**
+- Реализовать pressed states для window control buttons (minimize/maximize/close)
+- Реализовать pressed states для Desktop Icons
+- Реализовать pressed states для Taskbar buttons
+- Реализовать pressed states для всех остальных кнопок
+- Pressed state: outset → inset bevel + `translate(1px, 1px)`
+- Написать unit tests: `front/__tests__/fp7/button.pressed-state.test.tsx`
+
+**DoD:**
+- [ ] Все кнопки имеют pressed state (outset → inset bevel + translate(1px, 1px))
+- [ ] Window control buttons имеют pressed state
+- [ ] Desktop Icons имеют pressed state
+- [ ] Taskbar buttons имеют pressed state
+- [ ] Все остальные кнопки имеют pressed state
+- [ ] Unit tests зеленые: `button.pressed-state.test.tsx` проходит
+- [ ] Lint проходит: `npm run lint`
+- [ ] No inline styles violation
+
+**Команды проверки:**
+```bash
+# 1. Проверка pressed states в стилях
+cd front && grep -r ":active\|pressed" src/styles/ --include="*.scss" | grep -i "inset\|translate"
+# Ожидаем: pressed states используют inset bevel и translate(1px, 1px)
+
+# 2. Проверка компонентов
+cd front && grep -r "onMouseDown\|onPointerDown" src/os/ --include="*.tsx" | head -10
+# Ожидаем: компоненты обрабатывают pressed states
+
+# 3. Unit tests
+cd front && npm test -- button.pressed-state
+# Ожидаем: все тесты проходят
+
+# 4. Lint
+cd front && npm run lint
+# Ожидаем: lint проходит
+```
+
+#### PR #4: Single vs Double Click (Wave 4)
+
+**Цель:** Реализовать правильное поведение single vs double click для Desktop Icons и Explorer Grid.
+
+**Changes:**
+- Реализовать single-click selection для Desktop Icons (blue background, white text)
+- Реализовать double-click opening для Desktop Icons
+- Реализовать single-click selection для Explorer Grid (blue background, white text)
+- Реализовать double-click opening для Explorer Grid
+- Использовать click timeout (300ms) для различения single vs double click
+- Написать unit tests: `front/__tests__/fp7/desktop.icons.click.test.tsx`, `front/__tests__/fp7/explorer.grid.click.test.tsx`
+
+**DoD:**
+- [ ] Desktop Icons: single-click → selection (blue background), double-click → открытие окна
+- [ ] Explorer Grid: single-click → selection (blue background), double-click → открытие файла
+- [ ] Single-click не открывает окно/файл
+- [ ] Double-click открывает окно/файл
+- [ ] Unit tests зеленые: `desktop.icons.click.test.tsx`, `explorer.grid.click.test.tsx` проходят
+- [ ] Lint проходит: `npm run lint`
+- [ ] No inline styles violation
+
+**Команды проверки:**
+```bash
+# 1. Проверка click handlers
+cd front && grep -r "onClick\|onDoubleClick" src/os/ --include="*.tsx" | grep -i "desktop\|explorer" | head -10
+# Ожидаем: обработчики single/double click реализованы
+
+# 2. Проверка selection styles
+cd front && grep -r "selected\|selection" src/styles/ --include="*.scss" | grep -i "blue\|#000080"
+# Ожидаем: selection использует blue (#000080) background
+
+# 3. Unit tests
+cd front && npm test -- desktop.icons.click explorer.grid.click
+# Ожидаем: все тесты проходят
+
+# 4. Lint
+cd front && npm run lint
+# Ожидаем: lint проходит
+```
+
+#### PR #5: 3D Bevels & Components Polish (Wave 5)
+
+**Цель:** Применить правильные 3D bevels ко всем компонентам и проверить метрики.
+
+**Changes:**
+- Убедиться, что Explorer Tree/Grid используют inset bevel
+- Убедиться, что Buttons используют outset bevel (default), inset bevel (pressed)
+- Убедиться, что Input fields используют inset bevel
+- Убедиться, что Window frames используют 3D window bevel
+- Проверить все компоненты на соответствие WIN95_SPEC.md метрикам (titlebar 20px, taskbar 40px, etc.)
+- Удалить все `border-radius` (установить `border-radius: 0` явно)
+- Удалить все blur эффекты (`filter: blur()`, `backdrop-filter: blur()`)
+- Удалить/ограничить transitions (< 100ms linear или отсутствуют)
+
+**DoD:**
+- [ ] Explorer Tree/Grid используют inset bevel
+- [ ] Buttons используют правильные bevels (outset default, inset pressed)
+- [ ] Input fields используют inset bevel
+- [ ] Window frames используют 3D window bevel
+- [ ] Все метрики соответствуют WIN95_SPEC.md (titlebar 20px, taskbar 40px, etc.)
+- [ ] Нет `border-radius` (кроме `border-radius: 0`)
+- [ ] Нет blur эффектов
+- [ ] Transitions < 100ms или отсутствуют
+- [ ] Unit tests зеленые: `npm test`
+- [ ] Lint проходит: `npm run lint`
+- [ ] No inline styles violation
+
+**Команды проверки:**
+```bash
+# 1. Проверка bevels
+cd front && grep -r "@include bevel-inset\|@include bevel-outset\|@include window-frame" src/styles/ --include="*.scss" | wc -l
+# Ожидаем: все компоненты используют правильные mixins
+
+# 2. Проверка border-radius
+cd front && grep -r "border-radius" src/styles/ --include="*.scss" | grep -v "border-radius: 0" | head -10
+# Ожидаем: только border-radius: 0 или отсутствует
+
+# 3. Проверка blur
+cd front && grep -r "blur\|backdrop-filter" src/styles/ --include="*.scss" | head -10
+# Ожидаем: нет blur эффектов
+
+# 4. Проверка transitions
+cd front && grep -r "transition:" src/styles/ --include="*.scss" | grep -v "transition: none" | head -10
+# Ожидаем: transitions < 100ms или отсутствуют
+
+# 5. Проверка метрик
+cd front && grep -r "height.*20px\|height.*1.25rem" src/styles/ --include="*.scss" | grep -i "titlebar" | head -5
+# Ожидаем: titlebar height = 20px (1.25rem)
+
+# 6. Tests + Lint
+cd front && npm test && npm run lint
+# Ожидаем: все тесты зеленые, lint проходит
+```
+
+#### PR #6: Golden Screens & Visual Regression (Wave 6)
+
+**Цель:** Создать baseline screenshots для visual regression тестов и настроить CI.
+
+**Changes:**
+- Создать baseline screenshots для всех 8-10 golden screens (см. раздел "Golden Screens")
+- Настроить visual regression тесты (Playwright screenshots)
+- Написать visual regression тесты для всех golden screens
+- Настроить CI для запуска visual regression тестов на фиксированной среде (Docker)
+- Настроить tolerance для pixel differences (1-2px для font rendering differences)
+
+**DoD:**
+- [ ] Baseline screenshots созданы для всех 8-10 golden screens
+- [ ] Visual regression тесты написаны для всех golden screens
+- [ ] CI настроен для запуска visual regression тестов
+- [ ] Tolerance настроен (1-2px для font rendering differences)
+- [ ] Все golden screens проходят visual regression тесты
+- [ ] Screenshots сохранены в `docs/design/references/screenshots/golden/`
+- [ ] Unit tests зеленые: `npm test`
+- [ ] Visual tests проходят: `npx playwright test` (если настроен)
+
+**Команды проверки:**
+```bash
+# 1. Проверка baseline screenshots
+ls -la docs/design/references/screenshots/golden/ | wc -l
+# Ожидаем: минимум 8-10 golden screenshots
+
+# 2. Проверка visual regression тестов
+cd front && find __tests__ -name "*visual*.tsx" -o -name "*visual*.spec.ts" | head -10
+# Ожидаем: visual regression тесты существуют
+
+# 3. Запуск visual regression тестов (если настроен Playwright)
+cd front && npx playwright test --project=chromium 2>/dev/null || echo "Playwright not configured"
+# Ожидаем: все visual tests проходят
+
+# 4. Проверка CI конфигурации
+grep -r "playwright\|visual.*test" .github/workflows/ 2>/dev/null || echo "CI not configured"
+# Ожидаем: CI настроен для visual tests
+
+# 5. Unit tests
+cd front && npm test
+# Ожидаем: все тесты зеленые
+```
+
+#### PR #7: Asset Provenance & Final Checks (Wave 7)
+
+**Цель:** Проверить все ассеты на open-source лицензии и завершить документацию.
+
+**Changes:**
+- Проверить все шрифты: использовать только open-source альтернативы (Liberation Sans, Noto Sans)
+- Проверить все иконки: использовать только custom/open-source иконки
+- Обновить `docs/compliance/ASSET_PROVENANCE.md` со всеми источниками ассетов
+- Запустить asset provenance check: `node scripts/check-asset-provenance.cjs`
+- Финальная проверка: все Acceptance Criteria выполнены (15 критериев)
+
+**DoD:**
+- [ ] Все шрифты open-source (Liberation Sans, Noto Sans, system fonts)
+- [ ] Все иконки open-source или custom (документированы в ASSET_PROVENANCE.md)
+- [ ] Asset provenance check проходит: `node scripts/check-asset-provenance.cjs`
+- [ ] Документация источников ассетов готова (ASSET_PROVENANCE.md обновлен)
+- [ ] Все Acceptance Criteria выполнены (15 критериев из раздела Acceptance Criteria)
+- [ ] Unit tests зеленые: `npm test`
+- [ ] Visual regression tests проходят: все golden screens match
+- [ ] Lint проходит: `npm run lint`
+- [ ] No inline styles violation
+
+**Команды проверки:**
+```bash
+# 1. Asset provenance check
+node scripts/check-asset-provenance.cjs
+# Ожидаем: все ассеты имеют записи в ASSET_PROVENANCE.md
+
+# 2. Проверка шрифтов
+cd front && grep -r "font-family" src/styles/ --include="*.scss" | grep -i "liberation\|noto\|tahoma" | head -10
+# Ожидаем: используются только open-source шрифты
+
+# 3. Проверка иконок
+cd front && find public/icons -name "*.svg" -o -name "*.png" | head -10
+# Ожидаем: все иконки custom или open-source
+
+# 4. Acceptance Criteria checklist
+# Проверить вручную все 15 критериев из раздела Acceptance Criteria
+# Ожидаем: все критерии выполнены
+
+# 5. Tests + Lint
+cd front && npm test && npm run lint
+# Ожидаем: все тесты зеленые, lint проходит
+
+# 6. Visual regression (если настроен)
+cd front && npx playwright test --project=chromium 2>/dev/null || echo "Playwright not configured"
+# Ожидаем: все visual tests проходят
+```
+
+**DoD (M7 Overall):**
+- [ ] Все компоненты используют Windows 95 UI Kit (Chicago95 palette, 3D bevels, правильные метрики)
+- [ ] Focus model работает правильно (active/inactive windows)
+- [ ] Все pressed states работают правильно
+- [ ] Single vs double click работает правильно
+- [ ] Все 8-10 golden screens проходят visual regression тесты
+- [ ] Все ассеты open-source (шрифты, иконки)
+- [ ] Документация источников ассетов готова
+- [ ] Acceptance Criteria выполнены (все 15 критериев)
+
+**Risks & Mitigations (M7):**
+
+| Risk | Probability | Impact | Mitigation | Owner |
+|------|-------------|--------|------------|-------|
+| **Flaky visual tests:** Visual regression тесты могут быть нестабильными из-за различий в рендеринге между браузерами/ОС | Medium | High | Использовать стабильные инструменты (Playwright screenshots с фиксированными viewport). Настроить tolerance для pixel differences (1-2px для font rendering). Запускать тесты в CI на фиксированной среде (Docker с фиксированным браузером). Использовать retry logic (2-3 попытки) для flaky tests. | @Engineer |
+| **Asset licensing violations:** Использование проприетарных Windows 95 ассетов нарушает лицензию | High | Critical | Использовать только open-source альтернативы: Liberation Sans/Noto Sans (OFL-1.1), custom SVG/PNG иконки, system fonts. Документировать все источники в ASSET_PROVENANCE.md. Запускать asset provenance check в CI: `node scripts/check-asset-provenance.cjs`. Блокировать merge PR без asset provenance entries. | @Compliance |
+| **Visual regressions:** Изменения могут сломать визуальное поведение компонентов | Medium | High | Создать baseline screenshots для всех 8-10 golden screens перед началом изменений. Запускать visual regression тесты на каждом PR. Использовать pixel-perfect comparison с tolerance (1-2px). Ручная проверка критичных компонентов (WindowFrame, Explorer, Taskbar) перед merge. | @Engineer |
+| **Inline styles regression:** Команда/агенты могут вернуться к inline styles | Medium | Medium | Линтеры блокируют новые inline styles (ESLint rule). Pre-commit hooks проверяют inline styles. Whitelist только для drag/resize/layout-calc/performance с allow-tag комментарием. Документация "как добавлять стили правильно" в GUIDE_STYLE.md. | @Engineer |
+| **Font rendering differences:** Шрифты рендерятся по-разному на разных ОС/браузерах | Medium | Medium | Использовать системные шрифты с fallback stack (Liberation Sans → Noto Sans → Tahoma → system-ui). Отключить font smoothing для единообразия (`-webkit-font-smoothing: none`). Использовать visual regression тесты с tolerance для font rendering differences (1-2px). Документировать известные различия. | @Engineer |
+| **Runtime differences:** Визуальное отображение отличается между браузерами (Chrome, Firefox, Safari) | Medium | Medium | Тестировать на всех целевых браузерах (Chrome, Firefox, Safari). Использовать CSS fallbacks для кросс-браузерной совместимости. Документировать известные различия. Использовать visual regression тесты на фиксированной среде (CI с Chrome). | @Engineer |
+| **Icon licensing:** Иконки должны быть open-source, но могут не соответствовать Windows 95 стилю | Medium | Medium | Создать custom иконки в bitmap-style, соответствующие Win95 эстетике. Использовать open-source icon sets с правильными лицензиями (MIT, CC0). Документировать источники всех иконок в ASSET_PROVENANCE.md. Проверять лицензии перед добавлением иконок. | @Compliance |
+| **PR sequence complexity:** 7 PR могут создать конфликты и задержки | Medium | Low | Четкое разделение scope между PR (каждый PR независим). Использовать feature flags для постепенного rollout (опционально). Регулярные sync между PR (еженедельно). | @Delivery |
+| **Golden screens maintenance:** Baseline screenshots могут устареть при изменениях | Low | Medium | Обновлять baseline screenshots только при intentional visual changes. Review diff screenshots перед обновлением baseline. Документировать причины обновления baseline. | @Engineer |
+
 **Tasks:**
 
 **Wave 1: Theme Tokens System (Foundation)**
@@ -1000,6 +1536,12 @@ front/__tests__/fp7/
 | 11 | Style System Refactor может сломать визуальное поведение | Medium | High | Тесты + визуальная проверка, волновая миграция (5-10 компонентов за PR) | open |
 | 12 | Большой объем миграции (289 inline styles в 27 файлах) | High | Medium | Волновая миграция, 5-10 компонентов за PR, постепенная проверка | open |
 | 13 | Тесты могут зависеть от inline styles | Medium | Medium | Обновить селекторы тестов после миграции компонентов | open |
+| 14 | **Лицензии ассетов (иконки, шрифты):** Использование проприетарных Windows 95 ассетов нарушает лицензию | High | Critical | Использовать только open-source альтернативы: системные шрифты (system-ui, Tahoma), custom SVG/PNG иконки, bitmap-style иконки из scratch. Документировать все источники ассетов. | open |
+| 15 | **Шрифт MS Sans Serif:** Оригинальный шрифт Windows 95 проприетарный, нельзя использовать | High | High | Использовать fallback stack: `"MS Sans Serif"` (fallback) → `"Tahoma"` → `system-ui, -apple-system, sans-serif`. Отключить font smoothing (`-webkit-font-smoothing: none`) для pixel-perfect look. | open |
+| 16 | **Flaky visual tests:** Visual regression тесты могут быть нестабильными из-за различий в рендеринге между браузерами/ОС | Medium | High | Использовать стабильные инструменты (например, Percy, Chromatic, или Playwright screenshots с фиксированными viewport). Настроить tolerance для pixel differences (например, 1-2px). Запускать тесты в CI на фиксированной среде (Docker с фиксированным браузером). | open |
+| 17 | **Runtime differences:** Визуальное отображение может отличаться между браузерами (Chrome, Firefox, Safari) и ОС (Windows, macOS, Linux) | Medium | Medium | Тестировать на всех целевых браузерах. Использовать CSS fallbacks для кросс-браузерной совместимости. Документировать известные различия. Использовать visual regression тесты на фиксированной среде (CI). | open |
+| 18 | **Font rendering differences:** Шрифты могут рендериться по-разному на разных ОС/браузерах, влияя на pixel-perfect alignment | Medium | Medium | Использовать системные шрифты с fallback stack. Отключить font smoothing для единообразия. Документировать известные различия. Использовать visual regression тесты с tolerance для font rendering differences. | open |
+| 19 | **Icon licensing:** Иконки должны быть open-source, но могут не соответствовать Windows 95 стилю | Medium | Medium | Создать custom иконки в bitmap-style, соответствующие Win95 эстетике. Использовать open-source icon sets с правильными лицензиями (MIT, CC0). Документировать источники всех иконок. | open |
 
 ## Evidence Checklist
 
@@ -1373,4 +1915,70 @@ front/__tests__/fp7/
 - Theme tokens система обеспечивает поддержку тем без изменения компонентов
 - Документация и examples предотвращают повторение ошибок командой/агентами
 
-**End of FP7 v2.4 Contract Spec**
+### Version 2.5 (2026-01-22)
+
+**Добавлено:**
+
+1. **Chicago95-like OS Experience (Outcome):**
+   - Обновлен Outcome: 60-секундный пользовательский опыт с фокусом на перцептивное восприятие Windows 95-подобной ОС
+   - Пользователь должен почувствовать, что работает в аутентичной Windows 95-подобной системе, а не на веб-сайте
+   - **Раздел изменён:** Outcome
+
+2. **Scope IN/OUT (Visual/UX vs Architecture):**
+   - Четкое разделение: что меняем (визуал/UX) vs что не меняем (архитектура платформы, VFS/S3 контракт)
+   - Scope IN: Windows 95 UI Kit, интерактивные состояния, компоненты, viewers, golden screens
+   - Scope OUT: архитектура платформы, VFS/S3 контракт, backend API, функциональность
+   - **Раздел изменён:** Scope
+
+3. **Acceptance Criteria (15 измеримых критериев):**
+   - Focus model (active/inactive windows)
+   - Pressed states (все кнопки)
+   - Single vs double click
+   - Taskbar pressed
+   - Menu ESC
+   - Window control buttons
+   - 3D bevels
+   - Typography
+   - Desktop Icons
+   - Explorer Layout
+   - Taskbar
+   - Color Palette
+   - No Modern Effects
+   - Viewport Boundary
+   - Golden Screens Match
+   - **Раздел добавлен:** Acceptance Criteria
+
+4. **Golden Screens (10 экранов для visual regression):**
+   - Desktop Shell (Empty)
+   - Desktop Shell (Active Window)
+   - Desktop Shell (Multiple Windows)
+   - Explorer (Tree + Grid)
+   - Explorer (Selection)
+   - Notepad Window
+   - Internet Explorer Window
+   - User Panel Window
+   - Taskbar (Pressed State)
+   - Desktop Icon (Pressed State)
+   - **Раздел добавлен:** Golden Screens
+
+5. **Risks (6 новых рисков):**
+   - Risk #14: Лицензии ассетов (иконки, шрифты) — использование проприетарных Windows 95 ассетов
+   - Risk #15: Шрифт MS Sans Serif — оригинальный шрифт проприетарный
+   - Risk #16: Flaky visual tests — нестабильность visual regression тестов
+   - Risk #17: Runtime differences — различия в визуальном отображении между браузерами/ОС
+   - Risk #18: Font rendering differences — различия в рендеринге шрифтов
+   - Risk #19: Icon licensing — иконки должны быть open-source
+   - **Раздел изменён:** Risks & Mitigations
+
+6. **Plan (M7: Chicago95-like OS Experience):**
+   - Добавлен milestone M7: Chicago95-like OS Experience
+   - 7 волн реализации: Tokens & Foundation, Focus Model, Pressed States, Single vs Double Click, 3D Bevels, Golden Screens, Open-Source Assets
+   - **Раздел изменён:** Plan → M7
+
+**Почему:**
+- Chicago95-like OS experience требует четкого определения outcome (60-секундный опыт) и scope (визуал/UX vs архитектура)
+- Acceptance Criteria обеспечивают измеримость всех аспектов Windows 95 эстетики и интерактивности
+- Golden Screens создают baseline для visual regression тестов
+- Риски по лицензиям, шрифтам и flaky tests критичны для open-source реализации Windows 95-подобного опыта
+
+**End of FP7 v2.5 Contract Spec**

@@ -285,10 +285,10 @@ export const taskbar = {
 // ============================================================================
 
 export const typography = {
-  fontFamily: '"MS Sans Serif", "Tahoma", sans-serif',
+  fontFamily: '"Liberation Sans", "Noto Sans", "MS Sans Serif", "Tahoma", system-ui, -apple-system, sans-serif',
   fontSize: {
     small: '10px',            // Tooltips, small labels
-    normal: '11px',           // Default text, buttons, inputs
+    normal: '11px',           // Default text, buttons, inputs (Win95 base size)
     medium: '12px',           // Title bar, menu items
     large: '14px',            // Headings (if needed)
   },
@@ -300,6 +300,10 @@ export const typography = {
     tight: '1.2',
     normal: '1.4',
     relaxed: '1.6',
+  },
+  letterSpacing: {
+    default: '0',             // Normal text
+    titlebar: '0.5px',        // Title bar bold text (0.0313rem)
   },
 } as const;
 

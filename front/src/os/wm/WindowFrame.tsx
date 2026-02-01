@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, ReactNode } from "react";
 import { windowStore } from "./WindowStore";
 import { useWindowRegistry } from "./WindowRegistry";
+import { CaptionButtons } from "../../ui/primitives";
 
 type WindowFrameProps = {
   id: string;
@@ -76,6 +77,7 @@ export function WindowFrame({ id, title, children, onClose }: WindowFrameProps) 
         boxShadow: state.zIndex > 10 ? "4px 4px 10px rgba(0,0,0,0.5)" : undefined,
       }}
       onMouseDown={() => focusWindow(id)}
+      data-testid={`window-${id}`}
     >
       <header
         className={`win-titlebar ${state.isDragging ? "win-titlebar-dragging" : ""}`}
@@ -87,11 +89,10 @@ export function WindowFrame({ id, title, children, onClose }: WindowFrameProps) 
           <span>◆</span>
           <span>{title}</span>
         </div>
-        <div className="win-window-controls">
-          <button className="win-btn" type="button" onClick={handleClose} aria-label="Close window">
-            ×
-          </button>
-        </div>
+        <CaptionButtons 
+          onClose={handleClose}
+          data-testid={`window-${id}-controls`}
+        />
       </header>
       <div className="win-window-content">{children}</div>
     </div>

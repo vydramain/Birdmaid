@@ -310,9 +310,118 @@ npm run preview:mobile
 
 ---
 
-## 8. Тесты (автоматическая проверка) (2 минуты)
+## 8. Chicago95 Style Gate (5 минут)
 
-### 8.1 Frontend Tests
+### 8.1 Visual Regression Golden Screens
+
+**Проверка:**
+```bash
+# Если настроен Playwright
+cd front
+npx playwright test --project=chromium
+
+# Или проверить вручную наличие baseline screenshots
+ls -la docs/design/references/screenshots/golden/
+```
+
+**Ожидаемый результат:**
+- ✅ Baseline screenshots существуют для всех 8-10 golden screens
+- ✅ Visual regression тесты проходят (если настроены)
+- ✅ Screenshots сохранены в `docs/design/references/screenshots/golden/`
+
+**Golden Screens Checklist:**
+- [ ] Desktop Shell (Empty)
+- [ ] Desktop Shell (Active Window)
+- [ ] Desktop Shell (Multiple Windows)
+- [ ] Explorer (Tree + Grid)
+- [ ] Explorer (Selection)
+- [ ] Notepad Window
+- [ ] Internet Explorer Window
+- [ ] User Panel Window
+- [ ] Taskbar (Pressed State)
+- [ ] Desktop Icon (Pressed State)
+
+### 8.2 Asset Provenance Check
+
+**Проверка:**
+```bash
+node scripts/check-asset-provenance.cjs
+```
+
+**Ожидаемый результат:**
+- ✅ Asset provenance check проходит без ошибок
+- ✅ Все шрифты имеют записи в `docs/compliance/ASSET_PROVENANCE.md`
+- ✅ Все иконки имеют записи в `docs/compliance/ASSET_PROVENANCE.md`
+- ✅ Все ассеты open-source (MIT, OFL-1.1, CC0) или custom
+
+**Проверка шрифтов:**
+```bash
+cd front && grep -r "font-family" src/styles/ --include="*.scss" | grep -i "liberation\|noto\|tahoma" | head -5
+```
+- ✅ Используются только open-source шрифты (Liberation Sans, Noto Sans, Tahoma, system fonts)
+
+**Проверка иконок:**
+```bash
+cd front && find public/icons -name "*.svg" -o -name "*.png" | wc -l
+```
+- ✅ Все иконки custom или open-source (документированы)
+
+### 8.3 No Inline Styles Violation
+
+**Проверка:**
+```bash
+cd front
+npm run lint
+```
+
+**Ожидаемый результат:**
+- ✅ Lint проходит без ошибок inline styles
+- ✅ Нет inline styles без allow-tag комментария
+- ✅ Whitelist используется только для drag/resize/layout-calc/performance
+
+**Проверка inline styles:**
+```bash
+cd front && grep -r "style=" src/ --include="*.tsx" | grep -v "// inline-style: allowed" | head -10
+```
+- ✅ Нет inline styles без allow-tag (кроме whitelist случаев)
+
+### 8.4 Chicago95 Acceptance Criteria
+
+**Проверка вручную (15 критериев):**
+
+1. **Focus Model:**
+   - [ ] Active window имеет title bar с синим градиентом, z-index 20
+   - [ ] Inactive window имеет title bar серого цвета, z-index 10
+   - [ ] Клик по окну → окно становится active
+
+2. **Pressed States:**
+   - [ ] Все кнопки имеют pressed state (outset → inset bevel + translate(1px, 1px))
+   - [ ] Window control buttons имеют pressed state
+   - [ ] Desktop Icons имеют pressed state
+   - [ ] Taskbar buttons имеют pressed state
+
+3. **Single vs Double Click:**
+   - [ ] Desktop Icons: single-click → selection, double-click → открытие
+   - [ ] Explorer Grid: single-click → selection, double-click → открытие
+
+4. **3D Bevels:**
+   - [ ] Explorer Tree/Grid используют inset bevel
+   - [ ] Buttons используют правильные bevels (outset default, inset pressed)
+   - [ ] Input fields используют inset bevel
+   - [ ] Window frames используют 3D window bevel
+
+5. **No Modern Effects:**
+   - [ ] Нет `border-radius` (кроме `border-radius: 0`)
+   - [ ] Нет blur эффектов
+   - [ ] Нет glassmorphism
+   - [ ] Transitions < 100ms или отсутствуют
+
+**Ожидаемый результат:**
+- ✅ Все 15 Acceptance Criteria выполнены
+
+## 9. Тесты (автоматическая проверка) (2 минуты)
+
+### 9.1 Frontend Tests
 
 **Команда:**
 ```bash
@@ -324,7 +433,7 @@ npm test
 - ✅ Все тесты FP7 проходят (16 тестов)
 - ✅ Нет падающих тестов
 
-### 8.2 Backend Tests
+### 9.2 Backend Tests
 
 **Команда:**
 ```bash
@@ -336,7 +445,7 @@ npm test
 - ✅ Все тесты FP7 проходят (3 теста)
 - ✅ Нет падающих тестов
 
-### 8.3 Coverage
+### 9.3 Coverage
 
 **Команда:**
 ```bash
@@ -369,6 +478,10 @@ cd back && npm run coverage
 8. ✅ PostMessage валидация работает
 9. ✅ Mobile сборка запускается
 10. ✅ Все тесты FP7 проходят
+11. ✅ Visual regression golden screens проходят (8-10 screenshots)
+12. ✅ Asset provenance check проходит (все ассеты open-source)
+13. ✅ No inline styles violation (lint проходит)
+14. ✅ Chicago95 Acceptance Criteria выполнены (15 критериев)
 
 ### Критерии REJECT
 
@@ -421,7 +534,13 @@ curl -X POST http://localhost:3000/api/auth/dev -H "Content-Type: application/js
 cd front && npm run build:mobile && npm run preview:mobile
 ```
 
-### Шаг 8: Тесты (1 мин)
+### Шаг 8: Chicago95 Style Gate (5 мин)
+- Проверить visual regression golden screens (8-10 screenshots)
+- Запустить asset provenance check: `node scripts/check-asset-provenance.cjs`
+- Проверить no inline styles violation: `cd front && npm run lint`
+- Проверить Chicago95 Acceptance Criteria (15 критериев вручную)
+
+### Шаг 9: Тесты (1 мин)
 ```bash
 cd front && npm test
 cd back && npm test
@@ -507,6 +626,12 @@ docker compose down
 - ✅ Mobile сборка запускается (`npm run build:mobile`)
 - ✅ Mobile Shell отображается
 
+### Chicago95 Style
+- ✅ Visual regression golden screens проходят (8-10 screenshots)
+- ✅ Asset provenance check проходит (все ассеты open-source)
+- ✅ No inline styles violation (lint проходит)
+- ✅ Chicago95 Acceptance Criteria выполнены (15 критериев)
+
 ### Tests
 - ✅ Все тесты FP7 проходят (16 frontend + 3 backend)
 - ✅ Coverage > 70%
@@ -528,6 +653,11 @@ FP7 Release Gate — [PASS/REJECT]
 - Guest: [✅/❌]
 - Security: [✅/❌]
 - Mobile: [✅/❌]
+- Chicago95 Style: [✅/❌]
+  - Visual Regression: [✅/❌]
+  - Asset Provenance: [✅/❌]
+  - No Inline Styles: [✅/❌]
+  - Acceptance Criteria: [✅/❌]
 - Tests: [✅/❌]
 
 Блокеры (если REJECT):

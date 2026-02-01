@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useWindowRegistry } from "../wm/WindowRegistry";
 import { taskbar, colors } from "../../ui/win95/tokens";
+import { Icon } from "../../ui/icons";
 
 /**
  * Taskbar - Windows 95 styled taskbar.
@@ -55,7 +56,7 @@ export function Taskbar() {
           className={`tray-icon ${isLoggedIn ? "tray-icon-logged-in" : ""}`}
           title={isLoggedIn ? `Logged in as ${auth.user?.login || "User"}` : "Not logged in"}
         >
-          {isLoggedIn ? "👤" : "👤"}
+          <Icon type="system-user" size="16x16" />
         </div>
 
         {/* Clock */}

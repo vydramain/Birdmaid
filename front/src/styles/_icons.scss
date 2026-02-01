@@ -1,0 +1,32 @@
+/**
+ * Icon Styles
+ * 
+ * Styles for icon system. No inline styles for image-rendering.
+ */
+
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+  user-select: none;
+  // image-rendering via CSS class (no inline styles)
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  
+  // Size variants
+  &.icon-16x16 {
+    width: 16px;
+    height: 16px;
+  }
+  
+  &.icon-32x32 {
+    width: 32px;
+    height: 32px;
+  }
+  
+  &.icon-48x48 {
+    width: 48px;
+    height: 48px;
+  }
+}

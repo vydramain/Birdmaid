@@ -1,0 +1,39 @@
+/**
+ * Font Face Declarations
+ * 
+ * OSS fonts loaded via @font-face for Win95/Chicago95 typography.
+ * All fonts must be OSS-licensed (OFL, MIT, Apache-2.0).
+ * 
+ * References:
+ *   - docs/compliance/ASSET_POLICY.md: License requirements
+ *   - docs/compliance/ASSET_PROVENANCE.md: Asset provenance
+ */
+
+// ============================================================================
+// Liberation Sans (SIL OFL) - MS Sans Serif alternative
+// ============================================================================
+// Liberation Sans is a metric-compatible open-source alternative to MS Sans Serif.
+// License: SIL Open Font License 1.1 (OFL-1.1)
+// Source: https://github.com/liberationfonts/liberation-fonts
+//
+// Note: We use Google Fonts CDN for simplicity, but could also bundle locally.
+// For local bundling, download from:
+// https://github.com/liberationfonts/liberation-fonts/releases
+
+@import url('https://fonts.googleapis.com/css2?family=Liberation+Sans:wght@400;700&display=swap');
+
+// Alternative: If Liberation Sans is not available via Google Fonts,
+// we can use Noto Sans as a fallback (also OFL-1.1)
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap');
+
+// ============================================================================
+// Font Family Stack
+// ============================================================================
+// The font stack prioritizes:
+// 1. Liberation Sans (OSS, metric-compatible with MS Sans Serif)
+// 2. Noto Sans (OSS fallback)
+// 3. System fonts (MS Sans Serif, Tahoma if available)
+// 4. Generic sans-serif fallback
+
+// This is defined in themes via --font-family CSS variable.
+// See: themes/_win95-default.scss
