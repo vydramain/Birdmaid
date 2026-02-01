@@ -25,17 +25,6 @@ export function DesktopIcon({ icon, label, onClick, tooltip, dataTestId }: Deskt
         <Icon type={icon} size="48x48" />
       </div>
       <span className="desktop-icon-label">{label}</span>
-      {showTooltip && tooltip && (
-        <div
-          className="desktop-icon-tooltip"
-          // inline-style: allowed (reason: layout-calc)
-          style={{
-            transform: "translateX(-50%)",
-          }}
-        >
-          {tooltip}
-        </div>
-      )}
     </div>
   );
 }
