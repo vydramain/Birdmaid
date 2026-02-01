@@ -7,9 +7,10 @@ type DesktopIconProps = {
   label: string;
   onClick: () => void;
   tooltip?: string;
+  dataTestId?: string;
 };
 
-export function DesktopIcon({ icon, label, onClick, tooltip }: DesktopIconProps) {
+export function DesktopIcon({ icon, label, onClick, tooltip, dataTestId }: DesktopIconProps) {
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
@@ -18,7 +19,7 @@ export function DesktopIcon({ icon, label, onClick, tooltip }: DesktopIconProps)
       onClick={onClick}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
-      data-testid={`desktop-icon-${label}`}
+      data-testid={dataTestId || `desktop-icon-${label}`}
     >
       <div className="desktop-icon-box">
         <Icon type={icon} size="48x48" />

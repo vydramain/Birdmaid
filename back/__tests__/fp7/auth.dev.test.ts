@@ -2,8 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { JwtModule } from "@nestjs/jwt";
 import { AuthService } from "../../src/auth/auth.service";
 import { UsersRepository } from "../../src/users/users.repository";
-import { EmailService } from "../../src/auth/email.service";
-import { ForbiddenException, BadRequestException } from "@nestjs/common";
+import { ForbiddenException } from "@nestjs/common";
 
 describe("Auth Dev Mode", () => {
   let authService: AuthService;
@@ -24,12 +23,7 @@ describe("Auth Dev Mode", () => {
           useValue: {
             findById: jest.fn(),
             create: jest.fn(),
-          },
-        },
-        {
-          provide: EmailService,
-          useValue: {
-            sendRecoveryCode: jest.fn(),
+            updateRole: jest.fn(),
           },
         },
       ],
@@ -127,23 +121,80 @@ describe("Auth Dev Mode", () => {
     expect(result.user.role).toBe("Guest");
   });
 
-  it("should require userId", async () => {
-    process.env.AUTH_MODE = "dev";
-
-    await expect(authService.devAuth()).rejects.toThrow(BadRequestException);
-    await expect(authService.devAuth()).rejects.toThrow("userId is required for dev auth");
-  });
-
-  it("should fail if user not found", async () => {
+  it("should create user if userId not found", async () => {
     process.env.AUTH_MODE = "dev";
 
     (usersRepo.findById as jest.Mock).mockResolvedValue(null);
+    const mockNewUser = {
+      _id: "newuser123",
+      email: "dev-newuser123@local.dev",
+      login: "dev-newuser123",
+      password: "",
+      isSuperAdmin: false,
+      role: "Guest" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    (usersRepo.create as jest.Mock).mockResolvedValue(mockNewUser);
 
-    await expect(authService.devAuth("nonexistent", "Organizer")).rejects.toThrow(
-      BadRequestException
+    const result = await authService.devAuth("newuser123", "Organizer");
+
+    expect(usersRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: "dev-newuser123@local.dev",
+        login: "dev-newuser123",
+        role: "Organizer",
+      })
     );
-    await expect(authService.devAuth("nonexistent", "Organizer")).rejects.toThrow(
-      "User not found"
+    expect(result.user.id).toBe("newuser123");
+    expect(result.user.role).toBe("Organizer");
+  });
+
+  it("should create default dev user if no userId provided", async () => {
+    process.env.AUTH_MODE = "dev";
+
+    const mockNewUser = {
+      _id: "devuser123",
+      email: expect.stringMatching(/^dev-\d+@local\.dev$/),
+      login: expect.stringMatching(/^dev-\d+$/),
+      password: "",
+      isSuperAdmin: false,
+      role: "Guest" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    (usersRepo.create as jest.Mock).mockResolvedValue(mockNewUser);
+
+    const result = await authService.devAuth(undefined, "Participant");
+
+    expect(usersRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role: "Participant",
+      })
     );
+    expect(result.user.role).toBe("Participant");
+  });
+
+  it("should update role if provided and different from user's role", async () => {
+    process.env.AUTH_MODE = "dev";
+
+    const mockUser = {
+      _id: "user123",
+      email: "test@example.com",
+      login: "testuser",
+      password: "hashed",
+      isSuperAdmin: false,
+      role: "Guest" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    (usersRepo.findById as jest.Mock).mockResolvedValue(mockUser);
+    (usersRepo.updateRole as jest.Mock).mockResolvedValue(undefined);
+
+    const result = await authService.devAuth("user123", "Organizer");
+
+    expect(usersRepo.updateRole).toHaveBeenCalledWith("user123", "Organizer");
+    expect(result.user.role).toBe("Organizer");
   });
 });

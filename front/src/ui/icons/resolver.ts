@@ -21,8 +21,16 @@ function getExtension(filename: string): string {
 /**
  * Resolve icon type for VFS node
  */
-export function resolveIconForVFSNode(node: VFSNode): IconType {
+export function resolveIconForVFSNode(node: VFSNode, path?: string): IconType {
   if (node.type === 'dir') {
+    // Check if this is a root-level system folder (Disk A, Disk B, Disk C)
+    const name = node.name;
+    if (name === 'Disk A' || name === 'Disk B' || name === 'Disk C') {
+      // Check if it's at root level (path is '/' or undefined)
+      if (!path || path === '/') {
+        return 'disk';
+      }
+    }
     return 'dir';
   }
 

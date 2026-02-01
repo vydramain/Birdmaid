@@ -1,8 +1,14 @@
 # CUTLIST: Что удалить из репозитория для FP7 v2
 
-**Версия:** 1.0  
+**Версия:** 2.0  
 **Дата:** 2026-01-22  
-**Связано с:** [docs/fps/FP7.md](./docs/fps/FP7.md) (FP7 v2 Contract Spec)
+**Связано с:** [docs/fps/FP7.md](./docs/fps/FP7.md) (FP7 v2 Contract Spec), [docs/audit/FP7_COMPLIANCE_REPORT.md](./audit/FP7_COMPLIANCE_REPORT.md)
+
+## Приоритеты
+
+- **P0 (Critical):** Блокирует FP7 compliance, удалить немедленно
+- **P1 (High):** Должно быть исправлено перед release
+- **P2 (Medium):** Следует исправить для полного compliance
 
 ## Классификация
 
@@ -52,68 +58,142 @@
 
 ## 2. Email/password auth
 
-### remove immediately (после реализации Telegram auth)
+### P0 (Critical) - remove immediately
 
-**Backend:**
-- `back/src/auth/dto/register.dto.ts`
-  - **Причина:** Заменяется на Telegram auth
-  - **Действие:** Удалить после реализации Telegram auth
+**Why (FP7 clause):** FP7.md line 245-248: "Удалить регистрацию через email/password", "Заменить на Telegram auth". FP7.md line 860-862: Only `/api/auth/dev`, `/api/auth/telegram`, `/api/auth/me` should exist.
 
-- `back/src/auth/dto/login.dto.ts`
-  - **Причина:** Заменяется на Telegram auth
-  - **Действие:** Удалить после реализации Telegram auth
+**Backend DTOs:**
+- `back/src/auth/dto/register.dto.ts` (DELETE)
+  - **Paths:** `back/src/auth/dto/register.dto.ts`
+  - **How to verify removal:**
+    ```bash
+    test ! -f back/src/auth/dto/register.dto.ts && echo "✅ Deleted" || echo "❌ Still exists"
+    grep -r "RegisterDto" back/src/ --exclude-dir=node_modules && echo "❌ Still referenced" || echo "✅ No references"
+    ```
 
-- `back/src/auth/dto/recovery-request.dto.ts`
-- `back/src/auth/dto/recovery-verify.dto.ts`
-  - **Причина:** Заменяется на Telegram auth
-  - **Действие:** Удалить после реализации Telegram auth
+- `back/src/auth/dto/login.dto.ts` (DELETE)
+  - **Paths:** `back/src/auth/dto/login.dto.ts`
+  - **How to verify removal:**
+    ```bash
+    test ! -f back/src/auth/dto/login.dto.ts && echo "✅ Deleted" || echo "❌ Still exists"
+    grep -r "LoginDto" back/src/ --exclude-dir=node_modules && echo "❌ Still referenced" || echo "✅ No references"
+    ```
 
-- `back/src/auth/email.service.ts` (если есть)
-  - **Причина:** Не нужен для Telegram auth
-  - **Действие:** Удалить после реализации Telegram auth
+- `back/src/auth/dto/recovery-request.dto.ts` (DELETE)
+- `back/src/auth/dto/recovery-verify.dto.ts` (DELETE)
+  - **Paths:** `back/src/auth/dto/recovery-request.dto.ts`, `back/src/auth/dto/recovery-verify.dto.ts`
+  - **How to verify removal:**
+    ```bash
+    test ! -f back/src/auth/dto/recovery-request.dto.ts && \
+    test ! -f back/src/auth/dto/recovery-verify.dto.ts && \
+    echo "✅ Deleted" || echo "❌ Still exists"
+    ```
+
+**Backend Endpoints:**
+- `POST /api/auth/register` (DELETE from controller)
+- `POST /api/auth/login` (DELETE from controller)
+- `POST /api/auth/recovery/request` (DELETE from controller)
+- `POST /api/auth/recovery/verify` (DELETE from controller)
+  - **Paths:** `back/src/auth/auth.controller.ts` (lines 15-33)
+  - **How to verify removal:**
+    ```bash
+    grep -q "@Post(\"register\")\|@Post(\"login\")\|@Post(\"recovery\")" \
+    back/src/auth/auth.controller.ts && echo "❌ Endpoints still exist" || echo "✅ Endpoints removed"
+    ```
+
+**Backend Service Methods:**
+- `register`, `login`, `requestRecovery`, `verifyRecovery`, `hashPassword` (DELETE from service)
+  - **Paths:** `back/src/auth/auth.service.ts` (lines 38-112)
+  - **How to verify removal:**
+    ```bash
+    grep -q "async register\|async login\|async requestRecovery\|async verifyRecovery" \
+    back/src/auth/auth.service.ts && echo "❌ Methods still exist" || echo "✅ Methods removed"
+    ```
+
+**Backend Email Service:**
+- `back/src/auth/email.service.ts` (DELETE) - **P1**
+  - **Paths:** `back/src/auth/email.service.ts`
+  - **Why (FP7 clause):** Not needed for Telegram auth (FP7.md line 245-248)
+  - **How to verify removal:**
+    ```bash
+    test ! -f back/src/auth/email.service.ts && echo "✅ Deleted" || echo "❌ Still exists"
+    grep -r "EmailService" back/src/auth/ --exclude-dir=node_modules && echo "❌ Still referenced" || echo "✅ No references"
+    ```
 
 **Frontend:**
-- `front/src/components/AuthModal.tsx` (email/password версия)
-  - **Причина:** Заменяется на Telegram auth
-  - **Действие:** Переписать под Telegram auth или удалить и создать новый
+- `front/src/components/AuthModal.tsx` (REWRITE for Telegram)
+  - **Paths:** `front/src/components/AuthModal.tsx` (lines 12-291)
+  - **How to verify removal:**
+    ```bash
+    grep -q "email\|password\|identifier" front/src/components/AuthModal.tsx | \
+    grep -v "Telegram\|comment\|//" && echo "❌ Email/password fields found" || echo "✅ Fields removed"
+    grep -q "Telegram\|telegramAuth" front/src/components/AuthModal.tsx && \
+    echo "✅ Telegram auth UI found" || echo "❌ No Telegram auth UI"
+    ```
 
-**Endpoints:**
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/recovery/request`
-- `POST /api/auth/recovery/verify`
-  - **Причина:** Заменяются на Telegram auth
-  - **Действие:** Удалить после реализации Telegram auth
+- `front/src/contexts/AuthContext.tsx` (REWRITE for Telegram)
+  - **Paths:** `front/src/contexts/AuthContext.tsx` (lines 27-132)
+  - **How to verify removal:**
+    ```bash
+    grep -q "login.*identifier.*password\|register.*email.*password\|requestRecovery\|verifyRecovery" \
+    front/src/contexts/AuthContext.tsx && echo "❌ Methods found" || echo "✅ Methods removed"
+    grep -q "telegramAuth\|telegram.*auth" front/src/contexts/AuthContext.tsx && \
+    echo "✅ Telegram auth method found" || echo "❌ No Telegram auth method"
+    ```
 
-**Тесты:**
-- `back/__tests__/fp4/auth.register.test.ts`
-- `back/__tests__/fp4/auth.login.test.ts`
-- `back/__tests__/fp4/auth.recovery.test.ts`
-- `front/__tests__/fp4/auth.registration.test.tsx`
-- `front/__tests__/fp4/auth.login.test.tsx`
-  - **Причина:** Заменяются на Telegram auth тесты
-  - **Действие:** Удалить после реализации Telegram auth тестов
+**Tests:**
+- `back/__tests__/fp4/auth.register.test.ts` (DELETE)
+- `back/__tests__/fp4/auth.login.test.ts` (DELETE)
+- `back/__tests__/fp4/auth.recovery.test.ts` (DELETE)
+- `front/__tests__/fp4/auth.flows.test.tsx` (DELETE if exists)
+  - **Paths:** `back/__tests__/fp4/`, `front/__tests__/fp4/`
+  - **How to verify removal:**
+    ```bash
+    test ! -f back/__tests__/fp4/auth.register.test.ts && \
+    test ! -f back/__tests__/fp4/auth.login.test.ts && \
+    test ! -f back/__tests__/fp4/auth.recovery.test.ts && \
+    echo "✅ Tests deleted" || echo "❌ Tests still exist"
+    ```
 
 ---
 
-## 3. Старые роли
+## 3. Старые роли (isSuperAdmin)
 
-### refactor later
+### P0 (Critical) - refactor immediately
+
+**Why (FP7 clause):** FP7.md line 250-252: "Удалить `isSuperAdmin` как отдельную роль. Заменить на Guest/Participant/Organizer модель"
 
 **Backend:**
-- `isSuperAdmin` поле в User модели
-  - **Причина:** Заменяется на Guest/Participant/Organizer модель
-  - **Действие:** Мигрировать существующих superAdmin в Organizer роль, затем удалить поле
+- `isSuperAdmin` поле в User модели (REPLACE with role checks)
+  - **Paths:** `back/src/users/users.repository.ts` (line 11), `back/src/auth/auth.service.ts` (lines 24-200), `back/src/auth/auth.controller.ts` (line 55), `back/src/vfs/vfs.controller.ts` (line 18), `back/src/games/games.service.ts` (lines 12-264), `back/src/games/games.controller.ts` (lines 72-828)
+  - **How to verify removal:**
+    ```bash
+    grep -r "isSuperAdmin" back/src/ --exclude-dir=node_modules | \
+    grep -v "deprecated\|//\|role.*isSuperAdmin.*Organizer" && \
+    echo "❌ isSuperAdmin still used" || echo "✅ Replaced with role checks"
+    grep -q "role.*===.*Organizer\|role.*!==.*Organizer" back/src/auth/auth.service.ts && \
+    echo "✅ Role checks found" || echo "❌ No role checks"
+    ```
 
 **Frontend:**
-- Использование `isSuperAdmin` в компонентах
-  - **Причина:** Заменяется на Guest/Participant/Organizer модель
-  - **Действие:** Заменить на проверку роли Organizer
+- Использование `isSuperAdmin` в компонентах (REPLACE with role checks)
+  - **Paths:** `front/src/contexts/AuthContext.tsx` (lines 10-114), `front/src/os/apps/UserPanelApp.tsx` (line 19), `front/src/test/mocks/mockApi.ts` (lines 228-268), `front/src/test/fixtures/user.ts` (lines 9-20)
+  - **How to verify removal:**
+    ```bash
+    grep -r "isSuperAdmin" front/src/ --exclude-dir=legacy --exclude-dir=node_modules | \
+    grep -v "deprecated\|//" && echo "❌ isSuperAdmin still used" || echo "✅ Replaced with role checks"
+    grep -q "role.*===.*Organizer\|role.*!==.*Organizer" front/src/os/apps/UserPanelApp.tsx && \
+    echo "✅ Role checks found" || echo "❌ No role checks"
+    ```
 
 **Guards:**
-- `back/src/auth/guards/superadmin.guard.ts` (если есть)
-  - **Причина:** Заменяется на роль-базированные guards
-  - **Действие:** Переписать под Guest/Participant/Organizer модель
+- `back/src/auth/guards/superadmin.guard.ts` (DELETE if exists, REPLACE with role-based guards)
+  - **Paths:** `back/src/auth/guards/` (if exists)
+  - **How to verify removal:**
+    ```bash
+    test ! -f back/src/auth/guards/superadmin.guard.ts && \
+    echo "✅ Guard deleted" || echo "⚠️  Guard still exists (check if replaced)"
+    ```
 
 ---
 
@@ -184,15 +264,38 @@
 
 ## 7. Backend API, который может быть полезен
 
-### refactor later
+### P1 (High) - verify scope first
 
-**Endpoints:**
+**Why (FP7 clause):** FP7.md line 266-268: "Не входит: комментарии, рейтинги, 'соцсеть'"
+
+**Endpoints (VERIFY if OUT of FP7 scope, DELETE if confirmed):**
 - `GET /api/games` (список игр)
 - `GET /api/games/:id` (детали игры)
+  - **Paths:** `back/src/games/` (entire folder)
+  - **How to verify removal:**
+    ```bash
+    # Manual review: Check if games are social feature only or used by VFS/Explorer
+    # If OUT of scope:
+    test ! -d back/src/games && echo "✅ Deleted" || echo "❌ Still exists"
+    ```
+
 - `GET /api/teams` (список команд)
+  - **Paths:** `back/src/teams/` (entire folder)
+  - **How to verify removal:**
+    ```bash
+    # Manual review: Check if teams are social feature only or used by VFS/Explorer
+    # If OUT of scope:
+    test ! -d back/src/teams && echo "✅ Deleted" || echo "❌ Still exists"
+    ```
+
 - `POST /api/comments` (создание комментария)
-  - **Причина:** Могут быть полезны для будущей интеграции с VFS
-  - **Действие:** Оставить, но не использовать в shell-only поверхности. Возможно, интегрировать через VFS метаданные
+  - **Paths:** `back/src/comments/` (entire folder)
+  - **How to verify removal:**
+    ```bash
+    # Manual review: Check if comments are used by VFS/Explorer or only for games
+    # If OUT of scope:
+    test ! -d back/src/comments && echo "✅ Deleted" || echo "❌ Still exists"
+    ```
 
 ---
 
@@ -208,25 +311,31 @@
 
 ---
 
-## Итоговый план удаления
+## Итоговый план удаления (по приоритетам)
 
-### Phase 1: Immediate (M0)
-1. Удалить react-router маршруты из `App.tsx`
-2. Удалить CatalogPage, GamePage, TeamsPage, EditorPage
-3. Удалить dead code (WindowContext, старый WindowManager)
-4. Удалить старые тесты для react-router
+### P0 (Critical) - Immediate
+1. ✅ Delete email/password auth DTOs (`register.dto.ts`, `login.dto.ts`, `recovery-*.dto.ts`)
+2. ✅ Delete email/password auth endpoints (`/api/auth/register`, `/api/auth/login`, `/api/auth/recovery/*`)
+3. ✅ Delete email/password auth service methods (`register`, `login`, `requestRecovery`, `verifyRecovery`)
+4. ✅ Delete email/password auth tests (`auth.register.test.ts`, `auth.login.test.ts`, `auth.recovery.test.ts`)
+5. ✅ Replace `isSuperAdmin` with role checks (backend + frontend)
+6. ✅ Rewrite `AuthModal.tsx` for Telegram auth
+7. ✅ Rewrite `AuthContext.tsx` for Telegram auth
+8. ✅ Add Telegram auth endpoint (`/api/auth/telegram`)
 
-### Phase 2: After Telegram Auth (M4)
-1. Удалить email/password auth код
-2. Удалить старые auth тесты
+### P1 (High) - Before Release
+1. ✅ Delete email service (`email.service.ts`)
+2. ✅ Verify legacy pages not used (`front/src/legacy/pages.tsx`)
+3. ✅ Rewrite help endpoint to read from VFS (`/Disk C/desktop/help.txt`)
+4. ✅ Add `admin_help.txt` for Organizer role
+5. ✅ Verify Games/Teams/Comments scope (DELETE if OUT of FP7)
 
-### Phase 3: After Role Migration (M4)
-1. Мигрировать isSuperAdmin в Organizer
-2. Удалить isSuperAdmin поле
+### P2 (Medium) - Full Compliance
+- None identified
 
-### Phase 4: Cleanup (после M5)
-1. Удалить неиспользуемые зависимости
-2. Финальная проверка dead code
+## Execution Plan
+
+See [docs/CUTLINE_PLAN.md](./CUTLINE_PLAN.md) for detailed commit-by-commit execution plan.
 
 ---
 

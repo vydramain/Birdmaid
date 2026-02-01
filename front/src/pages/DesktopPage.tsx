@@ -22,7 +22,17 @@ export function DesktopPage() {
   useEffect(() => {
     const updateIcons = () => {
       const nodes = vfs.readDir("/Disk C/desktop");
-      const newIcons = nodes.map((node) => {
+      const userRole = vfs.getUserRole();
+      
+      // Filter nodes: hide admin_help.txt unless user is Organizer
+      const filteredNodes = nodes.filter((node) => {
+        if (node.name === "admin_help.txt") {
+          return userRole === "Organizer";
+        }
+        return true;
+      });
+      
+      const newIcons = filteredNodes.map((node) => {
         let icon: IconType = resolveIconForVFSNode(node);
         let target = "";
         let label = node.name;
@@ -31,8 +41,11 @@ export function DesktopPage() {
           // Parse link file
           try {
             const data = JSON.parse(node.content as string);
-            // If link has target app, use app icon
-            if (data.target) {
+            // Special case: "My Computer" should use system-computer icon
+            if (data.label === "My Computer") {
+              icon = "system-computer";
+            } else if (data.target) {
+              // If link has target app, use app icon
               icon = resolveIconForApp(data.target);
             } else {
               icon = "link";
@@ -105,15 +118,19 @@ export function DesktopPage() {
     <div className="desktop-background">
       {/* Desktop icons grid */}
       <div data-testid="desktop-icons" className="desktop-icons-grid">
-        {icons.map((icon) => (
-          <DesktopIcon
-            key={icon.id}
-            icon={icon.icon}
-            label={icon.label}
-            onClick={() => handleIconClick(icon)}
-            tooltip={icon.label}
-          />
-        ))}
+        {icons.map((icon) => {
+          const iconPath = `/Disk C/desktop/${icon.id}`;
+          return (
+            <DesktopIcon
+              key={icon.id}
+              icon={icon.icon}
+              label={icon.label}
+              onClick={() => handleIconClick(icon)}
+              tooltip={icon.label}
+              dataTestId={`desktop-icon-${iconPath}`}
+            />
+          );
+        })}
       </div>
 
       {/* Window Manager */}

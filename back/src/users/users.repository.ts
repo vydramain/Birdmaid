@@ -138,6 +138,25 @@ export class UsersRepository {
     );
   }
 
+  async updateRole(userId: string, role: UserRole): Promise<void> {
+    if (this.useMemory) {
+      const user = this.memoryUsers.find((u) => u._id === userId);
+      if (user) {
+        user.role = role;
+        user.updatedAt = new Date();
+      }
+      return;
+    }
+
+    const db = await this.getDb();
+    if (!db) throw new Error("DB not available");
+    const users = db.collection<UserDoc>("users");
+    await users.updateOne(
+      { _id: userId },
+      { $set: { role, updatedAt: new Date() } }
+    );
+  }
+
   async findById(id: string): Promise<UserDoc | null> {
     if (this.useMemory) {
       return this.memoryUsers.find((u) => u._id === id) || null;

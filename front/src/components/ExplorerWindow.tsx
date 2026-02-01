@@ -175,8 +175,8 @@ export function ExplorerWindow() {
         <div data-testid="explorer-grid" className="explorer-grid-view">
           <div className="explorer-grid">
             {files.map((node) => {
-              const iconType = resolveIconForVFSNode(node);
-
+              const itemPath = getNodePath(node, currentPath);
+              const iconType = resolveIconForVFSNode(node, currentPath);
               return (
                 <div
                   key={node.name}
@@ -189,7 +189,7 @@ export function ExplorerWindow() {
                     }
                   }}
                   className="explorer-grid-item"
-                  data-testid={`explorer-grid-item-${node.name}`}
+                  data-testid={`explorer-grid-item-${itemPath}`}
                 >
                   <div className="explorer-icon">
                     <Icon type={iconType} size="32x32" />

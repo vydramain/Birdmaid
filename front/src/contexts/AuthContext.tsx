@@ -14,11 +14,9 @@ type User = {
 type AuthContextType = {
   user: User | null;
   token: string | null;
-  login: (identifier: string, password: string) => Promise<void>;
-  register: (email: string, login: string, password: string) => Promise<void>;
+  devAuth: (userId?: string, role?: UserRole) => Promise<void>;
+  telegramAuth: (telegramId: string, hash: string) => Promise<void>;
   logout: () => void;
-  requestRecovery: (email: string) => Promise<void>;
-  verifyRecovery: (email: string, code: string, newPassword: string) => Promise<void>;
   loading: boolean;
 };
 
@@ -54,31 +52,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
-  const login = async (identifier: string, password: string) => {
-    const response = await apiClient.json<{ user: User; token: string }>("/auth/login", {
+  const devAuth = async (userId?: string, role?: UserRole) => {
+    const response = await apiClient.json<{ user: User; token: string }>("/auth/dev", {
       method: "POST",
-      body: JSON.stringify({ identifier, password }),
+      body: JSON.stringify({ userId, role }),
     });
     // Determine role from response
-    const role: UserRole = response.user.role || (response.user.isSuperAdmin ? 'Organizer' : 'Guest');
+    const userRole: UserRole = response.user.role || (response.user.isSuperAdmin ? 'Organizer' : 'Guest');
     setUser({
       ...response.user,
-      role: role,
+      role: userRole,
     });
     setToken(response.token);
     localStorage.setItem("birdmaid_token", response.token);
   };
 
-  const register = async (email: string, login: string, password: string) => {
-    const response = await apiClient.json<{ user: User; token: string }>("/auth/register", {
+  const telegramAuth = async (telegramId: string, hash: string) => {
+    const response = await apiClient.json<{ user: User; token: string }>("/auth/telegram", {
       method: "POST",
-      body: JSON.stringify({ email, login, password }),
+      body: JSON.stringify({ telegramId, hash }),
     });
     // Determine role from response
-    const role: UserRole = response.user.role || (response.user.isSuperAdmin ? 'Organizer' : 'Guest');
+    const userRole: UserRole = response.user.role || (response.user.isSuperAdmin ? 'Organizer' : 'Guest');
     setUser({
       ...response.user,
-      role: role,
+      role: userRole,
     });
     setToken(response.token);
     localStorage.setItem("birdmaid_token", response.token);
@@ -90,34 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("birdmaid_token");
   };
 
-  const requestRecovery = async (email: string) => {
-    await apiClient.json("/auth/recovery/request", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
-  };
-
-  const verifyRecovery = async (email: string, code: string, newPassword: string) => {
-    const response = await apiClient.json<{ token: string }>("/auth/recovery/verify", {
-      method: "POST",
-      body: JSON.stringify({ email, code, newPassword }),
-    });
-    setToken(response.token);
-    localStorage.setItem("birdmaid_token", response.token);
-    // Reload user from token
-    const payload = JSON.parse(atob(response.token.split(".")[1]));
-    const role: UserRole = payload.role || (payload.isSuperAdmin ? 'Organizer' : 'Guest');
-    setUser({
-      id: payload.userId,
-      email: payload.email,
-      login: payload.login,
-      isSuperAdmin: payload.isSuperAdmin || false,
-      role: role,
-    });
-  };
-
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, requestRecovery, verifyRecovery, loading }}>
+    <AuthContext.Provider value={{ user, token, devAuth, telegramAuth, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

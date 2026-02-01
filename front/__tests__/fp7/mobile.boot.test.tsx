@@ -43,7 +43,8 @@ describe("Mobile App Boot", () => {
     // Wait for apps to load
     await waitFor(() => {
       // Should show at least one app (from vfs-init)
-      const helpApp = screen.getByText(/help/i);
+      // Use exact text match to avoid matching "admin_help"
+      const helpApp = screen.getByText('help');
       expect(helpApp).toBeInTheDocument();
     });
   });
@@ -62,8 +63,8 @@ describe("Mobile App Boot", () => {
       expect(screen.getByText(/Programs/i)).toBeInTheDocument();
     });
 
-    // Find and click on help.txt
-    const helpApp = await screen.findByText(/help/i);
+    // Find and click on help.txt (use exact text to avoid matching "admin_help")
+    const helpApp = await screen.findByText('help');
     expect(helpApp).toBeInTheDocument();
     
     // Click on the app

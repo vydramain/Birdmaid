@@ -50,16 +50,18 @@ describe('Desktop Icons Read from Desktop Only', () => {
     render(<DesktopPage />);
     
     await waitFor(() => {
-      // Should show icons from /Disk C/desktop
+      // Should show icons from /Disk C/desktop using data-testid
       const desktopIcons = screen.getByTestId('desktop-icons');
-      expect(within(desktopIcons).getByText('My Computer')).toBeInTheDocument();
-      expect(within(desktopIcons).getByText('Explorer')).toBeInTheDocument();
+      const myComputerIcon = within(desktopIcons).getByTestId('desktop-icon-/Disk C/desktop/My Computer.url');
+      const explorerIcon = within(desktopIcons).getByTestId('desktop-icon-/Disk C/desktop/Explorer.url');
+      expect(myComputerIcon).toBeInTheDocument();
+      expect(explorerIcon).toBeInTheDocument();
     });
     
     // Should NOT show files from other locations
-    expect(screen.queryByText('file.txt')).not.toBeInTheDocument();
-    expect(screen.queryByText('image.png')).not.toBeInTheDocument();
-    expect(screen.queryByText('other-file.txt')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('desktop-icon-/Disk C/documents/file.txt')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('desktop-icon-/Disk C/images/image.png')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('desktop-icon-/Disk A/other-file.txt')).not.toBeInTheDocument();
   });
 
   it('should update icons when files are added to /Disk C/desktop', async () => {
@@ -67,7 +69,7 @@ describe('Desktop Icons Read from Desktop Only', () => {
     
     await waitFor(() => {
       const desktopIcons = screen.getByTestId('desktop-icons');
-      expect(within(desktopIcons).getByText('My Computer')).toBeInTheDocument();
+      expect(within(desktopIcons).getByTestId('desktop-icon-/Disk C/desktop/My Computer.url')).toBeInTheDocument();
     });
     
     // Add new icon to desktop
@@ -79,7 +81,8 @@ describe('Desktop Icons Read from Desktop Only', () => {
     
     // Wait for VFS event to propagate
     await waitFor(() => {
-      expect(screen.getByText('New Icon')).toBeInTheDocument();
+      const desktopIcons = screen.getByTestId('desktop-icons');
+      expect(within(desktopIcons).getByTestId('desktop-icon-/Disk C/desktop/NewIcon.url')).toBeInTheDocument();
     }, { timeout: 1000 });
   });
 
@@ -88,7 +91,7 @@ describe('Desktop Icons Read from Desktop Only', () => {
     
     await waitFor(() => {
       const desktopIcons = screen.getByTestId('desktop-icons');
-      expect(within(desktopIcons).getByText('My Computer')).toBeInTheDocument();
+      expect(within(desktopIcons).getByTestId('desktop-icon-/Disk C/desktop/My Computer.url')).toBeInTheDocument();
     });
     
     // Remove icon from desktop
@@ -96,7 +99,7 @@ describe('Desktop Icons Read from Desktop Only', () => {
     
     // Wait for VFS event to propagate
     await waitFor(() => {
-      expect(screen.queryByText('My Computer')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('desktop-icon-/Disk C/desktop/My Computer.url')).not.toBeInTheDocument();
     }, { timeout: 1000 });
   });
 
@@ -106,13 +109,13 @@ describe('Desktop Icons Read from Desktop Only', () => {
     await waitFor(() => {
       // Desktop icons should be loaded
       const desktopIcons = screen.getByTestId('desktop-icons');
-      // Check each icon separately to avoid ambiguous selector
-      expect(within(desktopIcons).getByText('My Computer')).toBeInTheDocument();
-      expect(within(desktopIcons).getByText('Explorer')).toBeInTheDocument();
+      // Check each icon separately using data-testid
+      expect(within(desktopIcons).getByTestId('desktop-icon-/Disk C/desktop/My Computer.url')).toBeInTheDocument();
+      expect(within(desktopIcons).getByTestId('desktop-icon-/Disk C/desktop/Explorer.url')).toBeInTheDocument();
     });
     
     // File in documents should not appear
-    expect(screen.queryByText('file.txt')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('desktop-icon-/Disk C/documents/file.txt')).not.toBeInTheDocument();
   });
 
   it('should not show files from /Disk A on desktop', async () => {
@@ -121,12 +124,12 @@ describe('Desktop Icons Read from Desktop Only', () => {
     await waitFor(() => {
       // Desktop icons should be loaded
       const desktopIcons = screen.getByTestId('desktop-icons');
-      // Check each icon separately to avoid ambiguous selector
-      expect(within(desktopIcons).getByText('My Computer')).toBeInTheDocument();
-      expect(within(desktopIcons).getByText('Explorer')).toBeInTheDocument();
+      // Check each icon separately using data-testid
+      expect(within(desktopIcons).getByTestId('desktop-icon-/Disk C/desktop/My Computer.url')).toBeInTheDocument();
+      expect(within(desktopIcons).getByTestId('desktop-icon-/Disk C/desktop/Explorer.url')).toBeInTheDocument();
     });
     
     // File in Disk A should not appear
-    expect(screen.queryByText('other-file.txt')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('desktop-icon-/Disk A/other-file.txt')).not.toBeInTheDocument();
   });
 });
