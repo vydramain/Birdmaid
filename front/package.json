@@ -8,6 +8,8 @@
     "dev:mobile": "vite --mode mobile",
     "build": "vite build",
     "build:mobile": "vite build --mode mobile",
+    "icons:build": "node scripts/build-icons.cjs",
+    "icons:check": "node scripts/check-icons.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ci": "! grep -rE '\\.skip|\\.only|test\\.todo|describe\\.todo' __tests__ && vitest run --coverage",

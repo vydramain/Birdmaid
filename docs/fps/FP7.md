@@ -439,7 +439,8 @@ VFS организована как иерархия папок и файлов 
     /desktop (system folder, immutable)
       My Computer (link to root for explorer)
       registration.html (html)
-      help.txt (txt)
+      help.txt (txt) - visible to Guest and Participant
+      admin_help.txt (txt) - visible only to Organizer
       /... (любая структура, созданная Organizer'ом)
     /images (system folder, immutable)
       /LD58 (folder, создана Organizer'ом)

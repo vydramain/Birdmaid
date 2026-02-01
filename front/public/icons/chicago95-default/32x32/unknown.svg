@@ -1,4 +1,31 @@
-<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
-  <rect width="32" height="32" fill="#c0c0c0" stroke="#000" stroke-width="1"/>
-  <text x="50%" y="50%" font-family="Arial" font-size="8" fill="#000" text-anchor="middle" dominant-baseline="middle">U</text>
+<?xml version="1.0" encoding="UTF-8" ?>
+<svg version="1.1" width="32" height="32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+<rect x="0" y="1" width="32" height="1" fill="#49527E" />
+<rect x="0" y="2" width="1" height="28" fill="#49527E" />
+<rect x="1" y="2" width="29" height="1" fill="#B1B8C0" />
+<rect x="30" y="2" width="1" height="27" fill="#49527E" />
+<rect x="31" y="2" width="1" height="28" fill="#00000E" />
+<rect x="1" y="3" width="1" height="25" fill="#B1B8C0" />
+<rect x="2" y="3" width="28" height="1" fill="#49527E" />
+<rect x="2" y="4" width="1" height="3" fill="#00000E" />
+<rect x="3" y="4" width="17" height="2" fill="#49527E" />
+<rect x="20" y="4" width="1" height="3" fill="#00000E" />
+<rect x="21" y="4" width="2" height="2" fill="#49527E" />
+<rect x="23" y="4" width="1" height="3" fill="#00000E" />
+<rect x="24" y="4" width="2" height="2" fill="#49527E" />
+<rect x="26" y="4" width="1" height="3" fill="#00000E" />
+<rect x="27" y="4" width="2" height="2" fill="#49527E" />
+<rect x="29" y="4" width="1" height="3" fill="#00000E" />
+<rect x="3" y="6" width="17" height="1" fill="#00000E" />
+<rect x="21" y="6" width="2" height="1" fill="#00000E" />
+<rect x="24" y="6" width="2" height="1" fill="#00000E" />
+<rect x="27" y="6" width="2" height="1" fill="#00000E" />
+<rect x="2" y="7" width="28" height="1" fill="#B1B8C0" />
+<rect x="2" y="8" width="27" height="1" fill="#49527E" />
+<rect x="29" y="8" width="1" height="20" fill="#B1B8C0" />
+<rect x="2" y="9" width="1" height="18" fill="#49527E" />
+<rect x="3" y="9" width="26" height="18" fill="#FEFFFF" />
+<rect x="2" y="27" width="27" height="1" fill="#B1B8C0" />
+<rect x="1" y="28" width="29" height="1" fill="#49527E" />
+<rect x="1" y="29" width="30" height="1" fill="#00000E" />
 </svg>

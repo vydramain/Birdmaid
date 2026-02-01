@@ -1,4 +1,31 @@
-<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg">
-  <rect width="16" height="16" fill="#c0c0c0" stroke="#000" stroke-width="1"/>
-  <text x="50%" y="50%" font-family="Arial" font-size="8" fill="#000" text-anchor="middle" dominant-baseline="middle">FA</text>
+<?xml version="1.0" encoding="UTF-8" ?>
+<svg version="1.1" width="16" height="16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+<rect x="0" y="1" width="16" height="1" fill="#49527E" />
+<rect x="0" y="1" width="1" height="14" fill="#49527E" />
+<rect x="1" y="1" width="15" height="1" fill="#B1B8C0" />
+<rect x="15" y="1" width="1" height="14" fill="#49527E" />
+<rect x="16" y="1" width="1" height="14" fill="#00000E" />
+<rect x="1" y="2" width="1" height="13" fill="#B1B8C0" />
+<rect x="1" y="2" width="14" height="1" fill="#49527E" />
+<rect x="1" y="2" width="1" height="2" fill="#00000E" />
+<rect x="2" y="2" width="9" height="1" fill="#49527E" />
+<rect x="10" y="2" width="1" height="2" fill="#00000E" />
+<rect x="11" y="2" width="1" height="1" fill="#49527E" />
+<rect x="12" y="2" width="1" height="2" fill="#00000E" />
+<rect x="12" y="2" width="1" height="1" fill="#49527E" />
+<rect x="13" y="2" width="1" height="2" fill="#00000E" />
+<rect x="14" y="2" width="1" height="1" fill="#49527E" />
+<rect x="15" y="2" width="1" height="2" fill="#00000E" />
+<rect x="2" y="3" width="9" height="1" fill="#00000E" />
+<rect x="11" y="3" width="1" height="1" fill="#00000E" />
+<rect x="12" y="3" width="1" height="1" fill="#00000E" />
+<rect x="14" y="3" width="1" height="1" fill="#00000E" />
+<rect x="1" y="4" width="14" height="1" fill="#B1B8C0" />
+<rect x="1" y="4" width="14" height="1" fill="#49527E" />
+<rect x="15" y="4" width="1" height="10" fill="#B1B8C0" />
+<rect x="1" y="5" width="1" height="9" fill="#49527E" />
+<rect x="2" y="5" width="13" height="9" fill="#FEFFFF" />
+<rect x="1" y="14" width="14" height="1" fill="#B1B8C0" />
+<rect x="1" y="14" width="15" height="1" fill="#49527E" />
+<rect x="1" y="15" width="15" height="1" fill="#00000E" />
 </svg>
