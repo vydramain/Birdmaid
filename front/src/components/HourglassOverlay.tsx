@@ -7,22 +7,7 @@ import { HourglassLoader } from "./win95/HourglassLoader";
  */
 export function HourglassOverlay() {
   return (
-    <div
-      className="hourglass-overlay"
-      // inline-style: allowed (reason: layout-calc, fullscreen overlay)
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(192, 192, 192, 0.9)",
-        zIndex: 99999,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
+    <div className="hourglass-overlay">
       <HourglassLoader />
     </div>
   );

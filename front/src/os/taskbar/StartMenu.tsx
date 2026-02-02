@@ -40,32 +40,9 @@ export function StartMenu({ isOpen, onClose }: StartMenuProps) {
   return (
     <>
       {/* Backdrop to close menu on click outside */}
-      <div
-        className="start-menu-backdrop"
-        onClick={onClose}
-        // inline-style: allowed (reason: layout-calc, fullscreen backdrop)
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 9998,
-        }}
-      />
+      <div className="start-menu-backdrop" onClick={onClose} />
       {/* Menu */}
-      <div
-        data-testid="start-menu"
-        className="start-menu"
-        // inline-style: allowed (reason: layout-calc, positioned menu)
-        style={{
-          position: "fixed",
-          bottom: "40px", // Above taskbar
-          left: "4px",
-          zIndex: 9999,
-          minWidth: "150px",
-        }}
-      >
+      <div data-testid="start-menu" className="start-menu">
         <button
           data-testid="start-menu-item-login"
           type="button"
