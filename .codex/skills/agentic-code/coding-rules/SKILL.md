@@ -5,6 +5,17 @@ description: "Applies coding standards for clean, maintainable code. Use when: w
 
 # Development Rules
 
+## MUST READ (Birdmaid project)
+
+- **docs/dev/GUARDRAILS.md** — canonical rules (inline styles, units, output contract)
+- **docs/style/GUIDE_STYLE.md** — style guide
+
+## MUST NOT (style)
+
+- No `!important`; no absolute units in CSS/SCSS; no constant inline styles; no patching docs to justify violations
+
+---
+
 ## Language-Specific References
 
 For language-specific rules, also read:

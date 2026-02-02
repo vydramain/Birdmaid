@@ -5,6 +5,19 @@ description: "Technical skills: feasibility assessment, architecture design, NFR
 
 # Engineer Skills
 
+## MUST READ (before code changes)
+
+- **docs/dev/GUARDRAILS.md** — canonical rules (inline styles, units, output contract)
+- **docs/style/GUIDE_STYLE.md** — style guide
+- **docs/fps/FP7.md** — product contract (when working on FP7)
+
+## MUST NOT (code quality)
+
+- No `!important`, no `px` in CSS/SCSS (use `rem`), no constant inline styles
+- No lazy allow-tags; no patching docs to justify violations
+
+---
+
 ## Core Competencies
 
 ### 1. Technical Feasibility Assessment
