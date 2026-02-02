@@ -21,23 +21,21 @@ export function Win95Modal({ title, children, onClose, open }: Win95ModalProps) 
   const isErrorModal = title === "Error";
   const isCompactModal = isAuthenticationModal || isTeamModal || isHelpModal || isErrorModal;
 
-  // Calculate modal dimensions based on type
   const modalStyles: CSSProperties = {
-    minWidth: isAuthenticationModal ? "280px" : isTeamModal ? "250px" : isGameModal ? "600px" : "400px",
-    maxWidth: isGameModal ? "90vw" : isAuthenticationModal ? "320px" : isTeamModal ? "350px" : "90vw",
-    maxHeight: isCompactModal ? "auto" : isGameModal ? "90vh" : "90vh",
+    minWidth: isAuthenticationModal ? "17.5rem" : isTeamModal ? "15.625rem" : isGameModal ? "37.5rem" : "25rem",
+    maxWidth: isGameModal ? "90vw" : isAuthenticationModal ? "20rem" : isTeamModal ? "21.875rem" : "90vw",
+    maxHeight: isCompactModal ? "auto" : "90vh",
     width: isGameModal ? "90vw" : "auto",
     height: isCompactModal ? "auto" : undefined,
   };
 
-  // Calculate content styles
   const contentStyles: CSSProperties = {
-    padding: isGameModal ? "0" : isCompactModal ? "8px" : "12px",
+    padding: isGameModal ? "0" : isCompactModal ? "0.5rem" : "0.75rem",
     overflow: isGameModal ? "hidden" : "auto",
     flex: "none",
     display: "flex",
     flexDirection: "column",
-    minHeight: isGameModal ? undefined : "120px",
+    minHeight: isGameModal ? undefined : "7.5rem",
   };
 
   useEffect(() => {
@@ -91,18 +89,6 @@ export function Win95Modal({ title, children, onClose, open }: Win95ModalProps) 
   return (
     <div
       className="win95-modal-overlay"
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        zIndex: 1000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -112,18 +98,25 @@ export function Win95Modal({ title, children, onClose, open }: Win95ModalProps) 
       <div
         ref={modalRef}
         className="win-window-base win95-modal"
-        style={{
-          position: "absolute",
-          left: `${position.x}px`,
-          top: `${position.y}px`,
-          ...modalStyles,
-        }}
+        style={
+          // inline-style: allowed (reason: drag/resize; why: modal position from mouse drag; revisit: FP7)
+          {
+            position: "absolute",
+            left: 0,
+            top: 0,
+            transform: `translate(${position.x}px, ${position.y}px)`,
+            ...modalStyles,
+          }
+        }
         onClick={(e) => e.stopPropagation()}
       >
         <header
           className="win-titlebar"
           onMouseDown={handleMouseDown}
-          style={{ cursor: isDragging ? "grabbing" : "grab" }}
+          style={
+            // inline-style: allowed (reason: drag/resize; why: cursor during modal drag; revisit: FP7)
+            { cursor: isDragging ? "grabbing" : "grab" }
+          }
         >
           <div className="title">
             <span>◆</span>

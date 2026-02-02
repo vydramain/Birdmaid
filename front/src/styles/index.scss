@@ -54,13 +54,10 @@ body {
   
   // Font rendering: Disable anti-aliasing for pixel-perfect Win95 look
   // Note: Applied selectively to avoid breaking readability in some browsers
-  // Tested in Chrome, Firefox, Safari - if issues occur, remove or make conditional
   -webkit-font-smoothing: none;
-  font-smooth: never;
-  
-  // Text rendering: Use optimizeSpeed for pixelated look, but not globally aggressive
-  // This gives a more "pixelated" appearance without breaking readability
-  text-rendering: optimizeSpeed;
+
+  // Text rendering: Use optimizespeed for pixelated look
+  text-rendering: optimizespeed;
 }
 
 button {

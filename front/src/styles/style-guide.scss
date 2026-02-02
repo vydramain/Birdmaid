@@ -160,8 +160,7 @@
   max-width: 25rem; // 400px
   max-height: 12.5rem; // 200px
   background-color: var(--win-white, #fff);
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
 
   @include bevel-inset;
 

@@ -8,25 +8,22 @@
   display: inline-block;
   vertical-align: middle;
   user-select: none;
-  // image-rendering via CSS class (no inline styles)
-  image-rendering: -moz-crisp-edges;
-  image-rendering: -webkit-crisp-edges;
-  image-rendering: pixelated;
   image-rendering: crisp-edges;
+  image-rendering: pixelated;
   
-  // Size variants
+  // Size variants (rem: 16px base)
   &.icon-16x16 {
-    width: 16px;
-    height: 16px;
+    width: 1rem;
+    height: 1rem;
   }
-  
+
   &.icon-32x32 {
-    width: 32px;
-    height: 32px;
+    width: 2rem;
+    height: 2rem;
   }
-  
+
   &.icon-48x48 {
-    width: 48px;
-    height: 48px;
+    width: 3rem;
+    height: 3rem;
   }
 }

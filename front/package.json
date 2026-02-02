@@ -18,9 +18,9 @@
     "coverage": "vitest run --coverage",
     "preview": "node server.js",
     "preview:mobile": "vite preview --mode mobile",
-    "lint": "eslint . && stylelint '**/*.css' '**/*.scss' && node scripts/check-inline-styles.cjs && node ../scripts/check-asset-provenance.cjs",
+    "lint": "eslint . && stylelint 'src/**/*.css' 'src/**/*.scss' && node scripts/check-inline-styles.cjs && node ../scripts/check-asset-provenance.cjs",
     "lint:js": "eslint .",
-    "lint:css": "stylelint '**/*.css' '**/*.scss'",
+    "lint:css": "stylelint 'src/**/*.css' 'src/**/*.scss'",
     "lint:assets": "node ../scripts/check-asset-provenance.cjs",
     "lint:staged": "lint-staged",
     "lint:canary": "node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-style.test.tsx && npx stylelint __tests__/style-guardrails/canary-important.test.css",
@@ -28,7 +28,7 @@
     "lint:canary:should-pass": "node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-style-allowed.test.tsx 2>&1 | grep -q 'No inline style' && echo '✅ Canary inline-style-allowed test correctly passes' || (echo '❌ Canary inline-style-allowed test should pass but failed' && exit 1)",
     "lint:canary:constants": "node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-style-constants.test.tsx 2>&1 | grep -qE 'Absolute units found|Inline style found' && echo '✅ Canary inline-style-constants test correctly fails' || (echo '❌ Canary inline-style-constants test should fail but passed' && exit 1)",
     "lint:canary:backdrop": "node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-style-backdrop.test.tsx 2>&1 | grep -qE 'Disallowed pattern|Absolute units found' && echo '✅ Canary inline-style-backdrop test correctly fails' || (echo '❌ Canary inline-style-backdrop test should fail but passed' && exit 1)",
-    "lint:fix": "eslint . --fix && stylelint '**/*.css' '**/*.scss' --fix",
+    "lint:fix": "eslint . --fix && stylelint 'src/**/*.css' 'src/**/*.scss' --fix",
     "prepare": "husky install || true"
   },
   "dependencies": {

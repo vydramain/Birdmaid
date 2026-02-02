@@ -193,6 +193,7 @@
 
 .win-taskbar-start-button {
   @include bevel-outset;
+
   background-color: var(--win-gray, #c0c0c0);
   border: 0.0625rem solid var(--win-black, #000); // 1px
   padding: 0.25rem 0.75rem; // 4px 12px
@@ -209,6 +210,7 @@
 
   &:active {
     @include bevel-inset;
+
     transform: translate(0.0625rem, 0.0625rem); // 1px 1px
   }
 }
@@ -229,7 +231,9 @@
   left: var(--spacing-sm, 0.25rem); // 4px
   min-width: 9.375rem; // 150px
   z-index: var(--z-taskbar-menu, 10000);
+
   @include bevel-outset;
+
   background-color: var(--win-gray, #c0c0c0);
   border: 0.125rem solid var(--win-black, #000); // 2px
   padding: 0.125rem; // 2px
@@ -248,16 +252,122 @@
     user-select: none;
     min-height: 1.375rem; // 22px
 
-    &:hover:not(:disabled) {
-      background-color: var(--win-blue, #000080);
-      color: var(--win-white, #fff);
-    }
-
     &:disabled {
       color: var(--win-text-disabled, #808080);
       cursor: not-allowed;
     }
+
+    &:hover:not(:disabled) {
+      background-color: var(--win-blue, #000080);
+      color: var(--win-white, #fff);
+    }
   }
+}
+
+// Landing/Help window content (replaces inline padding/font)
+.landing-content,
+.help-content {
+  padding: 0.75rem;
+  font-size: var(--font-size-medium, 0.75rem);
+}
+
+.landing-loading,
+.help-loading {
+  display: flex;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.landing-error,
+.help-error {
+  padding: 0.75rem;
+}
+
+.text-error {
+  color: var(--win-red, #f00);
+}
+
+.text-link {
+  color: var(--win-blue, #000080);
+}
+
+.landing-heading {
+  margin-top: 0;
+  font-size: var(--font-size-large, 0.875rem);
+  font-weight: bold;
+}
+
+.landing-spacing {
+  margin-top: 0.5rem;
+}
+
+.landing-spacing-lg {
+  margin-top: 0.75rem;
+}
+
+.help-markdown {
+  padding: 0.75rem;
+  font-family: monospace;
+  font-size: var(--font-size-medium, 0.75rem);
+  white-space: pre-wrap;
+  background-color: var(--win-white, #fff);
+  min-height: 12.5rem;
+}
+
+.help-h1 {
+  font-size: var(--font-size-large, 0.875rem);
+  font-weight: bold;
+  margin: 0.5rem 0;
+}
+
+.help-h2 {
+  font-size: var(--font-size-medium, 0.75rem);
+  font-weight: bold;
+  margin: 0.375rem 0;
+}
+
+.help-p {
+  margin: 0.25rem 0;
+  font-size: var(--font-size-medium, 0.75rem);
+}
+
+// Hourglass loader (boot/loading states)
+.hourglass-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--win-gray, #c0c0c0);
+  border: 0.125rem solid var(--win-black, #000);
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+}
+
+.hourglass-inner {
+  width: 3rem;
+  height: 3rem;
+  position: relative;
+  background: var(--win-gray, #c0c0c0);
+  border: 0.125rem inset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hourglass-svg {
+  position: relative;
+  z-index: 1;
+}
+
+.hourglass-label {
+  margin-top: 0.75rem;
+  font-size: var(--font-size-medium, 0.75rem);
+  color: var(--win-black, #000);
+  font-weight: normal;
 }
 
 // ============================================================================
@@ -271,7 +381,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(192, 192, 192, 0.9);
+  background-color: rgb(192 192 192 / 90%);
 }
 
 // ============================================================================
@@ -377,6 +487,7 @@
       auto-fill,
       minmax(var(--explorer-grid-item-width, 4rem), 1fr)
     ); // 64px
+
     gap: var(--spacing-xl, 1rem); // 16px
 
     .explorer-grid-item {
@@ -499,8 +610,25 @@
   }
 }
 
-// WindowManager drag overlay (WHITELIST - fixed position overlay for drag)
-// Note: position, top, left, right, bottom, zIndex stay inline for computed values
+// Modal overlay (fixed fullscreen backdrop)
+.win95-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 10001);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(0 0 0 / 50%);
+}
+
+// WindowManager drag overlay (blocks pointer during window drag)
+.drag-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-taskbar-backdrop, 9999);
+  pointer-events: auto;
+  background-color: transparent;
+}
 
 // ============================================================================
 // Viewers Component (ImageViewer, VideoViewer, Notepad, InternetExplorer, AppHost)
@@ -554,10 +682,8 @@
 // Pixelated assets (icons, pixel art) should use pixelated rendering
 // This is already handled by .icon class, but can be extended here if needed
 .pixelated-asset {
-  image-rendering: -moz-crisp-edges;
-  image-rendering: -webkit-crisp-edges;
-  image-rendering: pixelated;
   image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 // VideoViewer
@@ -851,6 +977,7 @@
 
 .win-btn-primary {
   @include button-default;
+
   background: linear-gradient(
     90deg,
     var(--win-blue, #000080) 0%,
@@ -873,11 +1000,13 @@
 
 .win-input {
   @include input-text;
+
   width: 100%;
 }
 
 .win-textarea {
   @include input-text;
+
   width: 100%;
   min-height: 5rem; // 80px
   resize: vertical;
@@ -936,7 +1065,9 @@
 
 .win-list-selection {
   background-color: var(--win-white, #fff);
+
   @include bevel-inset;
+
   overflow: auto;
 }
 
@@ -965,6 +1096,7 @@
 .win-scrollbar {
   width: var(--scrollbar-width, 1rem); // 16px
   background-color: var(--win-gray, #c0c0c0);
+
   @include bevel-inset;
 
   &.win-scrollbar-horizontal {

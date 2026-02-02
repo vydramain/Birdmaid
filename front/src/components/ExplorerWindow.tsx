@@ -34,8 +34,8 @@ function TreeItem({ node, path, currentPath, onSelect, level }: TreeItemProps) {
       <div
         onClick={handleClick}
         className={`tree-item ${isSelected ? "selected" : ""}`}
-        // inline-style: allowed (reason: layout-calc)
-        style={{ "--tree-level": level } as React.CSSProperties & { "--tree-level": number }}
+        // inline-style: allowed (reason: performance; why: CSS var for tree indent from level; revisit: FP7)
+        style={{ ["--tree-level" as string]: `${level}` } as React.CSSProperties}
         data-testid={`tree-item-${path}`}
       >
         {isDir && <span className="tree-expand-icon">{expanded ? "▼" : "▶"}</span>}

@@ -69,12 +69,12 @@ export function WindowFrame({ id, title, children, onClose }: WindowFrameProps) 
     <div
       ref={windowRef}
       className="win-window-base win-window win-window-frame"
-      // inline-style: allowed (reason: drag/resize)
+      // inline-style: allowed (reason: drag/resize; why: window position from drag state; revisit: FP7)
       style={{
         transform: `translate3d(${state.x}px, ${state.y}px, 0)`,
         zIndex: state.zIndex,
         width: state.width,
-        boxShadow: state.zIndex > 10 ? "4px 4px 10px rgba(0,0,0,0.5)" : undefined,
+        boxShadow: state.zIndex > 10 ? "0.25rem 0.25rem 0.625rem rgb(0 0 0 / 50%)" : undefined,
       }}
       onMouseDown={() => focusWindow(id)}
       data-testid={`window-${id}`}

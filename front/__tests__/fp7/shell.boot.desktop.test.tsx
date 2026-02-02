@@ -79,14 +79,11 @@ describe("Shell Boot Desktop", () => {
   it("should render Taskbar stub", async () => {
     renderAppRoot({ platform: "desktop" });
 
-    // Wait for taskbar to render
+    // Wait for taskbar to render (uses CSS classes)
     await waitFor(() => {
-      // Taskbar should be present (fixed bottom, gray background)
-      // Color is in RGB format: rgb(192, 192, 192)
       const taskbar =
-        document.querySelector('[style*="rgb(192, 192, 192)"]') ||
-        document.querySelector('[style*="c0c0c0"]') ||
-        document.querySelector('[style*="position: fixed"][style*="bottom: 0"]');
+        document.querySelector(".win-taskbar-fixed") ||
+        document.querySelector('[data-testid="start-button"]');
       expect(taskbar).toBeTruthy();
     });
   });

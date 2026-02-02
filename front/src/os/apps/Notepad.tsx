@@ -106,7 +106,7 @@ export function Notepad({ content }: NotepadProps) {
   const renderMarkdown = (text: string): string => {
     // Very basic markdown rendering - only safe elements
     // No script execution, no dangerous HTML
-    let html = text
+    const html = text
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
