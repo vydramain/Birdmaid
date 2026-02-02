@@ -1,15 +1,17 @@
-import React, { ComponentType } from "react";
+import { ComponentType } from "react";
 import type { IconType } from "../../ui/icons";
+
+export type AppProps = Record<string, unknown>;
 
 export type AppDefinition = {
   id: string;
   name: string;
   icon: IconType;
-  component: ComponentType<any>;
+  component: ComponentType<AppProps>;
   defaultWidth?: number;
   defaultHeight?: number;
   singleton?: boolean;
-  props?: Record<string, any>;
+  props?: AppProps;
 };
 
 export type ContentType = 'image' | 'video' | 'txt' | 'html' | 'webapp';

@@ -1,25 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { ExplorerWindow } from '@/components/ExplorerWindow';
-import { VirtualFileSystem } from '@/os/fs/VirtualFileSystem';
 import { vfs } from '@/os/fs/VirtualFileSystem';
+import { resetVFSForTest } from "@/test/utils/vfs-test-utils";
 
-// Mock WindowRegistry
 vi.mock('@/os/wm/WindowRegistry', () => ({
-  useWindowRegistry: () => ({
-    openWindow: vi.fn(),
-  }),
+  useWindowRegistry: () => ({ openWindow: vi.fn() }),
 }));
 
 describe('Explorer Tree + Grid Navigation', () => {
   beforeEach(() => {
-    // Reset VFS for each test
-    (vfs as any).root = {
-      name: '',
-      type: 'dir',
-      children: [],
-    };
-    (vfs as any).initializeSystemFolders();
+    resetVFSForTest();
     vfs.setUserRole('Organizer');
     
     // Create test structure

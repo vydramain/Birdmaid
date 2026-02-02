@@ -1,4 +1,6 @@
+import React from "react";
 import { appRegistry } from "./AppRegistry";
+import type { AppProps } from "./AppRegistry";
 import { AppHost } from "./AppHost";
 import { ImageViewer } from "./ImageViewer";
 import { VideoViewer } from "./VideoViewer";
@@ -13,8 +15,11 @@ import { HelpWindow } from "../../components/HelpWindow";
 import { LandingWindow } from "../../components/LandingWindow";
 import { resolveIconForApp } from "../../ui/icons";
 
-// Helper to wrap legacy components
-const wrap = (Component: React.ComponentType<any>) => (props: any) => <Component {...props} />;
+function wrap<P extends AppProps>(Component: React.ComponentType<P>) {
+  const AppWrapper = (props: P) => <Component {...props} />;
+  AppWrapper.displayName = `AppWrapper(${Component.displayName ?? Component.name ?? "Unknown"})`;
+  return AppWrapper;
+}
 
 export function initApps() {
   // Explorer
@@ -33,7 +38,7 @@ export function initApps() {
     id: "imageviewer",
     name: "Image Viewer",
     icon: resolveIconForApp("imageviewer"),
-    component: (props: any) => <ImageViewer content={props.content} />,
+    component: (props: AppProps) => <ImageViewer content={props.content} />,
     defaultWidth: 600,
     defaultHeight: 500,
     singleton: false,
@@ -44,7 +49,7 @@ export function initApps() {
     id: "videoviewer",
     name: "Video Viewer",
     icon: resolveIconForApp("videoviewer"),
-    component: (props: any) => <VideoViewer content={props.content} />,
+    component: (props: AppProps) => <VideoViewer content={props.content} />,
     defaultWidth: 800,
     defaultHeight: 600,
     singleton: false,
@@ -55,7 +60,7 @@ export function initApps() {
     id: "notepad",
     name: "Notepad",
     icon: resolveIconForApp("notepad"),
-    component: (props: any) => <Notepad content={props.content} />,
+    component: (props: AppProps) => <Notepad content={props.content} />,
     defaultWidth: 500,
     defaultHeight: 600,
     singleton: false,
@@ -66,7 +71,7 @@ export function initApps() {
     id: "internetexplorer",
     name: "Internet Explorer",
     icon: resolveIconForApp("internetexplorer"),
-    component: (props: any) => <InternetExplorer content={props.content} />,
+    component: (props: AppProps) => <InternetExplorer content={props.content} />,
     defaultWidth: 800,
     defaultHeight: 600,
     singleton: false,
@@ -77,14 +82,9 @@ export function initApps() {
     id: "executor",
     name: "Application",
     icon: resolveIconForApp("executor"),
-    component: (props: any) => {
-      // Expect props.src or props.buildUrl
-      return (
-        <AppHost 
-          src={props.src || props.buildUrl || "about:blank"} 
-          title={props.title} 
-        />
-      );
+    component: (props: AppProps) => {
+      const src = (props.src ?? props.buildUrl ?? "about:blank") as string;
+      return <AppHost src={src} title={props.title as string | undefined} />;
     },
     defaultWidth: 800,
     defaultHeight: 600,
@@ -107,11 +107,11 @@ export function initApps() {
     id: "landing",
     name: "Welcome",
     icon: resolveIconForApp("landing"),
-    component: (props: any) => (
-      <LandingWindow 
+    component: (_props: AppProps) => (
+      <LandingWindow
         onClose={() => {
           localStorage.setItem("birdmaid_landing_seen", "true");
-        }} 
+        }}
       />
     ),
     defaultWidth: 500,
@@ -124,7 +124,7 @@ export function initApps() {
     id: "userpanel",
     name: "User Panel",
     icon: resolveIconForApp("userpanel"),
-    component: (props: any) => <UserPanelApp onClose={props.onClose} />,
+    component: (props: AppProps) => <UserPanelApp onClose={props.onClose as () => void} />,
     defaultWidth: 300,
     defaultHeight: 250,
     singleton: true,
@@ -135,7 +135,7 @@ export function initApps() {
     id: "styleguide",
     name: "Style Guide",
     icon: resolveIconForApp("styleguide"),
-    component: (props: any) => <StyleGuideApp />,
+    component: (_props: AppProps) => <StyleGuideApp />,
     defaultWidth: 800,
     defaultHeight: 900,
     singleton: false,
@@ -146,7 +146,7 @@ export function initApps() {
     id: "login-window",
     name: "Welcome to Windows",
     icon: resolveIconForApp("login"),
-    component: (props: any) => <LoginWindow onClose={props.onClose} />,
+    component: (props: AppProps) => <LoginWindow onClose={props.onClose as () => void} />,
     defaultWidth: 400,
     defaultHeight: 200,
     singleton: true,
@@ -157,7 +157,7 @@ export function initApps() {
     id: "logout-confirmation",
     name: "Log Out",
     icon: resolveIconForApp("logout"),
-    component: (props: any) => <LogoutConfirmationDialog onClose={props.onClose} />,
+    component: (props: AppProps) => <LogoutConfirmationDialog onClose={props.onClose as () => void} />,
     defaultWidth: 300,
     defaultHeight: 150,
     singleton: true,

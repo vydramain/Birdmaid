@@ -37,7 +37,7 @@ function extractPathAndQuery(url: string): string {
   } catch {
     // If URL parsing fails, assume it's already a path
     // Remove protocol/host if present (defensive)
-    const match = url.match(/^https?:\/\/[^\/]+(\/.*)$/);
+    const match = url.match(/^https?:\/\/[^/]+(\/.*)$/);
     return match ? match[1] : url;
   }
 }

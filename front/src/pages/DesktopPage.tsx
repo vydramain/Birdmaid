@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useWindowRegistry } from "../os/wm/WindowRegistry";
 import { DesktopIcon } from "../components/DesktopIcon";
 import { WindowManager } from "../os/wm/WindowManager";
-import { vfs, VFSNode } from "../os/fs/VirtualFileSystem";
+import { vfs } from "../os/fs/VirtualFileSystem";
 import { appRegistry } from "../os/apps/AppRegistry";
 import { resolveIconForVFSNode, resolveIconForApp } from "../ui/icons";
 import type { IconType } from "../ui/icons";
@@ -52,7 +52,7 @@ export function DesktopPage() {
             }
             target = data.target;
             label = data.label || node.name;
-          } catch (e) {
+          } catch (_e) {
             console.error("Failed to parse link:", node.name);
           }
         }
@@ -83,7 +83,7 @@ export function DesktopPage() {
   const handleIconClick = (icon: DesktopIconData) => {
     if (icon.target) {
       // Link file - open target
-      openWindow(icon.target as any);
+      openWindow(icon.target);
     } else {
       // Regular file - find node and open with appropriate viewer
       const nodes = vfs.readDir("/Disk C/desktop");

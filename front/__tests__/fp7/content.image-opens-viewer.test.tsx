@@ -4,19 +4,13 @@ import { WindowRegistryProvider } from "@/os/wm/WindowRegistry";
 import { appRegistry } from "@/os/apps/AppRegistry";
 import { vfs } from "@/os/fs/VirtualFileSystem";
 import { ImageViewer } from "@/os/apps/ImageViewer";
-// Ensure apps are initialized (side-effect import)
+import { resetVFSForTest } from "@/test/utils/vfs-test-utils";
 import "@/os/apps/registry-init";
 
 describe("Content Opening: Image files", () => {
   beforeEach(() => {
-    // Reset VFS
-    (vfs as any).root = {
-      name: '',
-      type: 'dir',
-      children: [],
-    };
-    (vfs as any).initializeSystemFolders();
-    vfs.setUserRole('Organizer');
+    resetVFSForTest();
+    vfs.setUserRole("Organizer");
   });
 
   it("should open .png file in ImageViewer", async () => {

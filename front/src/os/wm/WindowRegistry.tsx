@@ -16,17 +16,19 @@ if (!vfsInitialized) {
   vfsInitialized = true;
 }
 
+export type WindowContent = Record<string, unknown>;
+
 export type WindowMeta = {
   id: string;
   appId: string;
   title: string;
   zIndex: number;
-  content?: any;
+  content?: WindowContent;
 };
 
 type WindowRegistryContextType = {
   windows: WindowMeta[];
-  openWindow: (appId: string, content?: any) => string;
+  openWindow: (appId: string, content?: WindowContent) => string;
   closeWindow: (id: string) => void;
   focusWindow: (id: string) => void;
 };
@@ -36,54 +38,6 @@ const WindowRegistryContext = createContext<WindowRegistryContextType | undefine
 export function WindowRegistryProvider({ children }: { children: ReactNode }) {
   const [windows, setWindows] = useState<WindowMeta[]>([]);
   const [maxZIndex, setMaxZIndex] = useState(1000);
-
-  const openWindow = useCallback((appId: string, content?: any) => {
-    // 1. Resolve App
-    const app = appRegistry.get(appId);
-    if (!app) {
-      console.error(`App not found: ${appId}`);
-      return "";
-    }
-
-    // 2. Check Singleton
-    if (app.singleton) {
-      const existing = windows.find((w) => w.appId === appId);
-      if (existing) {
-        focusWindow(existing.id);
-        return existing.id;
-      }
-    }
-
-    const id = `${appId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const newZIndex = maxZIndex + 1;
-    
-    // 3. Resolve Title
-    let title = app.name;
-    if (content?.title) title = content.title;
-
-    // 4. Register initial state in store
-    windowStore.register(id, {
-      x: 100 + (windows.length % 5) * 30,
-      y: 100 + (windows.length % 5) * 30,
-      width: app.defaultWidth || 600,
-      height: app.defaultHeight || 400,
-      zIndex: newZIndex,
-    });
-
-    setWindows((prev) => {
-      // Max 10 windows policy
-      let next = prev;
-      if (prev.length >= 10) {
-        const oldest = [...prev].sort((a, b) => a.zIndex - b.zIndex)[0];
-        windowStore.unregister(oldest.id);
-        next = prev.filter((w) => w.id !== oldest.id);
-      }
-      return [...next, { id, appId, title, zIndex: newZIndex, content }];
-    });
-    
-    setMaxZIndex(newZIndex);
-    return id;
-  }, [maxZIndex, windows]);
 
   const closeWindow = useCallback((id: string) => {
     setWindows((prev) => prev.filter((w) => w.id !== id));
@@ -109,16 +63,53 @@ export function WindowRegistryProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const openWindow = useCallback((appId: string, content?: WindowContent) => {
+    const app = appRegistry.get(appId);
+    if (!app) {
+      console.error(`App not found: ${appId}`);
+      return "";
+    }
+    if (app.singleton) {
+      const existing = windows.find((w) => w.appId === appId);
+      if (existing) {
+        focusWindow(existing.id);
+        return existing.id;
+      }
+    }
+    const id = `${appId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const newZIndex = maxZIndex + 1;
+    let title = app.name;
+    if (content?.title) title = content.title as string;
+    windowStore.register(id, {
+      x: 100 + (windows.length % 5) * 30,
+      y: 100 + (windows.length % 5) * 30,
+      width: app.defaultWidth || 600,
+      height: app.defaultHeight || 400,
+      zIndex: newZIndex,
+    });
+    setWindows((prev) => {
+      let next = prev;
+      if (prev.length >= 10) {
+        const oldest = [...prev].sort((a, b) => a.zIndex - b.zIndex)[0];
+        windowStore.unregister(oldest.id);
+        next = prev.filter((w) => w.id !== oldest.id);
+      }
+      return [...next, { id, appId, title, zIndex: newZIndex, content }];
+    });
+    setMaxZIndex(newZIndex);
+    return id;
+  }, [maxZIndex, windows, focusWindow]);
+
   // Expose system API for smoke tests
   useEffect(() => {
-    (window as any).sys = {
+    (window as Window & { sys?: unknown }).sys = {
       open: openWindow,
       close: closeWindow,
       store: windowStore,
-      vfs: vfs // Real VFS
+      vfs: vfs,
     };
     return () => {
-      delete (window as any).sys;
+      delete (window as Window & { sys?: unknown }).sys;
     };
   }, [openWindow, closeWindow]);
 

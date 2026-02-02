@@ -43,7 +43,7 @@ export function LandingWindow({ onClose }: { onClose?: () => void }) {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", padding: "20px" }}>
+      <div className="landing-loading">
         <HourglassLoader />
       </div>
     );
@@ -51,9 +51,9 @@ export function LandingWindow({ onClose }: { onClose?: () => void }) {
 
   if (error) {
     return (
-      <div style={{ padding: "12px" }}>
-        <p style={{ color: "var(--win-red)" }}>Error: {error}</p>
-        <Win95Button type="button" onClick={handleClose} style={{ marginTop: "8px" }}>
+      <div className="landing-content landing-error">
+        <p className="text-error">Error: {error}</p>
+        <Win95Button type="button" onClick={handleClose} className="landing-spacing">
           Close
         </Win95Button>
       </div>
@@ -62,9 +62,9 @@ export function LandingWindow({ onClose }: { onClose?: () => void }) {
 
   if (!jam) {
     return (
-      <div style={{ padding: "12px" }}>
+      <div className="landing-content">
         <p>No upcoming jams at this time.</p>
-        <Win95Button type="button" onClick={handleClose} style={{ marginTop: "8px" }}>
+        <Win95Button type="button" onClick={handleClose} className="landing-spacing">
           Close
         </Win95Button>
       </div>
@@ -72,8 +72,8 @@ export function LandingWindow({ onClose }: { onClose?: () => void }) {
   }
 
   return (
-    <div style={{ padding: "12px", fontSize: "12px" }}>
-      <h2 style={{ marginTop: 0, fontSize: "16px", fontWeight: "bold" }}>{jam.name}</h2>
+    <div className="landing-content">
+      <h2 className="landing-heading">{jam.name}</h2>
       <p>
         <strong>Start:</strong> {new Date(jam.startDate).toLocaleDateString()}
       </p>
@@ -81,18 +81,18 @@ export function LandingWindow({ onClose }: { onClose?: () => void }) {
         <strong>End:</strong> {new Date(jam.endDate).toLocaleDateString()}
       </p>
       {jam.description_md && (
-        <div style={{ marginTop: "8px" }}>
+        <div className="landing-spacing">
           <p>{jam.description_md}</p>
         </div>
       )}
       {jam.registrationUrl && (
-        <div style={{ marginTop: "8px" }}>
-          <a href={jam.registrationUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--win-blue)" }}>
+        <div className="landing-spacing">
+          <a href={jam.registrationUrl} target="_blank" rel="noopener noreferrer" className="text-link">
             Register here
           </a>
         </div>
       )}
-      <Win95Button type="button" onClick={handleClose} style={{ marginTop: "12px" }}>
+      <Win95Button type="button" onClick={handleClose} className="landing-spacing-lg">
         Close
       </Win95Button>
     </div>

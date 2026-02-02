@@ -1,6 +1,6 @@
 export async function runSmokeTest() {
   console.log("Starting Smoke Test...");
-  const sys = (window as any).sys;
+  const sys = window.sys;
   if (!sys) {
     console.error("SysBridge not loaded");
     return;
@@ -34,7 +34,6 @@ export async function runSmokeTest() {
 
   // 3. Verify Position
   const finalState = store.get(winId);
-  const expectedX = startX + (steps - 1) * 5; // roughly
   console.log(`Final Position: ${finalState.x}, ${finalState.y}`);
   
   // 4. Close Window
