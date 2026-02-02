@@ -3,11 +3,13 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useWindowRegistry } from "../wm/WindowRegistry";
 import { taskbar, colors } from "../../ui/win95/tokens";
 import { Icon } from "../../ui/icons";
+import { StartMenu } from "./StartMenu";
 
 /**
  * Taskbar - Windows 95 styled taskbar.
  *
  * Features:
+ * - Start button (left side)
  * - List of open windows (left side) - TODO
  * - Tray area (right side): User Icon, Clock
  */
@@ -15,6 +17,7 @@ export function Taskbar() {
   const auth = useAuth();
   const { openWindow } = useWindowRegistry();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [startMenuOpen, setStartMenuOpen] = useState(false);
 
   // Update clock every second
   useEffect(() => {
@@ -36,19 +39,34 @@ export function Taskbar() {
     return `${hours}:${minutes}:${seconds}`;
   };
 
-  const isLoggedIn = auth.user !== null;
+  const isLoggedIn = auth.user !== null && auth.state === 'authed';
+
+  const handleStartClick = () => {
+    setStartMenuOpen(!startMenuOpen);
+  };
 
   return (
-    <div
-      className="win-taskbar-fixed"
-      // inline-style: allowed (reason: layout-calc)
-      style={{
-        height: `${taskbar.height}px`,
-        zIndex: taskbar.zIndex,
-      }}
-    >
-      <div className="win-taskbar-window-list">{/* Window list will go here */}</div>
-      <div className="win-taskbar-tray">
+    <>
+      <div
+        className="win-taskbar-fixed"
+        // inline-style: allowed (reason: layout-calc)
+        style={{
+          height: `${taskbar.height}px`,
+          zIndex: taskbar.zIndex,
+        }}
+      >
+        <div className="win-taskbar-window-list">
+          {/* Start Button */}
+          <button
+            data-testid="start-button"
+            type="button"
+            onClick={handleStartClick}
+            className="win-taskbar-start-button"
+          >
+            Start
+          </button>
+        </div>
+        <div className="win-taskbar-tray">
         {/* User Icon */}
         <div
           data-testid="tray-user-icon"
@@ -63,7 +81,9 @@ export function Taskbar() {
         <div className="tray-clock" title={currentTime.toLocaleString()}>
           {formatTime(currentTime)}
         </div>
+        </div>
       </div>
-    </div>
+      <StartMenu isOpen={startMenuOpen} onClose={() => setStartMenuOpen(false)} />
+    </>
   );
 }

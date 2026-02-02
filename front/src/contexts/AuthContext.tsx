@@ -1,22 +1,25 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { apiClient } from "../api/client";
 
 export type UserRole = 'Guest' | 'Participant' | 'Organizer';
+
+export type AuthState = 'booting' | 'guest' | 'authed';
 
 type User = {
   id: string;
   email: string;
   login: string;
-  isSuperAdmin: boolean; // deprecated, use role instead
   role?: UserRole; // 'Guest' | 'Participant' | 'Organizer', defaults to 'Guest' if not set
 };
 
 type AuthContextType = {
   user: User | null;
   token: string | null;
+  state: AuthState;
   devAuth: (userId?: string, role?: UserRole) => Promise<void>;
   telegramAuth: (telegramId: string, hash: string) => Promise<void>;
   logout: () => void;
+  hardLogout: () => void;
   loading: boolean;
 };
 
@@ -25,32 +28,132 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [state, setState] = useState<AuthState>('booting');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem("birdmaid_token");
-    if (storedToken) {
-      setToken(storedToken);
-      // Decode token to get user info (simple base64 decode)
-      try {
-        const payload = JSON.parse(atob(storedToken.split(".")[1]));
-        // Determine role: use role field if set, otherwise fallback to isSuperAdmin -> Organizer, else Guest
-        const role: UserRole = payload.role || (payload.isSuperAdmin ? 'Organizer' : 'Guest');
-        setUser({
-          id: payload.userId,
-          email: payload.email,
-          login: payload.login,
-          isSuperAdmin: payload.isSuperAdmin || false,
-          role: role,
-        });
-      } catch {
-        // Invalid token, clear it
-        localStorage.removeItem("birdmaid_token");
-        setToken(null);
-      }
-    }
-    setLoading(false);
+  const hardLogout = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    setState('guest');
+    localStorage.removeItem("birdmaid_token");
   }, []);
+
+  const bootstrapAuth = useCallback(async () => {
+    setState('booting');
+    setLoading(true);
+
+    const storedToken = localStorage.getItem("birdmaid_token");
+    if (!storedToken) {
+      setState('guest');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await apiClient.json<{ user: User }>("/api/auth/me", {
+        method: "GET",
+      });
+      
+      // Success: user is authenticated
+      setToken(storedToken);
+      const userRole: UserRole = response.user.role || 'Guest';
+      setUser({
+        ...response.user,
+        role: userRole,
+      });
+      setState('authed');
+    } catch (error) {
+      // 401 or other error: token is invalid, clear it
+      console.warn("Auth bootstrap failed, clearing token:", error);
+      hardLogout();
+    } finally {
+      setLoading(false);
+    }
+  }, [hardLogout]);
+
+  useEffect(() => {
+    void bootstrapAuth();
+  }, [bootstrapAuth]);
+
+  // Listen for hardLogout events from apiClient
+  useEffect(() => {
+    const handleHardLogout = () => {
+      hardLogout();
+    };
+
+    window.addEventListener('auth:hardLogout', handleHardLogout);
+    return () => window.removeEventListener('auth:hardLogout', handleHardLogout);
+  }, [hardLogout]);
+
+  const telegramAuth = useCallback(async (telegramId: string, hash: string, additionalData?: { firstName?: string; lastName?: string; username?: string; auth_date?: number }) => {
+    const response = await apiClient.json<{ user: User; token: string }>("/api/auth/telegram", {
+      method: "POST",
+      body: JSON.stringify({ 
+        telegramId, 
+        hash,
+        firstName: additionalData?.firstName,
+        lastName: additionalData?.lastName,
+        username: additionalData?.username,
+        auth_date: additionalData?.auth_date,
+      }),
+    });
+    // Determine role from response
+    const userRole: UserRole = response.user.role || 'Guest';
+    setUser({
+      ...response.user,
+      role: userRole,
+    });
+    setToken(response.token);
+    localStorage.setItem("birdmaid_token", response.token);
+    setState('authed');
+    
+    // After successful auth, verify with /api/auth/me
+    try {
+      const meResponse = await apiClient.json<{ user: User }>("/api/auth/me", {
+        method: "GET",
+      });
+      const verifiedRole: UserRole = meResponse.user.role || 'Guest';
+      setUser({
+        ...meResponse.user,
+        role: verifiedRole,
+      });
+    } catch (error) {
+      console.error("Failed to verify auth after telegram login:", error);
+      hardLogout();
+    }
+  }, [hardLogout]);
+
+  // Listen for postMessage from Telegram auth
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Security: only accept messages from Telegram OAuth origin
+      // Telegram sends postMessage from https://oauth.telegram.org
+      if (event.origin !== 'https://oauth.telegram.org') {
+        return;
+      }
+
+      // Telegram OAuth callback format
+      // Telegram sends the auth data directly in event.data
+      if (event.data && typeof event.data === 'object') {
+        const { id, first_name, last_name, username, photo_url, auth_date, hash } = event.data;
+        
+        if (id && hash) {
+          // Call telegramAuth with the data
+          void telegramAuth(id.toString(), hash, {
+            firstName: first_name,
+            lastName: last_name,
+            username: username,
+            auth_date: auth_date,
+          });
+        } else {
+          console.error("Telegram auth error: missing id or hash");
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [telegramAuth]);
 
   const devAuth = async (userId?: string, role?: UserRole) => {
     const response = await apiClient.json<{ user: User; token: string }>("/auth/dev", {
@@ -58,38 +161,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ userId, role }),
     });
     // Determine role from response
-    const userRole: UserRole = response.user.role || (response.user.isSuperAdmin ? 'Organizer' : 'Guest');
+    const userRole: UserRole = response.user.role || 'Guest';
     setUser({
       ...response.user,
       role: userRole,
     });
     setToken(response.token);
     localStorage.setItem("birdmaid_token", response.token);
-  };
-
-  const telegramAuth = async (telegramId: string, hash: string) => {
-    const response = await apiClient.json<{ user: User; token: string }>("/auth/telegram", {
-      method: "POST",
-      body: JSON.stringify({ telegramId, hash }),
-    });
-    // Determine role from response
-    const userRole: UserRole = response.user.role || (response.user.isSuperAdmin ? 'Organizer' : 'Guest');
-    setUser({
-      ...response.user,
-      role: userRole,
-    });
-    setToken(response.token);
-    localStorage.setItem("birdmaid_token", response.token);
+    setState('authed');
   };
 
   const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem("birdmaid_token");
+    hardLogout();
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, devAuth, telegramAuth, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, state, devAuth, telegramAuth, logout, hardLogout, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { JwtModule } from "@nestjs/jwt";
 import { AuthService } from "../../src/auth/auth.service";
 import { UsersRepository } from "../../src/users/users.repository";
+import { OrganizerWhitelistRepository } from "../../src/auth/organizer-whitelist.repository";
 import { ForbiddenException } from "@nestjs/common";
 
 describe("Auth Dev Mode", () => {
@@ -26,6 +27,14 @@ describe("Auth Dev Mode", () => {
             updateRole: jest.fn(),
           },
         },
+        {
+          provide: OrganizerWhitelistRepository,
+          useValue: {
+            isOrganizer: jest.fn(),
+            add: jest.fn(),
+            remove: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -45,7 +54,6 @@ describe("Auth Dev Mode", () => {
       email: "test@example.com",
       login: "testuser",
       password: "hashed",
-      isSuperAdmin: false,
       role: "Guest" as const,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -130,7 +138,6 @@ describe("Auth Dev Mode", () => {
       email: "dev-newuser123@local.dev",
       login: "dev-newuser123",
       password: "",
-      isSuperAdmin: false,
       role: "Guest" as const,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -158,7 +165,6 @@ describe("Auth Dev Mode", () => {
       email: expect.stringMatching(/^dev-\d+@local\.dev$/),
       login: expect.stringMatching(/^dev-\d+$/),
       password: "",
-      isSuperAdmin: false,
       role: "Guest" as const,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -183,7 +189,6 @@ describe("Auth Dev Mode", () => {
       email: "test@example.com",
       login: "testuser",
       password: "hashed",
-      isSuperAdmin: false,
       role: "Guest" as const,
       createdAt: new Date(),
       updatedAt: new Date(),

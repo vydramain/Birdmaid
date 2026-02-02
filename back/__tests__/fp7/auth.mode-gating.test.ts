@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { JwtModule } from "@nestjs/jwt";
 import { AuthService } from "../../src/auth/auth.service";
 import { UsersRepository } from "../../src/users/users.repository";
+import { OrganizerWhitelistRepository } from "../../src/auth/organizer-whitelist.repository";
 import { ForbiddenException, NotImplementedException } from "@nestjs/common";
 import { TelegramAuthDto } from "../../src/auth/dto/telegram-auth.dto";
 
@@ -27,6 +28,14 @@ describe("Auth Mode Gating", () => {
             updateRole: jest.fn(),
           },
         },
+        {
+          provide: OrganizerWhitelistRepository,
+          useValue: {
+            isOrganizer: jest.fn(),
+            add: jest.fn(),
+            remove: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -36,6 +45,7 @@ describe("Auth Mode Gating", () => {
 
   afterEach(() => {
     delete process.env.AUTH_MODE;
+    delete process.env.TELEGRAM_BOT_TOKEN;
   });
 
   describe("devAuth endpoint", () => {
@@ -47,7 +57,6 @@ describe("Auth Mode Gating", () => {
         email: "test@example.com",
         login: "testuser",
         password: "",
-        isSuperAdmin: false,
         role: "Guest" as const,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -85,15 +94,17 @@ describe("Auth Mode Gating", () => {
   describe("telegramAuth endpoint", () => {
     it("should allow telegram auth when AUTH_MODE=telegram", async () => {
       process.env.AUTH_MODE = "telegram";
+      process.env.TELEGRAM_BOT_TOKEN = "test-bot-token";
 
       const dto: TelegramAuthDto = {
         telegramId: "123456789",
         hash: "test-hash",
       };
 
-      // Currently returns 501, but should not throw ForbiddenException
-      await expect(authService.telegramAuth(dto)).rejects.toThrow(
-        NotImplementedException
+      // Will throw UnauthorizedException due to invalid hash, but should not throw ForbiddenException
+      await expect(authService.telegramAuth(dto)).rejects.toThrow();
+      await expect(authService.telegramAuth(dto)).rejects.not.toThrow(
+        ForbiddenException
       );
     });
 
@@ -115,6 +126,7 @@ describe("Auth Mode Gating", () => {
 
     it("should block telegram auth when AUTH_MODE is not set (defaults to telegram)", async () => {
       delete process.env.AUTH_MODE;
+      process.env.TELEGRAM_BOT_TOKEN = "test-bot-token";
 
       const dto: TelegramAuthDto = {
         telegramId: "123456789",
@@ -122,8 +134,10 @@ describe("Auth Mode Gating", () => {
       };
 
       // Defaults to telegram, so should not throw ForbiddenException
-      await expect(authService.telegramAuth(dto)).rejects.toThrow(
-        NotImplementedException
+      // Will throw UnauthorizedException due to invalid hash
+      await expect(authService.telegramAuth(dto)).rejects.toThrow();
+      await expect(authService.telegramAuth(dto)).rejects.not.toThrow(
+        ForbiddenException
       );
     });
   });

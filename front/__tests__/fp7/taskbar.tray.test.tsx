@@ -23,6 +23,11 @@ describe("Taskbar Tray", () => {
     if (mockApi && typeof mockApi.get === "function") {
       mockApi.get("/jam/current", () => fetchMock.json(null));
     }
+    
+    // Mock /api/auth/me - will decode token from localStorage
+    if (mockApi && typeof mockApi.authMe === 'function') {
+      mockApi.authMe();
+    }
   });
 
   it("should render Taskbar Tray with User Icon and Clock", async () => {

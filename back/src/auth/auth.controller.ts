@@ -36,11 +36,12 @@ export class AuthController {
   async getMe(@CurrentUser() user: any) {
     // Return user info from JWT payload
     return {
-      id: user.userId,
-      email: user.email,
-      login: user.login,
-      isSuperAdmin: user.isSuperAdmin,
-      role: user.role || (user.isSuperAdmin ? 'Organizer' : 'Guest'),
+      user: {
+        id: user.userId,
+        email: user.email,
+        login: user.login,
+        role: user.role || 'Guest',
+      },
     };
   }
 }

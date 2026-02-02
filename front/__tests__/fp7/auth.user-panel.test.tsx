@@ -23,6 +23,11 @@ describe("Auth User Panel", () => {
     if (mockApi && typeof mockApi.get === 'function') {
       mockApi.get('/jam/current', () => fetchMock.json(null));
     }
+    
+    // Mock /api/auth/me - will decode token from localStorage
+    if (mockApi && typeof mockApi.authMe === 'function') {
+      mockApi.authMe();
+    }
   });
 
   it("should open User Panel window when clicking User Icon", async () => {
