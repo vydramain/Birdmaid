@@ -23,6 +23,11 @@ describe("Auth Logout", () => {
     if (mockApi && typeof mockApi.get === 'function') {
       mockApi.get('/jam/current', () => fetchMock.json(null));
     }
+    
+    // Mock /api/auth/me - will decode token from localStorage
+    if (mockApi && typeof mockApi.authMe === 'function') {
+      mockApi.authMe();
+    }
   });
 
   it("should clear token when logging out", async () => {

@@ -3,6 +3,7 @@ import { JwtModule, JwtService } from "@nestjs/jwt";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { UsersRepository } from "../users/users.repository";
+import { OrganizerWhitelistRepository } from "./organizer-whitelist.repository";
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { UsersRepository } from "../users/users.repository";
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, UsersRepository],
+  providers: [AuthService, UsersRepository, OrganizerWhitelistRepository],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

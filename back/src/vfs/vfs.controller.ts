@@ -15,7 +15,7 @@ export class VfsController {
    * Get user role from JWT payload
    */
   private getUserRole(user: any): UserRole {
-    return user.role || (user.isSuperAdmin ? 'Organizer' : 'Guest');
+    return user.role || 'Guest';
   }
 
   /**

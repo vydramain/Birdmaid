@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
     "test:ci": "jest --ci --runInBand --verbose",
-    "coverage": "jest --coverage"
+    "coverage": "jest --coverage",
+    "migrate:fp7-cleanup": "ts-node scripts/migrate-fp7-legacy-cleanup.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.980.0",

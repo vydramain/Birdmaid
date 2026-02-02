@@ -283,6 +283,75 @@ export const mockApi = {
   },
 
   /**
+   * Mock GET /api/auth/me - returns user from token
+   * Decodes JWT token from localStorage and returns user data
+   * Supports role field from token payload
+   * Returns 401 if no token is found
+   */
+  authMe: (user?: Partial<User & { role?: 'Guest' | 'Participant' | 'Organizer' }>) => {
+    // Add safety check
+    if (!fetchMock || typeof fetchMock.json !== 'function') {
+      console.warn('[mockApi] fetchMock is not available, skipping authMe mock');
+      return;
+    }
+    
+    mockApi.get('/api/auth/me', () => {
+      // Try to decode token from localStorage
+      const token = localStorage.getItem('birdmaid_token');
+      if (!token) {
+        // No token - return 401
+        return fetchMock.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      
+      // Check for expired/invalid token markers
+      if (token.includes('.expired') || token.endsWith('.expired')) {
+        return fetchMock.json({ error: 'Token expired' }, { status: 401 });
+      }
+      
+      try {
+        // Decode JWT token (format: header.payload.signature)
+        const parts = token.split('.');
+        if (parts.length >= 2 && parts[1]) {
+          // Try to decode payload
+          try {
+            const decoded = atob(parts[1]);
+            const payload = JSON.parse(decoded);
+            const userData: User & { role?: 'Guest' | 'Participant' | 'Organizer' } = {
+              id: payload.userId || payload.id || '123',
+              email: payload.email || 'test@example.com',
+              login: payload.login || 'testuser',
+              isSuperAdmin: payload.isSuperAdmin || false,
+              role: payload.role || 'Guest',
+            };
+            // Merge with provided overrides
+            const finalUser = { ...userData, ...user };
+            return fetchMock.json({ user: finalUser });
+          } catch (decodeError) {
+            // If base64 decode or JSON parse fails, return 401
+            return fetchMock.json({ error: 'Invalid token' }, { status: 401 });
+          }
+        } else {
+          // Invalid token format (missing parts)
+          return fetchMock.json({ error: 'Invalid token format' }, { status: 401 });
+        }
+      } catch (e) {
+        // If token decode fails (invalid base64, invalid JSON, etc.), return 401
+        return fetchMock.json({ error: 'Invalid token' }, { status: 401 });
+      }
+      
+      // Fallback: use provided user or default
+      if (user) {
+        const fixtureUser = makeUser(user);
+        const userWithRole = { ...fixtureUser, role: (user.role as 'Guest' | 'Participant' | 'Organizer') || 'Guest' };
+        return fetchMock.json({ user: userWithRole });
+      }
+      
+      // No user provided and token decode failed - return 401
+      return fetchMock.json({ error: 'Unauthorized' }, { status: 401 });
+    });
+  },
+
+  /**
    * Setup default mocks for common test scenarios
    * Safe defaults that prevent crashes
    */
@@ -297,6 +366,7 @@ export const mockApi = {
     // Mock /jam/current endpoint (used by LandingWindow in FP6/FP7)
     mockApi.get('/jam/current', () => fetchMock.json(null));
     // Don't mock auth/login by default - tests should explicitly set it
+    // Don't mock auth/me by default - tests should explicitly set it
   },
 };
 

@@ -90,21 +90,22 @@ export const apiClient = {
     });
 
     // Handle 401 Unauthorized
-    // Only redirect if:
+    // Only trigger hardLogout if:
     // 1. User has a token (was authenticated)
     // 2. Request is NOT to auth endpoints (login/register/recovery)
-    // This prevents redirect on login/register errors
+    // This prevents logout on login/register errors
     if (response.status === 401) {
-      const isAuthEndpoint = path.startsWith('/auth/');
+      const isAuthEndpoint = path.startsWith('/auth/') || path.startsWith('/api/auth/');
       const hadToken = !!token;
       
       if (hadToken && !isAuthEndpoint) {
-        // Token expired or invalid for protected endpoint - redirect to login
-        localStorage.removeItem("birdmaid_token");
-        window.location.href = "/";
+        // Token expired or invalid for protected endpoint - trigger hardLogout
+        // Note: We can't directly call hardLogout from here, so we dispatch a custom event
+        // AuthContext will listen to this event and call hardLogout
+        window.dispatchEvent(new CustomEvent('auth:hardLogout'));
         return response; // Return response so error can still be thrown
       }
-      // For auth endpoints (login/register), don't redirect - let the error be thrown
+      // For auth endpoints (login/register), don't trigger logout - let the error be thrown
     }
 
     if (!response.ok) {

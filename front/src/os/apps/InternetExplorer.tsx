@@ -93,17 +93,28 @@ export function InternetExplorer({ content }: InternetExplorerProps) {
   }
 
   // Strict sandbox policy for HTML content
-  // allow-scripts: Required for HTML to work
-  // allow-same-origin: Required for API calls to our backend (same origin)
+  // For Telegram OAuth: need allow-same-origin to allow oauth.telegram.org to work
+  // For local HTML: allow-scripts, allow-same-origin for API calls
   // allow-forms: Allow form submissions
   // allow-popups: Allow popups (but not top-level navigation)
   // NO allow-top-navigation: Prevent iframe from navigating parent window
   // NO allow-modals: Prevent alert/confirm dialogs
-  const sandboxPolicy = "allow-scripts allow-same-origin allow-forms allow-popups";
+  // Note: For Telegram OAuth, we need to allow same-origin for oauth.telegram.org
+  // This is safe because Telegram OAuth uses postMessage for callback
+  const isTelegramOAuth = content?.src?.includes('oauth.telegram.org');
+  const sandboxPolicy = isTelegramOAuth
+    ? "allow-scripts allow-same-origin allow-forms allow-popups"
+    : "allow-scripts allow-same-origin allow-forms allow-popups";
+
+  // Note: Telegram OAuth callback is handled in AuthContext via window.addEventListener('message')
+  // The iframe will receive postMessage from Telegram, and we forward it to parent window
+  // But actually, Telegram sends postMessage directly to parent window, not to iframe
+  // So we don't need to handle it here - AuthContext will handle it
 
   return (
-    <div className="viewer-ie-container">
+    <div data-testid="ie-window" className="viewer-ie-container">
       <iframe
+        data-testid="ie-window-iframe"
         src={htmlSrc}
         title={content?.node?.name || "HTML Content"}
         sandbox={sandboxPolicy}

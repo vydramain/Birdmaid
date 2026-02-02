@@ -16,7 +16,7 @@ type UserPanelAppProps = {
 export function UserPanelApp({ onClose }: UserPanelAppProps) {
   const auth = useAuth();
   const user = auth.user;
-  const role: UserRole = user?.role || (user?.isSuperAdmin ? "Organizer" : "Guest");
+  const role: UserRole = user?.role || "Guest";
 
   const handleLogout = () => {
     auth.logout();
@@ -61,19 +61,21 @@ export function UserPanelApp({ onClose }: UserPanelAppProps) {
             onClick={handleManagement}
             className="win-btn-default user-panel-button"
           >
-            Management Functions (stub)
+            Management Functions
           </button>
         )}
 
-        {/* Logout Button */}
-        <button
-          data-testid="user-logout"
-          type="button"
-          onClick={handleLogout}
-          className="win-btn-default user-panel-button"
-        >
-          Log out
-        </button>
+        {/* Logout Button - only show if logged in */}
+        {user && (
+          <button
+            data-testid="user-logout"
+            type="button"
+            onClick={handleLogout}
+            className="win-btn-default user-panel-button"
+          >
+            Log out
+          </button>
+        )}
       </div>
     </div>
   );

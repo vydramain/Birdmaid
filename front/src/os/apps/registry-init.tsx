@@ -6,6 +6,8 @@ import { Notepad } from "./Notepad";
 import { InternetExplorer } from "./InternetExplorer";
 import { UserPanelApp } from "./UserPanelApp";
 import { StyleGuideApp } from "./StyleGuideApp";
+import { LoginWindow } from "./LoginWindow";
+import { LogoutConfirmationDialog } from "./LogoutConfirmationDialog";
 import { ExplorerWindow } from "../../components/ExplorerWindow";
 import { HelpWindow } from "../../components/HelpWindow";
 import { LandingWindow } from "../../components/LandingWindow";
@@ -137,6 +139,28 @@ export function initApps() {
     defaultWidth: 800,
     defaultHeight: 900,
     singleton: false,
+  });
+
+  // Login Window (system app)
+  appRegistry.register({
+    id: "login-window",
+    name: "Welcome to Windows",
+    icon: resolveIconForApp("login"),
+    component: (props: any) => <LoginWindow onClose={props.onClose} />,
+    defaultWidth: 400,
+    defaultHeight: 200,
+    singleton: true,
+  });
+
+  // Logout Confirmation Dialog (system app)
+  appRegistry.register({
+    id: "logout-confirmation",
+    name: "Log Out",
+    icon: resolveIconForApp("logout"),
+    component: (props: any) => <LogoutConfirmationDialog onClose={props.onClose} />,
+    defaultWidth: 300,
+    defaultHeight: 150,
+    singleton: true,
   });
 
   // Register content type mappings

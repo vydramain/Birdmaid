@@ -5,6 +5,7 @@ import request from "supertest";
 import { AuthController } from "../../src/auth/auth.controller";
 import { AuthService } from "../../src/auth/auth.service";
 import { UsersRepository } from "../../src/users/users.repository";
+import { OrganizerWhitelistRepository } from "../../src/auth/organizer-whitelist.repository";
 import { JwtAuthGuard } from "../../src/auth/auth.guard";
 
 describe("Auth Integration Tests", () => {
@@ -29,6 +30,14 @@ describe("Auth Integration Tests", () => {
             findById: jest.fn(),
             create: jest.fn(),
             updateRole: jest.fn(),
+          },
+        },
+        {
+          provide: OrganizerWhitelistRepository,
+          useValue: {
+            isOrganizer: jest.fn(),
+            add: jest.fn(),
+            remove: jest.fn(),
           },
         },
       ],
@@ -61,7 +70,9 @@ describe("Auth Integration Tests", () => {
   });
 
   afterEach(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
     delete process.env.AUTH_MODE;
   });
 
@@ -74,7 +85,6 @@ describe("Auth Integration Tests", () => {
         email: "test@example.com",
         login: "testuser",
         password: "",
-        isSuperAdmin: false,
         role: "Organizer" as const,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -103,7 +113,6 @@ describe("Auth Integration Tests", () => {
         email: "dev-newuser123@local.dev",
         login: "dev-newuser123",
         password: "",
-        isSuperAdmin: false,
         role: "Guest" as const,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -131,7 +140,6 @@ describe("Auth Integration Tests", () => {
         email: "test@example.com",
         login: "testuser",
         password: "",
-        isSuperAdmin: false,
         role: "Organizer" as const,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -152,10 +160,11 @@ describe("Auth Integration Tests", () => {
         .set("Authorization", `Bearer ${token}`)
         .expect(200);
 
-      expect(meResponse.body).toHaveProperty("id");
-      expect(meResponse.body).toHaveProperty("role");
-      expect(meResponse.body.id).toBe("user123");
-      expect(meResponse.body.role).toBe("Organizer");
+      expect(meResponse.body).toHaveProperty("user");
+      expect(meResponse.body.user).toHaveProperty("id");
+      expect(meResponse.body.user).toHaveProperty("role");
+      expect(meResponse.body.user.id).toBe("user123");
+      expect(meResponse.body.user.role).toBe("Organizer");
     });
   });
 });

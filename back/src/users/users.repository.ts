@@ -7,10 +7,8 @@ export type UserDoc = {
   _id: string;
   email: string;
   login: string;
-  password: string; // hashed
-  isSuperAdmin: boolean; // deprecated, use role instead
+  password: string; // hashed (legacy field, not used for auth)
   role?: UserRole; // 'Guest' | 'Participant' | 'Organizer', defaults to 'Guest' if not set
-  recoveryCode?: { code: string; createdAt: Date };
   createdAt: Date;
   updatedAt: Date;
 };
@@ -86,57 +84,6 @@ export class UsersRepository {
     return newUser;
   }
 
-  async updateRecoveryCode(email: string, code: string): Promise<void> {
-    if (this.useMemory) {
-      const user = this.memoryUsers.find((u) => u.email === email);
-      if (user) {
-        user.recoveryCode = { code, createdAt: new Date() };
-        user.updatedAt = new Date();
-      }
-      return;
-    }
-
-    const db = await this.getDb();
-    if (!db) throw new Error("DB not available");
-    const users = db.collection<UserDoc>("users");
-    await users.updateOne(
-      { email },
-      { $set: { recoveryCode: { code, createdAt: new Date() }, updatedAt: new Date() } }
-    );
-  }
-
-  async getRecoveryCode(email: string): Promise<string | null> {
-    if (this.useMemory) {
-      const user = this.memoryUsers.find((u) => u.email === email);
-      return user?.recoveryCode?.code || null;
-    }
-
-    const db = await this.getDb();
-    if (!db) return null;
-    const users = db.collection<UserDoc>("users");
-    const user = await users.findOne({ email }, { projection: { recoveryCode: 1 } });
-    return user?.recoveryCode?.code || null;
-  }
-
-  async updatePassword(email: string, hashedPassword: string): Promise<void> {
-    if (this.useMemory) {
-      const user = this.memoryUsers.find((u) => u.email === email);
-      if (user) {
-        user.password = hashedPassword;
-        user.recoveryCode = undefined;
-        user.updatedAt = new Date();
-      }
-      return;
-    }
-
-    const db = await this.getDb();
-    if (!db) throw new Error("DB not available");
-    const users = db.collection<UserDoc>("users");
-    await users.updateOne(
-      { email },
-      { $set: { password: hashedPassword, recoveryCode: undefined, updatedAt: new Date() } }
-    );
-  }
 
   async updateRole(userId: string, role: UserRole): Promise<void> {
     if (this.useMemory) {
