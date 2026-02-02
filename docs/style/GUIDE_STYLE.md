@@ -214,17 +214,64 @@ Inline styles разрешены **только** для следующих сл
    - `transform` — для GPU-ускорения анимаций
    - `opacity` — для fade анимаций (только если анимируется через JS)
 
-**Обязательный allow-tag формат:**
+**Обязательный allow-tag формат v2:**
 
 ```typescript
-// inline-style: allowed (reason: drag/resize)
+// inline-style: allowed (reason: drag/resize; why: mouse position during drag; revisit: FP7)
 <div style={{ transform: `translate3d(${x}px, ${y}px, 0)` }} />
 ```
 
+**Обязательные поля:**
+- `reason` — одна из: `drag/resize`, `layout-calc`, `performance`
+- `why` — краткое обоснование: откуда берётся динамика (например: `taskbar height measured via ResizeObserver`, `mouse position during drag`)
+- `revisit` — milestone для пересмотра (например: `M6`, `FP7`)
+
 **Разрешённые причины (reason):**
 - `drag/resize` — для drag и resize операций
-- `layout-calc` — для вычисляемых размеров/позиций
+- `layout-calc` — для вычисляемых размеров/позиций (см. ограничения ниже)
 - `performance` — для GPU-ускорения (transform, opacity)
+
+**Жёсткое правило:** Inline style с allow-tag всё равно **запрещён**, если все значения в `style` — литералы (string/number) и не зависят от runtime (state, refs, ResizeObserver, getBoundingClientRect, window/visualViewport).
+
+**layout-calc** разрешён **только** если:
+1. Значение вычисляется из измерений: `getBoundingClientRect`, `ResizeObserver`, `window.innerWidth/Height`, `visualViewport`
+2. Вынос в CSS невозможен без потери корректности
+
+**Если нет явного источника измерения — reason=layout-calc недействителен.**
+
+**Запрещённые паттерны (всегда, даже с allow-tag):**
+
+| Паттерн | Пример нарушения | Как правильно |
+|---------|------------------|---------------|
+| Fixed fullscreen backdrop/overlay | `position: fixed`, `inset: 0`, `zIndex: 9998` | CSS класс (например `.start-menu-backdrop`) + z-index token |
+| Позиционирование меню/окон константами | `bottom: 40px`, `left: 4px`, `minWidth: 150px` | CSS класс + tokens (rem) |
+| zIndex-магические числа | `zIndex: 9999` | Только через z-index tokens/classes |
+
+**Как правильно (примеры):**
+```scss
+.start-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-taskbar-backdrop);
+}
+.start-menu {
+  position: fixed;
+  bottom: var(--taskbar-h, 2.5rem);
+  left: var(--spacing-xs);
+  min-width: 9.375rem;
+  z-index: var(--z-taskbar-menu);
+}
+```
+
+**Правило предпочтения (сначала CSS vars, потом inline):** Если нужен runtime-результат — **сначала** ставим CSS custom property (inline только `--var`), а применение делаем в классе.
+
+```typescript
+// inline-style: allowed (reason: layout-calc; why: taskbar height measured; revisit: M6)
+<div className="start-menu" style={{ ["--taskbar-h" as any]: `${taskbarH}px` }} />
+```
+```scss
+.start-menu { bottom: var(--taskbar-h); }
+```
 
 **Запрещённые свойства в inline styles:**
 - ❌ `color`, `backgroundColor`, `borderColor` — используй классы
@@ -319,20 +366,20 @@ Inline styles разрешены **только** для следующих сл
 <div className="mt-md text-center" />
 ```
 
-**Правило 5: Динамические значения → Inline Styles с allow-tag**
+**Правило 5: Динамические значения → Inline Styles с allow-tag v2**
 
-Динамические значения (drag/resize positioning, layout calculations) могут оставаться в inline styles с allow-tag:
+Динамические значения (drag/resize positioning, layout calculations) могут оставаться в inline styles с allow-tag v2:
 
 ```typescript
 // ✅ Разрешено (drag/resize)
-// inline-style: allowed (reason: drag/resize)
+// inline-style: allowed (reason: drag/resize; why: mouse position during drag; revisit: FP7)
 <div style={{ 
   transform: `translate3d(${state.x}px, ${state.y}px, 0)`,
   zIndex: state.zIndex 
 }} />
 
-// ✅ Разрешено (layout-calc)
-// inline-style: allowed (reason: layout-calc)
+// ✅ Разрешено (layout-calc) — только при измерении из viewport/ResizeObserver
+// inline-style: allowed (reason: layout-calc; why: viewport measured; revisit: FP7)
 <div style={{ 
   width: `${viewportWidth - 40}px`,
   maxHeight: `${viewportHeight - 100}px` 
@@ -343,7 +390,7 @@ Inline styles разрешены **только** для следующих сл
 
 ✅ **Разрешено (drag/resize):**
 ```typescript
-// inline-style: allowed (reason: drag/resize)
+// inline-style: allowed (reason: drag/resize; why: mouse position during drag; revisit: FP7)
 <div style={{ 
   transform: `translate3d(${state.x}px, ${state.y}px, 0)`,
   zIndex: state.zIndex 
@@ -352,7 +399,7 @@ Inline styles разрешены **только** для следующих сл
 
 ✅ **Разрешено (layout-calc):**
 ```typescript
-// inline-style: allowed (reason: layout-calc)
+// inline-style: allowed (reason: layout-calc; why: viewport measured; revisit: FP7)
 <div style={{ 
   width: `${viewportWidth - 40}px`,
   maxHeight: `${viewportHeight - 100}px` 
@@ -404,13 +451,15 @@ Inline styles разрешены **только** для следующих сл
 
 **Запрещено:**
 - ❌ `!important` — используй правильную специфичность селекторов
-- ❌ Абсолютные единицы (`px`, `pt`, `pc`, `in`, `cm`, `mm`, `q`, `Q`) — используй относительные единицы (`rem`, `em`, `%`, `vh`, `vw`, `vmin`, `vmax`, `ch`, `ex`)
-- ❌ Inline styles для визуальных свойств (без allow-tag) — используй классы/SCSS
+- ❌ Абсолютные единицы (`px`, `pt`, `pc`, `in`, `cm`, `mm`, `q`, `Q`) в SCSS — используй относительные единицы (`rem`, `em`, `%`, `vh`, `vw`, `vmin`, `vmax`, `ch`, `ex`)
+- ❌ Inline styles для визуальных свойств (без allow-tag v2) — используй классы/SCSS
+- ❌ Константные inline styles (даже с allow-tag) — все значения должны зависеть от runtime
+- ❌ Disallowed patterns: fixed fullscreen backdrop/overlay, позиционирование меню константами, zIndex magic numbers — всегда CSS классы + tokens
 
 **Разрешено:**
 - ✅ Относительные единицы (`rem`, `em`, `%`, `vh`, `vw`, `vmin`, `vmax`, `ch`, `ex`)
 - ✅ Unitless `0` (например, `margin: 0`)
-- ✅ Inline styles с allow-tag для drag/resize/layout-calc/performance случаев
+- ✅ Inline styles с allow-tag v2 (reason + why + revisit) для drag/resize/layout-calc/performance случаев
 
 ## Правила
 
@@ -432,6 +481,8 @@ Inline styles разрешены **только** для следующих сл
 ## Unit Policy: Запрет абсолютных единиц
 
 **Общее правило:** Все абсолютные единицы измерения запрещены в стилях. Stylelint блокирует коммиты с абсолютными единицами.
+
+**Исключение для inline styles:** В коде допускаются `px` **только** в runtime-координатах (drag/resize) и **только** внутри `transform`/`translate`; все постоянные размеры — `rem`.
 
 ### Запрещённые единицы (absolute units)
 
@@ -486,7 +537,7 @@ Inline styles разрешены **только** для следующих сл
 
 ### Conversion Table
 
-Таблица конвертации стандартных значений:
+**Источник правды — rem.** В SCSS используй rem; px в таблице — только для справки/конвертации.
 
 | px | rem | Примечание |
 |----|-----|------------|
@@ -592,7 +643,9 @@ Canary тесты в `front/__tests__/style-guardrails/` проверяют, ч�
 - `canary-absolute-units.test.css` — должен падать при коммите (содержит абсолютные единицы: `px`, `pt`, `pc`, `in`, `cm`, `mm`, `q`, `Q`)
 - `canary-inline-style.test.tsx` — должен падать при коммите (inline style без allow-tag)
 - `canary-inline-absolute-units.test.tsx` — должен падать при коммите (inline style с абсолютными единицами)
-- `canary-inline-style-allowed.test.tsx` — должен проходить (inline style с allow-tag)
+- `canary-inline-style-allowed.test.tsx` — должен проходить (inline style с allow-tag v2)
+- `canary-inline-style-constants.test.tsx` — должен падать (inline с литералами и allow-tag layout-calc)
+- `canary-inline-style-backdrop.test.tsx` — должен падать (fullscreen backdrop с allow-tag)
 
 **Проверка canary тестов:**
 ```bash
@@ -618,9 +671,17 @@ node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-st
 node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-absolute-units.test.tsx
 # Должен упасть с ошибкой "Absolute units found in inline style"
 
-# Проверка inline style с allow-tag
+# Проверка inline style с allow-tag v2
 node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-style-allowed.test.tsx
 # Должен пройти
+
+# Проверка constants (должен падать)
+node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-style-constants.test.tsx
+# Должен упасть
+
+# Проверка backdrop (должен падать)
+node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-style-backdrop.test.tsx
+# Должен упасть
 ```
 
 ## Migration Checklist

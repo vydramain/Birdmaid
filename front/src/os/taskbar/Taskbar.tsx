@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useWindowRegistry } from "../wm/WindowRegistry";
-import { taskbar, colors } from "../../ui/win95/tokens";
 import { Icon } from "../../ui/icons";
 import { StartMenu } from "./StartMenu";
 
@@ -47,14 +46,7 @@ export function Taskbar() {
 
   return (
     <>
-      <div
-        className="win-taskbar-fixed"
-        // inline-style: allowed (reason: layout-calc)
-        style={{
-          height: `${taskbar.height}px`,
-          zIndex: taskbar.zIndex,
-        }}
-      >
+      <div className="win-taskbar-fixed">
         <div className="win-taskbar-window-list">
           {/* Start Button */}
           <button

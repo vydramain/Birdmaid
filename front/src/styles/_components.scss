@@ -131,12 +131,14 @@
   justify-content: space-between;
 }
 
-// Taskbar fixed positioning (position, bottom, left, right stay inline for computed values)
+// Taskbar fixed positioning
 .win-taskbar-fixed {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  height: var(--taskbar-height, 2.5rem); // 40px
+  z-index: var(--z-taskbar, 10000);
   background-color: var(--win-gray, #c0c0c0);
   border-top: 0.125rem solid var(--win-white, #fff); // 2px
   border-bottom: 0.125rem solid var(--win-gray-dark, #808080); // 2px
@@ -215,7 +217,18 @@
 // Start Menu Component
 // ============================================================================
 
+.start-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-taskbar-backdrop, 9999);
+}
+
 .start-menu {
+  position: fixed;
+  bottom: var(--taskbar-height, 2.5rem); // above taskbar
+  left: var(--spacing-sm, 0.25rem); // 4px
+  min-width: 9.375rem; // 150px
+  z-index: var(--z-taskbar-menu, 10000);
   @include bevel-outset;
   background-color: var(--win-gray, #c0c0c0);
   border: 0.125rem solid var(--win-black, #000); // 2px
@@ -245,6 +258,20 @@
       cursor: not-allowed;
     }
   }
+}
+
+// ============================================================================
+// Hourglass Overlay Component
+// ============================================================================
+
+.hourglass-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 10001);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(192, 192, 192, 0.9);
 }
 
 // ============================================================================

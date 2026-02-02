@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Script to check for inline styles without allow-tag comment and absolute units
+ * Script to check for inline styles without allow-tag v2 comment, absolute units, and disallowed patterns
  * This script is used in pre-commit hook to enforce style guardrails
- * 
- * Format: // inline-style: allowed (reason: drag/resize|layout-calc|performance)
- * 
+ *
+ * Allow-tag v2 format: // inline-style: allowed (reason: X; why: <runtime dynamic>; revisit: <milestone>)
+ *
  * Usage:
  *   node scripts/check-inline-styles.cjs [file1] [file2] ...
  *   If no files provided, scans entire src directory
@@ -14,11 +14,32 @@
 const fs = require("fs");
 const path = require("path");
 
-// Format: // inline-style: allowed (reason: drag/resize|layout-calc|performance)
-const ALLOW_TAG_PATTERN = /inline-style:\s*allowed\s*\(reason:\s*(drag\/resize|layout-calc|performance)\)/i;
+// Allow-tag v2: reason + why + revisit required
+const ALLOW_TAG_V2_PATTERN = /inline-style:\s*allowed\s*\(\s*reason:\s*(drag\/resize|layout-calc|performance)\s*;\s*why:\s*[^;)]+\s*;\s*revisit:\s*[^)]+\s*\)/i;
+
+// Legacy v1 (missing why/revisit) - used to detect and reject
+const ALLOW_TAG_V1_PATTERN = /inline-style:\s*allowed\s*\(reason:\s*(drag\/resize|layout-calc|performance)\s*\)/i;
 
 // Absolute units that are forbidden (px, pt, pc, in, cm, mm, q, Q)
 const ABSOLUTE_UNITS_PATTERN = /\b\d+(\.\d+)?(px|pt|pc|in|cm|mm|[qQ])\b/gi;
+
+// Disallowed: fixed fullscreen backdrop (position: fixed + inset/top/left/right/bottom: 0)
+const DISALLOWED_BACKDROP_PATTERN = /position:\s*["']fixed["'].*?(?:inset|top|left|right|bottom):\s*0|(?:inset|top|left|right|bottom):\s*0.*?position:\s*["']fixed["']/is;
+
+// Disallowed: zIndex magic numbers (4+ digits, e.g. 9998, 9999)
+const DISALLOWED_ZINDEX_PATTERN = /zIndex:\s*\d{4,}/;
+
+function collectStyleBlock(lines, startIdx) {
+  let block = lines[startIdx];
+  let depth = (block.match(/\{/g) || []).length - (block.match(/\}/g) || []).length;
+  let j = startIdx;
+  while (depth > 0 && j < lines.length - 1) {
+    j += 1;
+    block += "\n" + lines[j];
+    depth += (lines[j].match(/\{/g) || []).length - (lines[j].match(/\}/g) || []).length;
+  }
+  return block;
+}
 
 function checkFile(filePath) {
   const content = fs.readFileSync(filePath, "utf-8");
@@ -27,35 +48,63 @@ function checkFile(filePath) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    
-    // Check if line contains style={{ or style={{
+
     if (line.includes("style={{") || line.includes('style={{"')) {
-      // Check previous lines for allow-tag comment (within 4 lines to allow for empty lines/comments)
-      let hasAllowComment = false;
+      // Check previous lines for allow-tag v2 (within 4 lines)
+      let hasAllowV2 = false;
+      let hasAllowV1Only = false;
       for (let j = Math.max(0, i - 4); j < i; j++) {
-        if (ALLOW_TAG_PATTERN.test(lines[j])) {
-          hasAllowComment = true;
+        if (ALLOW_TAG_V2_PATTERN.test(lines[j])) {
+          hasAllowV2 = true;
           break;
+        }
+        if (ALLOW_TAG_V1_PATTERN.test(lines[j]) && !ALLOW_TAG_V2_PATTERN.test(lines[j])) {
+          hasAllowV1Only = true;
         }
       }
 
-      if (!hasAllowComment) {
+      if (hasAllowV1Only && !hasAllowV2) {
         errors.push({
           file: filePath,
           line: i + 1,
-          message: `Inline style found without allow-tag comment. Add: // inline-style: allowed (reason: drag/resize|layout-calc|performance)`,
+          message: `Allow-tag v2 required. Add why and revisit: // inline-style: allowed (reason: X; why: <runtime dynamic>; revisit: <milestone>)`,
+        });
+      } else if (!hasAllowV2) {
+        errors.push({
+          file: filePath,
+          line: i + 1,
+          message: `Inline style found without allow-tag v2. Add: // inline-style: allowed (reason: drag/resize|layout-calc|performance; why: <runtime dynamic>; revisit: <milestone>)`,
         });
       }
 
-      // Check for absolute units in inline styles (even if allow-tag is present)
-      // Absolute units are forbidden everywhere, including inline styles
-      const absoluteUnitsMatch = line.match(ABSOLUTE_UNITS_PATTERN);
+      // Check for absolute units in inline styles (px in transform/translate is allowed for drag)
+      const styleBlock = collectStyleBlock(lines, i);
+      const blockWithoutTranslate = styleBlock
+        .replace(/translate3d\s*\([^)]*\)/g, "")
+        .replace(/translate\s*\([^)]*\)/g, "");
+      const absoluteUnitsMatch = blockWithoutTranslate.match(ABSOLUTE_UNITS_PATTERN);
       if (absoluteUnitsMatch) {
-        const units = [...new Set(absoluteUnitsMatch.map(m => m.match(/(px|pt|pc|in|cm|mm|[qQ])$/i)?.[0]).filter(Boolean))];
+        const units = [...new Set(absoluteUnitsMatch.map((m) => m.match(/(px|pt|pc|in|cm|mm|[qQ])$/i)?.[0]).filter(Boolean))];
         errors.push({
           file: filePath,
           line: i + 1,
-          message: `Absolute units found in inline style: ${units.join(", ")}. Use relative units (rem, em, %, vh, vw, vmin, vmax, ch, ex) instead.`,
+          message: `Absolute units found in inline style: ${units.join(", ")}. Use relative units (rem, em, %, vh, vw, vmin, vmax, ch, ex) or px only in transform/translate for drag.`,
+        });
+      }
+
+      // Disallowed patterns: fixed fullscreen backdrop, zIndex magic numbers
+      if (DISALLOWED_BACKDROP_PATTERN.test(styleBlock)) {
+        errors.push({
+          file: filePath,
+          line: i + 1,
+          message: `Disallowed pattern: fixed fullscreen backdrop/overlay. Use CSS class + z-index token instead.`,
+        });
+      }
+      if (DISALLOWED_ZINDEX_PATTERN.test(styleBlock)) {
+        errors.push({
+          file: filePath,
+          line: i + 1,
+          message: `Disallowed pattern: zIndex magic number (4+ digits). Use z-index tokens/classes instead.`,
         });
       }
     }
@@ -90,15 +139,12 @@ const args = process.argv.slice(2);
 const filesToCheck = args.length > 0
   ? args.filter((arg) => {
       const fullPath = path.isAbsolute(arg) ? arg : path.join(process.cwd(), arg);
-      // Skip canary test files - they are meant to fail and are tested separately
-      // Check both relative and absolute paths
-      const normalizedPath = fullPath.replace(/\\/g, "/");
-      if (normalizedPath.includes("__tests__/style-guardrails/") || normalizedPath.includes("/style-guardrails/")) {
-        return false;
-      }
       return fs.existsSync(fullPath) && (arg.endsWith(".tsx") || arg.endsWith(".ts"));
     })
-  : findTsxFiles(path.join(__dirname, "..", "src"));
+  : findTsxFiles(path.join(__dirname, "..", "src")).filter((p) => {
+      const normalized = p.replace(/\\/g, "/");
+      return !normalized.includes("__tests__/style-guardrails/");
+    });
 
 const allErrors = [];
 
@@ -117,8 +163,9 @@ if (allErrors.length > 0) {
     console.error(`    ${error.message}\n`);
   });
   console.error("  Rules:");
-  console.error("    - Inline styles require allow-tag: // inline-style: allowed (reason: drag/resize|layout-calc|performance)");
-  console.error("    - Absolute units (px, pt, pc, in, cm, mm, q, Q) are forbidden. Use relative units (rem, em, %, vh, vw, vmin, vmax, ch, ex) instead.\n");
+  console.error("    - Inline styles require allow-tag v2: (reason: X; why: <runtime dynamic>; revisit: <milestone>)");
+  console.error("    - Disallowed: fixed fullscreen backdrop, zIndex magic numbers (4+ digits)");
+  console.error("    - Absolute units (px, pt, pc...) forbidden except px in transform/translate for drag.\n");
   process.exit(1);
 } else {
   if (filesToCheck.length > 0) {
