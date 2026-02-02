@@ -16,9 +16,16 @@ const path = require("path");
 
 // Allow-tag v2: reason + why + revisit required
 const ALLOW_TAG_V2_PATTERN = /inline-style:\s*allowed\s*\(\s*reason:\s*(drag\/resize|layout-calc|performance)\s*;\s*why:\s*[^;)]+\s*;\s*revisit:\s*[^)]+\s*\)/i;
+const ALLOW_TAG_V2_REASON_CAPTURE = /inline-style:\s*allowed\s*\(\s*reason:\s*(drag\/resize|layout-calc|performance)\s*;/i;
 
 // Legacy v1 (missing why/revisit) - used to detect and reject
 const ALLOW_TAG_V1_PATTERN = /inline-style:\s*allowed\s*\(reason:\s*(drag\/resize|layout-calc|performance)\s*\)/i;
+
+// Evidence of measurement APIs (required for reason=layout-calc)
+const LAYOUT_CALC_EVIDENCE_PATTERN = /getBoundingClientRect|ResizeObserver|visualViewport|window\.inner(Width|Height)|clientWidth|clientHeight|offsetWidth|offsetHeight/;
+
+// Runtime value indicator: template literal or variable reference
+const RUNTIME_VALUE_PATTERN = /\$\{|\.current\b|useState\b|useRef\b|state\.|ref\.|props\./;
 
 // Absolute units that are forbidden (px, pt, pc, in, cm, mm, q, Q)
 const ABSOLUTE_UNITS_PATTERN = /\b\d+(\.\d+)?(px|pt|pc|in|cm|mm|[qQ])\b/gi;
@@ -52,10 +59,14 @@ function checkFile(filePath) {
     if (line.includes("style={{") || line.includes('style={{"')) {
       // Check previous lines for allow-tag v2 (within 4 lines)
       let hasAllowV2 = false;
+      let allowTagReason = null;
       let hasAllowV1Only = false;
       for (let j = Math.max(0, i - 4); j < i; j++) {
-        if (ALLOW_TAG_V2_PATTERN.test(lines[j])) {
+        const v2Match = lines[j].match(ALLOW_TAG_V2_PATTERN);
+        if (v2Match) {
           hasAllowV2 = true;
+          const reasonMatch = lines[j].match(ALLOW_TAG_V2_REASON_CAPTURE);
+          if (reasonMatch) allowTagReason = reasonMatch[1].toLowerCase();
           break;
         }
         if (ALLOW_TAG_V1_PATTERN.test(lines[j]) && !ALLOW_TAG_V2_PATTERN.test(lines[j])) {
@@ -77,8 +88,29 @@ function checkFile(filePath) {
         });
       }
 
-      // Check for absolute units in inline styles (px in transform/translate is allowed for drag)
       const styleBlock = collectStyleBlock(lines, i);
+
+      // layout-calc: require evidence of measurement APIs in file
+      if (hasAllowV2 && allowTagReason === "layout-calc") {
+        if (!LAYOUT_CALC_EVIDENCE_PATTERN.test(content)) {
+          errors.push({
+            file: filePath,
+            line: i + 1,
+            message: `reason=layout-calc requires evidence of measurement APIs (getBoundingClientRect, ResizeObserver, visualViewport, window.innerWidth/Height, clientWidth/Height, offsetWidth/Height) in file.`,
+          });
+        }
+      }
+
+      // Literal-only: fail if all values are literals (no runtime) even with allow-tag
+      if (hasAllowV2 && !RUNTIME_VALUE_PATTERN.test(styleBlock)) {
+        errors.push({
+          file: filePath,
+          line: i + 1,
+          message: `Inline style with allow-tag forbidden when all values are literals. Values must depend on runtime (state, refs, template literals, measurement APIs).`,
+        });
+      }
+
+      // Check for absolute units in inline styles (px in transform/translate is allowed for drag)
       const blockWithoutTranslate = styleBlock
         .replace(/translate3d\s*\([^)]*\)/g, "")
         .replace(/translate\s*\([^)]*\)/g, "");

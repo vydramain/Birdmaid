@@ -1925,6 +1925,42 @@ front/__tests__/fp7/
 
 ## Plan
 
+### FP7 Guardrails Unification (mode=plan) — 2026-02-02
+
+**Audit mapping table:**
+
+| Agent | Runtime prompt path | Claims to follow | Actually enforced |
+|-------|---------------------|-----------------|-------------------|
+| Product Lead | ai/agents/product-lead.md | Codex product-lead skill | — |
+| Designer | ai/agents/designer.md | Codex designer skill | — |
+| Analyst | ai/agents/analyst.md | Codex analyst skill | — |
+| Engineer | ai/agents/engineer.md | Codex engineer skill | stylelint, check-inline-styles.cjs |
+| Delivery | ai/agents/delivery.md | Codex delivery skill | — |
+| Compliance | ai/agents/compliance.md | Codex compliance skill | — |
+
+**Config locations:**
+- Cursor: `.cursor/rules/agents.md`, `agent-workflow.md`, `product-delivery.md`
+- Repo prompts: `ai/agents/*`, `ai/roles/*`
+- Codex: `.codex/skills/agents/*`, `.codex/skills/agentic-code/*`
+- Style: `docs/style/GUIDE_STYLE.md`
+
+**Single Source of Truth decisions:**
+- Canonical guardrails: `docs/dev/GUARDRAILS.md` (new)
+- Style contract: `docs/style/GUIDE_STYLE.md` (unchanged)
+- AGENTS.md: de-duplicated, link-only to canonical sources
+- .cursor/rules/agents.md: wired to GUARDRAILS + hard rules
+
+**Patch plan (completed):**
+1. Created `docs/dev/GUARDRAILS.md`
+2. Updated `.cursor/rules/agents.md` (Global Guardrails, Output Contract)
+3. Updated `AGENTS.md` (Runtime Rules & Guardrails section)
+4. Created `.codex/skills/README.md`, updated engineer + coding-rules skills
+5. Updated `front/scripts/check-inline-styles.cjs` (literal-only, layout-calc evidence)
+6. Updated canary `canary-inline-style-allowed.test.tsx` (runtime values)
+7. Created `docs/dev/AGENT_CONTRACT_SUMMARY.md`
+
+---
+
 ## Implementation Plan (FP=FP7 mode=plan)
 
 **Роль:** @Delivery  

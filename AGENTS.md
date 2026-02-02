@@ -205,3 +205,10 @@ FP=FP6 mode=plan
 - **Агенты:** `ai/agents/` — промпты агентов
 - **Workflow:** `ai/roles/` — этапы работы
 - **Правила:** `.cursor/rules/` — правила для Cursor
+
+## Runtime Rules & Guardrails (non-duplicating)
+
+- **Cursor runtime rules:** [.cursor/rules/agents.md](./.cursor/rules/agents.md)
+- **Canonical guardrails:** [docs/dev/GUARDRAILS.md](./docs/dev/GUARDRAILS.md)
+- **Style contract:** [docs/style/GUIDE_STYLE.md](./docs/style/GUIDE_STYLE.md)
+- **FP contract:** [docs/fps/FP7.md](./docs/fps/FP7.md)

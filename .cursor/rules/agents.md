@@ -2,6 +2,28 @@
 
 Эти правила интегрируют агентов-специалистов в Cursor для упрощенного использования.
 
+## Global Guardrails (MUST follow)
+
+**All agents MUST follow these canonical sources:**
+- `docs/dev/GUARDRAILS.md` — canonical rules (inline styles, units, output contract)
+- `docs/style/GUIDE_STYLE.md` — style guide + guardrails policy
+- `docs/fps/FP7.md` — product contract (when working on FP7)
+
+**Engineer/Developer Hard Rules (no exceptions):**
+- No lazy allow-tags: allow-tag v2 requires `reason`, `why`, `revisit`
+- No `px` in CSS/SCSS (use `rem`); `px` only in transform/translate for drag
+- No `!important`
+- No constant inline styles (all literals) — even with allow-tag
+- No patching docs to justify violations
+
+**Output Contract (every engineering response):**
+- Evidence: files/paths changed
+- Minimal patch plan: what was added/changed/removed
+- Tests: commands to run (`npm run lint`, `npm run test`)
+- DoD checklist: [ ] Lint passes, [ ] Tests pass, [ ] No new violations
+
+---
+
 ## Команда агентов (6 человек)
 
 1. **@Product Lead** — управляет продуктом, определяет проблему, outcome, приоритеты
