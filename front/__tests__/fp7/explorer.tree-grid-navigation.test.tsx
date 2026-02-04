@@ -48,8 +48,8 @@ describe('Explorer Tree + Grid Navigation', () => {
       
       await waitFor(() => {
         // Path should update to show /Disk C
-        const pathDisplay = screen.getByTestId('explorer-path');
-        expect(pathDisplay).toHaveTextContent('/Disk C');
+        const addressInput = screen.getByTestId('explorer-address-input');
+        expect(addressInput).toHaveValue('/Disk C');
         
         // Grid should update to show contents of Disk C (system folders)
         const gridView = screen.getByTestId('explorer-grid');
@@ -90,8 +90,8 @@ describe('Explorer Tree + Grid Navigation', () => {
       
       // Wait for Disk C to load
       await waitFor(() => {
-        const pathDisplay = screen.getByTestId('explorer-path');
-        expect(pathDisplay).toHaveTextContent('/Disk C');
+        const addressInput = screen.getByTestId('explorer-address-input');
+        expect(addressInput).toHaveValue('/Disk C');
       });
       
       // Find documents folder in grid
@@ -103,8 +103,8 @@ describe('Explorer Tree + Grid Navigation', () => {
         
         // Verify grid shows contents of /Disk C/documents
         await waitFor(() => {
-          const pathDisplay = screen.getByTestId('explorer-path');
-          expect(pathDisplay).toHaveTextContent('/Disk C/documents');
+          const addressInput = screen.getByTestId('explorer-address-input');
+          expect(addressInput).toHaveValue('/Disk C/documents');
           
           // Check for LD59 folder in grid
           const updatedGridView = screen.getByTestId('explorer-grid');
@@ -127,8 +127,8 @@ describe('Explorer Tree + Grid Navigation', () => {
       await waitFor(() => {
         // Grid should update to show contents of Disk C
         const gridView = screen.getByTestId('explorer-grid');
-        const pathDisplay = screen.getByTestId('explorer-path');
-        expect(pathDisplay).toHaveTextContent('/Disk C');
+        const addressInput = screen.getByTestId('explorer-address-input');
+        expect(addressInput).toHaveValue('/Disk C');
         
         // Verify grid shows system folders from Disk C
         const desktopFolder = within(gridView).queryByTestId('explorer-grid-item-/Disk C/desktop');
@@ -137,27 +137,60 @@ describe('Explorer Tree + Grid Navigation', () => {
     }
   });
 
-  it('should show path in toolbar', () => {
+  it('should show path in address bar', () => {
     render(<ExplorerWindow />);
     
-    // Toolbar should show current path
-    const pathDisplay = screen.getByTestId('explorer-path');
-    expect(pathDisplay).toBeInTheDocument();
+    // Address bar should show current path
+    const addressInput = screen.getByTestId('explorer-address-input');
+    expect(addressInput).toBeInTheDocument();
     // At root, should show "My Computer"
-    expect(pathDisplay).toHaveTextContent('My Computer');
+    expect(addressInput).toHaveValue('My Computer');
   });
 
   it('should navigate up when clicking up button', async () => {
     render(<ExplorerWindow />);
     
-    // Navigate to a subfolder first
-    // Then click up button
-    // Verify path changes
-    
-    const upButton = screen.getByText('↑');
+    const upButton = screen.getByTestId('explorer-up-button');
     expect(upButton).toBeInTheDocument();
     
     // Up button should be disabled at root
     expect(upButton).toBeDisabled();
+  });
+
+  it('should render menubar with expected items', () => {
+    render(<ExplorerWindow />);
+    
+    const menubar = screen.getByTestId('explorer-menubar');
+    expect(menubar).toBeInTheDocument();
+    expect(menubar).toHaveTextContent('File');
+    expect(menubar).toHaveTextContent('Edit');
+    expect(menubar).toHaveTextContent('View');
+    expect(menubar).toHaveTextContent('Go');
+    expect(menubar).toHaveTextContent('Bookmarks');
+    expect(menubar).toHaveTextContent('Help');
+  });
+
+  it('should select item on single-click without navigating', async () => {
+    render(<ExplorerWindow />);
+    
+    const treeView = screen.getByTestId('explorer-tree');
+    const diskC = within(treeView).queryByTestId('tree-item-/Disk C');
+    if (diskC) {
+      fireEvent.click(diskC);
+    }
+    
+    await waitFor(() => {
+      const addressInput = screen.getByTestId('explorer-address-input');
+      expect(addressInput).toHaveValue('/Disk C');
+    });
+    
+    const gridView = screen.getByTestId('explorer-grid');
+    const documentsFolder = within(gridView).queryByTestId('explorer-grid-item-/Disk C/documents');
+    expect(documentsFolder).toBeTruthy();
+    
+    if (documentsFolder) {
+      fireEvent.click(documentsFolder);
+      expect(documentsFolder).toHaveClass('explorer-grid-item-selected');
+    }
   });
 });

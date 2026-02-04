@@ -9,18 +9,19 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
+import { renderShell } from '@/test/utils/render';
 import { StyleGuideApp } from '../../src/os/apps/StyleGuideApp';
 
 describe('Style Guide Visual Tests', () => {
   it('renders style guide container', () => {
-    render(<StyleGuideApp />);
+    renderShell(<StyleGuideApp />);
     const header = screen.getByText('Windows 95 UI Style Guide');
     expect(header).toBeInTheDocument();
   });
 
   it('renders window states section', () => {
-    render(<StyleGuideApp />);
+    renderShell(<StyleGuideApp />);
     const section = screen.getByText('Window States');
     expect(section).toBeInTheDocument();
     
@@ -31,7 +32,7 @@ describe('Style Guide Visual Tests', () => {
   });
 
   it('renders button states section', () => {
-    render(<StyleGuideApp />);
+    renderShell(<StyleGuideApp />);
     const section = screen.getByText('Button States');
     expect(section).toBeInTheDocument();
     
@@ -42,7 +43,7 @@ describe('Style Guide Visual Tests', () => {
   });
 
   it('renders input fields section', () => {
-    render(<StyleGuideApp />);
+    renderShell(<StyleGuideApp />);
     const section = screen.getByText('Input Fields');
     expect(section).toBeInTheDocument();
     
@@ -51,7 +52,7 @@ describe('Style Guide Visual Tests', () => {
   });
 
   it('renders list selection section', () => {
-    render(<StyleGuideApp />);
+    renderShell(<StyleGuideApp />);
     const section = screen.getByText('List Selection');
     expect(section).toBeInTheDocument();
     
@@ -60,7 +61,7 @@ describe('Style Guide Visual Tests', () => {
   });
 
   it('renders status bar section', () => {
-    render(<StyleGuideApp />);
+    renderShell(<StyleGuideApp />);
     const section = screen.getByText('Status Bar');
     expect(section).toBeInTheDocument();
     
@@ -69,7 +70,7 @@ describe('Style Guide Visual Tests', () => {
   });
 
   it('renders scrollbar sample section', () => {
-    render(<StyleGuideApp />);
+    renderShell(<StyleGuideApp />);
     const section = screen.getByText('Scrollbar Sample');
     expect(section).toBeInTheDocument();
     
@@ -78,11 +79,13 @@ describe('Style Guide Visual Tests', () => {
   });
 
   it('renders desktop icons sample section', () => {
-    render(<StyleGuideApp />);
+    renderShell(<StyleGuideApp />);
     const section = screen.getByText('Desktop Icons Sample');
     expect(section).toBeInTheDocument();
-    
-    const myComputer = screen.getByText('My Computer');
+    // Scope to desktop icons section (Explorer also has "My Computer" in tree)
+    const iconsSection = section.closest('.style-guide-section');
+    expect(iconsSection).toBeInTheDocument();
+    const myComputer = within(iconsSection!).getByText('My Computer');
     expect(myComputer).toBeInTheDocument();
   });
 });

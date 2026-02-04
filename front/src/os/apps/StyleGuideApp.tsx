@@ -18,6 +18,7 @@ import React, { useState } from 'react';
 import '../../styles/style-guide.scss';
 import { Icon } from '../../ui/icons';
 import { CaptionButtons } from '../../ui/primitives';
+import { ExplorerWindow } from '../../components/ExplorerWindow';
 
 export function StyleGuideApp() {
   const [activeWindow, setActiveWindow] = useState<'left' | 'right'>('left');
@@ -172,6 +173,17 @@ export function StyleGuideApp() {
               <div className="desktop-icon-label">{name}</div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Explorer Baseline (for visual regression) */}
+      <section
+        className="style-guide-section"
+        data-section="explorer-baseline"
+      >
+        <h2>Explorer Baseline</h2>
+        <div className="style-guide-explorer-viewport">
+          <ExplorerWindow />
         </div>
       </section>
     </div>

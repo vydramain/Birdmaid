@@ -11,12 +11,13 @@ import { ReactNode } from "react";
 
 type MenuBarProps = {
   children: ReactNode;
+  className?: string;
   "data-testid"?: string;
 };
 
-export function MenuBar({ children, "data-testid": testId }: MenuBarProps) {
+export function MenuBar({ children, className, "data-testid": testId }: MenuBarProps) {
   return (
-    <div className="win-menubar" data-testid={testId}>
+    <div className={`win-menubar ${className ?? ""}`.trim()} data-testid={testId}>
       {children}
     </div>
   );

@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useWindowRegistry } from "../os/wm/WindowRegistry";
 import { vfs, VFSNode } from "../os/fs/VirtualFileSystem";
 import { appRegistry } from "../os/apps/AppRegistry";
-import { StatusBar } from "../ui/primitives";
+import { StatusBar, MenuBar, MenuItem } from "../ui/primitives";
 import { Icon } from "../ui/icons";
 import { resolveIconForVFSNode } from "../ui/icons";
+
+const MENU_ITEMS = ["File", "Edit", "View", "Go", "Bookmarks", "Help"] as const;
 
 interface TreeItemProps {
   node: VFSNode;
@@ -15,7 +17,7 @@ interface TreeItemProps {
 }
 
 function TreeItem({ node, path, currentPath, onSelect, level }: TreeItemProps) {
-  const [expanded, setExpanded] = useState(level === 0); // Root level expanded by default
+  const [expanded, setExpanded] = useState(level === 0);
   const isSelected = currentPath === path;
   const isDir = node.type === "dir";
   const hasChildren = isDir && node.children && node.children.length > 0;
@@ -29,13 +31,14 @@ function TreeItem({ node, path, currentPath, onSelect, level }: TreeItemProps) {
     }
   };
 
+  const levelClass = `tree-item-level-${Math.min(level, 19)}`;
+
   return (
     <div>
       <div
         onClick={handleClick}
-        className={`tree-item ${isSelected ? "selected" : ""}`}
-        // inline-style: allowed (reason: performance; why: CSS var for tree indent from level; revisit: FP7)
-        style={{ ["--tree-level" as string]: `${level}` } as React.CSSProperties}
+        className={`tree-item ${levelClass} ${isSelected ? "selected" : ""}`}
+        data-level={level}
         data-testid={`tree-item-${path}`}
       >
         {isDir && <span className="tree-expand-icon">{expanded ? "▼" : "▶"}</span>}
@@ -66,6 +69,7 @@ function TreeItem({ node, path, currentPath, onSelect, level }: TreeItemProps) {
 export function ExplorerWindow() {
   const [currentPath, setCurrentPath] = useState("/");
   const [files, setFiles] = useState<VFSNode[]>([]);
+  const [selectedItemPath, setSelectedItemPath] = useState<string | null>(null);
   const { openWindow } = useWindowRegistry();
 
   useEffect(() => {
@@ -109,7 +113,7 @@ export function ExplorerWindow() {
           if (data.target) {
             openWindow(data.target);
           }
-        } catch (e) {
+        } catch (_e) {
           console.error("Failed to parse link");
         }
       } else {
@@ -146,65 +150,111 @@ export function ExplorerWindow() {
     return <div>Error: Root not found</div>;
   }
 
+  const addressDisplay = currentPath === "/" ? "My Computer" : currentPath;
+
   return (
     <div className="win-explorer">
-      {/* Tree View (Left) */}
-      <div data-testid="explorer-tree" className="explorer-tree">
-        <TreeItem
-          node={rootNode}
-          path="/"
-          currentPath={currentPath}
-          onSelect={handleNavigate}
-          level={0}
+      <MenuBar data-testid="explorer-menubar" className="explorer-menubar">
+        {MENU_ITEMS.map((label) => (
+          <MenuItem key={label} label={label} onClick={() => {}} />
+        ))}
+      </MenuBar>
+
+      <div data-testid="explorer-toolbar" className="explorer-toolbar">
+        <button
+          type="button"
+          className="win-btn-icon explorer-toolbar-back"
+          disabled
+          aria-label="Back"
+        >
+          ←
+        </button>
+        <button
+          type="button"
+          className="win-btn-icon explorer-toolbar-forward"
+          disabled
+          aria-label="Forward"
+        >
+          →
+        </button>
+        <span className="explorer-toolbar-separator" aria-hidden />
+        <button
+          type="button"
+          onClick={handleUp}
+          disabled={currentPath === "/"}
+          className="win-btn-icon explorer-up-button"
+          data-testid="explorer-up-button"
+          aria-label="Up"
+        >
+          ↑
+        </button>
+        <button
+          type="button"
+          className="win-btn-icon explorer-toolbar-refresh"
+          aria-label="Refresh"
+        >
+          ↻
+        </button>
+      </div>
+
+      <div data-testid="explorer-address" className="explorer-addressbar">
+        <span className="explorer-addressbar-icon" aria-hidden>
+          <Icon type={currentPath === "/" ? "system-computer" : "dir"} size="16x16" />
+        </span>
+        <input
+          type="text"
+          className="win-input explorer-addressbar-input"
+          readOnly
+          value={addressDisplay}
+          aria-label="Current path"
+          data-testid="explorer-address-input"
         />
       </div>
 
-      {/* Grid View (Right) */}
-      <div className="explorer-grid-container">
-        {/* Toolbar */}
-        <div className="explorer-toolbar">
-          <button onClick={handleUp} disabled={currentPath === "/"} className="win-btn explorer-up-button">
-            ↑
-          </button>
-          <div data-testid="explorer-path" className="explorer-path">
-            {currentPath === "/" ? "My Computer" : currentPath}
-          </div>
+      <div className="explorer-main">
+        <div data-testid="explorer-tree" className="explorer-tree">
+          <TreeItem
+            node={rootNode}
+            path="/"
+            currentPath={currentPath}
+            onSelect={handleNavigate}
+            level={0}
+          />
         </div>
 
-        {/* Grid View */}
-        <div data-testid="explorer-grid" className="explorer-grid-view">
-          <div className="explorer-grid">
-            {files.map((node) => {
-              const itemPath = getNodePath(node, currentPath);
-              const iconType = resolveIconForVFSNode(node, currentPath);
-              return (
-                <div
-                  key={node.name}
-                  onDoubleClick={() => handleOpen(node)}
-                  onClick={() => {
-                    if (node.type === "dir") {
-                      const newPath =
-                        currentPath === "/" ? `/${node.name}` : `${currentPath}/${node.name}`;
-                      setCurrentPath(newPath);
-                    }
-                  }}
-                  className="explorer-grid-item"
-                  data-testid={`explorer-grid-item-${itemPath}`}
-                >
-                  <div className="explorer-icon">
-                    <Icon type={iconType} size="32x32" />
+        <div className="explorer-divider" aria-hidden />
+
+        <div className="explorer-content">
+          <div className="explorer-grid-view">
+            <div data-testid="explorer-grid" className="explorer-grid">
+              {files.map((node) => {
+                const itemPath = getNodePath(node, currentPath);
+                const iconType = resolveIconForVFSNode(node, currentPath);
+                const isSelected = selectedItemPath === itemPath;
+                return (
+                  <div
+                    key={node.name}
+                    onClick={() => setSelectedItemPath(itemPath)}
+                    onDoubleClick={() => handleOpen(node)}
+                    className={`explorer-grid-item ${isSelected ? "explorer-grid-item-selected" : ""}`}
+                    data-testid={`explorer-grid-item-${itemPath}`}
+                  >
+                    <div className="explorer-icon">
+                      <Icon type={iconType} size="32x32" />
+                    </div>
+                    <div className="explorer-filename">
+                      {node.name}
+                    </div>
                   </div>
-                  <div className="explorer-filename">{node.name}</div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        {/* Status Bar */}
-        <StatusBar data-testid="explorer-status">
-          {files.length} item(s)
-        </StatusBar>
+          <StatusBar data-testid="explorer-status">
+            {files.length} item(s)
+          </StatusBar>
+        </div>
       </div>
     </div>
   );
