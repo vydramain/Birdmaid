@@ -204,7 +204,19 @@
 // Desktop Icons Sample
 .style-guide-icons {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr)); // 80px
+  grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
   gap: var(--spacing-xl, 1rem);
   padding: var(--spacing-md, 0.5rem);
+}
+
+// Explorer Baseline (fixed viewport for visual regression)
+.style-guide-explorer-viewport {
+  width: 40rem;
+  height: 30rem;
+  overflow: hidden;
+  background-color: var(--win-gray, #c0c0c0);
+
+  .win-explorer {
+    height: 100%;
+  }
 }

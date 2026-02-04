@@ -11,6 +11,7 @@
     "icons:build": "node scripts/build-icons.cjs",
     "icons:check": "node scripts/check-icons.cjs",
     "test": "vitest run",
+    "test:visual": "playwright test",
     "test:watch": "vitest",
     "test:ci": "! grep -rE '\\.skip|\\.only|test\\.todo|describe\\.todo' __tests__ && vitest run --coverage",
     "test:canary": "npm run lint:canary:should-fail && npm run lint:canary:should-pass && npm run lint:canary:absolute-units && npm run lint:canary:constants && npm run lint:canary:backdrop && echo '✅ All canary tests passed'",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@playwright/test": "^1.58.1",
     "@testing-library/jest-dom": "^6.1.0",
     "@testing-library/react": "^14.1.0",
     "@types/react": "^18.2.0",

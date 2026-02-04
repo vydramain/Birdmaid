@@ -1,13 +1,28 @@
 # Visual Regression Testing Guide
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Created:** 2026-01-22  
+**Updated:** 2026-02-05  
 **Purpose:** Guide for visual regression testing of Win95 UI components  
 **Status:** Design Phase (FP7)
 
 ## Overview
 
 Visual regression tests ensure that UI components maintain their visual appearance across changes. This document describes how to set up and run visual tests for the Win95 UI style guide.
+
+## Explorer Baseline
+
+The Explorer window has a dedicated visual baseline test. See [EXPLORER_UI_CONTRACT.md](./EXPLORER_UI_CONTRACT.md) for the contract.
+
+**Test file:** `front/__tests__/visual/explorer.spec.ts`  
+**Baseline page:** `front/visual-test.html` (renders Explorer in isolation)  
+**Baseline screenshot:** `front/__tests__/visual/__screenshots__/chromium/explorer_win95_baseline.png`
+
+**To update baseline intentionally:**
+```bash
+cd front
+npm run test:visual -- --update-snapshots
+```
 
 ## Test Structure
 

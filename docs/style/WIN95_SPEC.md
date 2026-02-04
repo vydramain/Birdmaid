@@ -196,6 +196,8 @@ This specification defines the complete design system for Windows 95-style UI, i
 
 ### Explorer
 
+For full Explorer window fidelity (menubar, toolbar, address bar, split panes, content view, tree), see **[EXPLORER_UI_CONTRACT.md](./EXPLORER_UI_CONTRACT.md)**.
+
 | Metric | Value | Usage |
 |--------|-------|-------|
 | **Divider Width** | 4px (0.25rem) | Divider between tree and grid |
@@ -451,6 +453,7 @@ We do not copy Windows assets or source code. We implement our own tokens, mixin
 - **Token Rules:** `docs/design/WIN95_TOKENS_RULES.md`
 - **UI Kit Requirements:** `docs/design/WIN95_UI_KIT.md`
 - **Style Guide:** `docs/style/GUIDE_STYLE.md`
+- **Explorer UI Contract:** `docs/style/EXPLORER_UI_CONTRACT.md`
 - **Theme Contract:** `docs/style/THEME_CONTRACT.md`
 - **FP7 Contract:** `docs/fps/FP7.md`
 

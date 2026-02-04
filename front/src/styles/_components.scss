@@ -420,36 +420,119 @@
 }
 
 // ============================================================================
-// Explorer Component
+// Explorer Component (see docs/style/EXPLORER_UI_CONTRACT.md)
 // ============================================================================
+
+// Icon button variant: square, minimal hover, pressed shift
+// Extends .win-btn; use for toolbar icon buttons
+.win-btn-icon {
+  @extend .win-btn;
+
+  padding: 0;
+  min-width: var(--explorer-toolbar-btn-size, 1.5rem);
+  width: var(--explorer-toolbar-btn-size, 1.5rem);
+  height: var(--explorer-toolbar-btn-size, 1.5rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-medium, 0.75rem);
+
+  &:hover {
+    background-color: var(--win-gray, #c0c0c0);
+  }
+}
 
 .win-explorer {
   display: flex;
+  flex-direction: column;
   height: 100%;
-  gap: var(--spacing-sm, 0.25rem); // 4px
+  min-height: 0;
 
-  // Tree View (Left)
-  .explorer-tree {
-    width: var(--explorer-tree-width, 12.5rem); // 200px
-    min-width: var(--explorer-tree-min-width, 9.375rem); // 150px
+  .explorer-menubar {
+    height: var(--explorer-menubar-height, 1.25rem);
+    padding: var(--explorer-menubar-padding, 0 0.25rem);
+    flex-shrink: 0;
+  }
+
+  .explorer-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--explorer-toolbar-gap, 0.125rem);
+    padding: var(--explorer-toolbar-padding, 0.125rem 0.25rem);
+    height: var(--explorer-toolbar-height, 1.5rem);
     background-color: var(--win-gray, #c0c0c0);
-    padding: var(--spacing-sm, 0.25rem); // 4px
+    border-bottom: 0.0625rem solid var(--win-gray-dark, #808080);
+    flex-shrink: 0;
+  }
+
+  .explorer-toolbar-separator {
+    width: 0.125rem;
+    height: 1rem;
+    background: linear-gradient(
+      to bottom,
+      var(--win-gray-dark, #808080) 0%,
+      var(--win-white, #fff) 50%,
+      var(--win-gray-dark, #808080) 100%
+    );
+    flex-shrink: 0;
+  }
+
+  .explorer-addressbar {
+    display: flex;
+    align-items: center;
+    gap: var(--explorer-addressbar-gap, 0.25rem);
+    padding: var(--explorer-addressbar-padding, 0.125rem 0.25rem);
+    height: var(--explorer-addressbar-height, 1.5rem);
+    background-color: var(--win-gray, #c0c0c0);
+    border-bottom: 0.0625rem solid var(--win-gray-dark, #808080);
+
+    @include bevel-inset;
+
+    flex-shrink: 0;
+  }
+
+
+  .explorer-addressbar-icon {
+    flex-shrink: 0;
+    width: 1rem;
+    height: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .explorer-addressbar-input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .explorer-main {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .explorer-tree {
+    width: var(--explorer-tree-width, 12.5rem);
+    min-width: var(--explorer-tree-min-width, 9.375rem);
+    background-color: var(--win-gray, #c0c0c0);
+    padding: var(--spacing-sm, 0.25rem);
 
     @include bevel-inset;
 
     overflow: auto;
+    flex-shrink: 0;
 
     .tree-item {
-      font-size: var(--font-size-normal, 0.688rem); // 11px
-      padding: 0.125rem var(--spacing-sm, 0.25rem); // 2px 4px
-      // Computed paddingLeft via CSS variable (set inline: --tree-level)
-      padding-left: calc(0.25rem + var(--tree-level, 0) * 1rem); // 4px + level * 16px
+      font-size: var(--font-size-normal, 0.688rem);
+      padding: 0.125rem var(--spacing-sm, 0.25rem);
+      min-height: var(--explorer-tree-row-height, 1.25rem);
       cursor: pointer;
       color: var(--win-text, #000);
       line-height: var(--line-height-normal, 1.4);
       display: flex;
       align-items: center;
-      gap: var(--spacing-sm, 0.25rem); // 4px
+      gap: var(--spacing-sm, 0.25rem);
       background-color: transparent;
 
       &:hover {
@@ -463,67 +546,54 @@
       }
     }
 
+    @for $i from 0 through 19 {
+      .tree-item-level-#{$i} {
+        padding-left: calc(0.25rem + #{$i} * var(--explorer-tree-indent-step, 1rem));
+      }
+    }
+
     .tree-expand-icon {
-      font-size: var(--font-size-small, 0.625rem); // 10px
+      font-size: var(--explorer-tree-toggle-size, 0.5rem);
+      width: var(--explorer-tree-toggle-size, 0.5rem);
+      flex-shrink: 0;
     }
 
     .tree-spacer {
-      width: 0.625rem; // 10px
+      width: var(--explorer-tree-icon-size, 1rem);
+      flex-shrink: 0;
     }
   }
 
   .explorer-divider {
-    width: var(--explorer-divider-width, 0.25rem); // 4px
+    width: var(--explorer-divider-width, 0.25rem);
     background-color: var(--win-gray, #c0c0c0);
     cursor: col-resize;
+    flex-shrink: 0;
   }
 
-  // Grid View Container (Right)
-  .explorer-grid-container {
+  .explorer-content {
     display: flex;
     flex-direction: column;
     flex: 1;
-    gap: var(--spacing-sm, 0.25rem); // 4px
+    min-width: 0;
+    min-height: 0;
   }
 
-  // Toolbar
-  .explorer-toolbar {
-    display: flex;
-    gap: var(--spacing-sm, 0.25rem); // 4px
-    padding: var(--spacing-sm, 0.25rem); // 4px
-    background-color: var(--win-white, #fff);
-
-    @include bevel-inset;
-
-    .explorer-up-button {
-      min-width: 1.875rem; // 30px
-    }
-
-    .explorer-path {
-      flex: 1;
-      padding: 0.125rem var(--spacing-sm, 0.25rem); // 2px 4px
-      border: 0.0625rem solid var(--win-gray-dark, #808080); // 1px
-    }
-  }
-
-  // Grid View
   .explorer-grid-view {
     flex: 1;
     background-color: var(--win-white, #fff);
     overflow: auto;
-    padding: var(--spacing-md, 0.5rem); // 8px
+    padding: var(--spacing-md, 0.5rem);
 
     @include bevel-inset;
+
+    min-height: 0;
   }
 
   .explorer-grid {
     display: grid;
-    grid-template-columns: repeat(
-      auto-fill,
-      minmax(var(--explorer-grid-item-width, 4rem), 1fr)
-    ); // 64px
-
-    gap: var(--spacing-xl, 1rem); // 16px
+    grid-template-columns: repeat(auto-fill, var(--explorer-grid-cell-width, 4rem));
+    gap: var(--explorer-grid-gap, 0.5rem);
 
     .explorer-grid-item {
       display: flex;
@@ -531,25 +601,37 @@
       align-items: center;
       cursor: pointer;
       text-align: center;
+      width: var(--explorer-grid-cell-width, 4rem);
+      min-height: var(--explorer-grid-cell-height, 4.5rem);
 
       .explorer-icon {
-        font-size: 1.5rem; // 24px
-        margin-bottom: var(--spacing-sm, 0.25rem); // 4px
+        width: var(--explorer-grid-icon-size, 2rem);
+        height: var(--explorer-grid-icon-size, 2rem);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: var(--spacing-sm, 0.25rem);
       }
 
       .explorer-filename {
-        font-size: var(--font-size-normal, 0.688rem); // 11px
+        font-size: var(--font-size-normal, 0.688rem);
         word-break: break-word;
+        max-width: 100%;
+        padding: 0.125rem;
+      }
+
+      &.explorer-grid-item-selected {
+        background-color: var(--win-blue, #000080);
+        color: var(--win-text-inverse, #fff);
+
+        .explorer-filename {
+          background-color: transparent;
+          color: inherit;
+        }
       }
     }
   }
 
-  // Status Bar
-  .explorer-status {
-    margin-top: var(--spacing-sm, 0.25rem); // 4px
-    font-size: var(--font-size-normal, 0.688rem); // 11px
-    color: var(--win-gray-dark, #808080);
-  }
 }
 
 // ============================================================================
@@ -1102,8 +1184,8 @@
 }
 
 .win-menubar-item {
-  padding: var(--spacing-sm, 0.25rem) var(--spacing-md, 0.5rem); // 4px 8px
-  font-size: var(--font-size-medium, 0.75rem); // 12px
+  padding: var(--explorer-menu-item-padding, 0.25rem 0.5rem);
+  font-size: var(--font-size-normal, 0.688rem);
   background-color: transparent;
   border: none;
   cursor: pointer;
@@ -1112,6 +1194,12 @@
   &:hover {
     background-color: var(--win-blue, #000080);
     color: var(--win-text-inverse, #fff);
+  }
+
+  &:active {
+    @include bevel-inset;
+
+    transform: translate(0.0625rem, 0.0625rem);
   }
 
   &:disabled {
@@ -1125,14 +1213,20 @@
 // ============================================================================
 
 .win-statusbar {
-  height: var(--window-titlebar-height, 1.25rem); // 20px
+  height: var(--window-titlebar-height, 1.25rem);
   background-color: var(--win-gray, #c0c0c0);
-  border-top: 0.0625rem solid var(--win-gray-dark, #808080); // 1px
-  padding: var(--spacing-xs, 0.125rem) var(--spacing-sm, 0.25rem); // 2px 4px
-  font-size: var(--font-size-normal, 0.688rem); // 11px
+  border-top: 0.0625rem solid var(--win-gray-dark, #808080);
+  padding: var(--spacing-xs, 0.125rem) var(--spacing-sm, 0.25rem);
+  font-size: var(--font-size-normal, 0.688rem);
   color: var(--win-text, #000);
   display: flex;
   align-items: center;
+}
+
+.win-explorer .explorer-content .win-statusbar {
+  flex-shrink: 0;
+  height: var(--explorer-statusbar-height, 1.25rem);
+  padding: var(--explorer-statusbar-padding, 0.125rem 0.25rem);
 }
 
 // ============================================================================

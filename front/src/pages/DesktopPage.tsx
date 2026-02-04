@@ -72,6 +72,13 @@ export function DesktopPage() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const openApp = params.get("open");
+    if (openApp === "styleguide") {
+      openWindow("styleguide");
+      return;
+    }
+
     // Check if landing window was already seen
     const seen = localStorage.getItem("birdmaid_landing_seen");
     if (!seen) {
