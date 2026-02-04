@@ -2,7 +2,7 @@
 
 **Версия:** 2.0  
 **Дата:** 2026-01-22  
-**Связано с:** [docs/fps/FP7.md](./docs/fps/FP7.md) (FP7 v2 Contract Spec), [docs/audit/FP7_COMPLIANCE_REPORT.md](./audit/FP7_COMPLIANCE_REPORT.md)
+**Связано с:** [docs/fps/FP7.md](./docs/fps/FP7.md) (FP7 v2 Contract Spec), [docs/audit/FP7_COMPLIANCE_REPORT.md](./docs/audit/FP7_COMPLIANCE_REPORT.md)
 
 ## Приоритеты
 
@@ -335,7 +335,7 @@
 
 ## Execution Plan
 
-See [docs/CUTLINE_PLAN.md](./CUTLINE_PLAN.md) for detailed commit-by-commit execution plan.
+See [docs/CUTLINE_PLAN.md](./docs/CUTLINE_PLAN.md) for detailed commit-by-commit execution plan.
 
 ---
 

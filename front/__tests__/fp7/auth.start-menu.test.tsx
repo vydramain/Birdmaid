@@ -26,7 +26,7 @@ describe("Auth Start Menu", () => {
     }
   });
 
-  it("4a. Start menu: в guest есть пункт Log In... enabled, Log Out... disabled", async () => {
+  it("4a. Start menu: в guest есть только пункт Log In...", async () => {
     // Test guest state
     expect(localStorage.getItem("birdmaid_token")).toBeNull();
     // mockApi.authMe() already set up in beforeEach - will return 401 when no token
@@ -53,21 +53,16 @@ describe("Auth Start Menu", () => {
       expect(startMenu).toBeTruthy();
     });
 
-    // Check guest state: Log In... enabled, Log Out... disabled
+    // Check guest state: only Log In... exists, no Log Out
     const startMenu = screen.getByTestId("start-menu");
-    const loginItem = within(startMenu).getByTestId("start-menu-item-login");
-    const logoutItem = within(startMenu).getByTestId("start-menu-item-logout");
-
-    expect(loginItem).toBeTruthy();
-    expect(loginItem).not.toBeDisabled();
-    expect(loginItem).toHaveTextContent("Log In...");
-
-    expect(logoutItem).toBeTruthy();
-    expect(logoutItem).toBeDisabled();
-    expect(logoutItem).toHaveTextContent("Log Out...");
+    const menuItem = within(startMenu).getByTestId("start-menu-item");
+    expect(menuItem).toBeTruthy();
+    expect(menuItem).not.toBeDisabled();
+    expect(menuItem).toHaveTextContent("Log In...");
+    expect(within(startMenu).queryByText("Log Out...")).toBeNull();
   });
 
-  it("4b. Start menu: в authed есть Log In... disabled, Log Out... enabled", async () => {
+  it("4b. Start menu: в authed есть только пункт Log Out...", async () => {
     // Test authed state
     const mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJsb2dpbiI6InRlc3R1c2VyIiwicm9sZSI6Ikd1ZXN0In0.test";
     localStorage.setItem("birdmaid_token", mockToken);
@@ -94,17 +89,12 @@ describe("Auth Start Menu", () => {
       expect(startMenu).toBeTruthy();
     });
 
-    // Check authed state: Log In... disabled, Log Out... enabled
+    // Check authed state: only Log Out... exists, no Log In
     const startMenu = screen.getByTestId("start-menu");
-    const loginItem = within(startMenu).getByTestId("start-menu-item-login");
-    const logoutItem = within(startMenu).getByTestId("start-menu-item-logout");
-
-    expect(loginItem).toBeTruthy();
-    expect(loginItem).toBeDisabled();
-    expect(loginItem).toHaveTextContent("Log In...");
-
-    expect(logoutItem).toBeTruthy();
-    expect(logoutItem).not.toBeDisabled();
-    expect(logoutItem).toHaveTextContent("Log Out...");
+    const menuItem = within(startMenu).getByTestId("start-menu-item");
+    expect(menuItem).toBeTruthy();
+    expect(menuItem).not.toBeDisabled();
+    expect(menuItem).toHaveTextContent("Log Out...");
+    expect(within(startMenu).queryByText("Log In...")).toBeNull();
   });
 });

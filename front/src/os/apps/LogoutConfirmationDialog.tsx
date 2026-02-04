@@ -39,7 +39,7 @@ export function LogoutConfirmationDialog({ onClose }: LogoutConfirmationDialogPr
             data-testid="logout-dialog-yes"
             type="button"
             onClick={handleYes}
-            className="win-btn-default"
+            className="win-btn win-btn-default"
           >
             Yes
           </button>

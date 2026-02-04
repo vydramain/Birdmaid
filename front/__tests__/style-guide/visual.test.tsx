@@ -35,8 +35,8 @@ describe('Style Guide Visual Tests', () => {
     const section = screen.getByText('Button States');
     expect(section).toBeInTheDocument();
     
-    const defaultButton = screen.getByText('Default Button');
-    const disabledButton = screen.getByText('Disabled Button');
+    const defaultButton = screen.getByText('Default (dialog)');
+    const disabledButton = screen.getByText('Disabled');
     expect(defaultButton).toBeInTheDocument();
     expect(disabledButton).toBeInTheDocument();
   });

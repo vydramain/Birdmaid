@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, ReactNode, CSSProperties } from "react";
+import { CaptionButtons } from "../../ui/primitives";
 
 type Win95ModalProps = {
   title: string;
@@ -122,11 +123,7 @@ export function Win95Modal({ title, children, onClose, open }: Win95ModalProps) 
             <span>◆</span>
             <span>{title}</span>
           </div>
-          <div className="win-window-controls">
-            <button className="win-btn" type="button" onClick={onClose}>
-              ×
-            </button>
-          </div>
+          <CaptionButtons onClose={onClose} />
         </header>
         <div className="content" style={contentStyles}>
           {children}

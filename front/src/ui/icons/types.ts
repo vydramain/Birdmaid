@@ -39,6 +39,7 @@ export type IconType =
   // System
   | 'system-user'
   | 'system-computer'
+  | 'system-start'
   | 'disk'
   // Fallback
   | 'unknown';

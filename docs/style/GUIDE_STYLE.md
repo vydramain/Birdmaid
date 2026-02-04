@@ -712,6 +712,19 @@ node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-st
 - [ ] Создать examples: "как добавить новый компонент правильно"
 - [ ] Создать migration guide: "как мигрировать inline styles → SCSS"
 
+## Inspiration (OSS + Visual References)
+
+We do not copy Windows assets or source code. We implement our own tokens, mixins, and components based on visual analysis and open-source references.
+
+| Reference | URL | Purpose |
+|-----------|-----|---------|
+| 98.css | https://jdan.github.io/98.css/ | Win98-inspired CSS library — design inspiration |
+| GuidebookGallery Win95 GUI | https://guidebookgallery.org/guis/windows/win95 | Historical reference |
+| GuidebookGallery Win95 Tutorial | https://guidebookgallery.org/tutorials/windows95 | Historical reference |
+| GuidebookGallery Win95 Screenshots | https://guidebookgallery.org/screenshots/win95 | Historical reference |
+
+**Chicago95:** Mentioned as optional design inspiration (Chicago95-like palette). We do not bundle Chicago95; we implement our own tokens and mixins.
+
 ## Ссылки
 
 - **FP7.md:** [M6: Style System Refactor](../fps/FP7.md#m6-style-system-refactor) — Style System Refactor

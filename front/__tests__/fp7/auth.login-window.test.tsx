@@ -8,13 +8,14 @@
 
 import { renderAppRoot, screen, waitFor, within } from "@/test/utils";
 import { mockApi, fetchMock } from "@/test/mocks/mockApi";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 describe("Auth Login Window", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
-    
+    vi.unstubAllEnvs();
+
     // Reset and setup mockApi
     if (mockApi && typeof mockApi.reset === 'function') {
       mockApi.reset();
@@ -27,6 +28,10 @@ describe("Auth Login Window", () => {
         return fetchMock.json({ message: 'Unauthorized' }, { status: 401 });
       });
     }
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("5. Click Log In -> открывается Win95 Login window", async () => {
@@ -54,9 +59,9 @@ describe("Auth Login Window", () => {
 
     // Click Log In... item
     const startMenu = screen.getByTestId("start-menu");
-    const loginItem = within(startMenu).getByTestId("start-menu-item-login");
-    expect(loginItem).toBeTruthy();
-    fireEvent.click(loginItem);
+    const menuItem = within(startMenu).getByTestId("start-menu-item");
+    expect(menuItem).toBeTruthy();
+    fireEvent.click(menuItem);
 
     // Wait for Login Window to open
     await waitFor(() => {
@@ -108,8 +113,8 @@ describe("Auth Login Window", () => {
 
     // Click Log In... item
     const startMenu = screen.getByTestId("start-menu");
-    const loginItem = within(startMenu).getByTestId("start-menu-item-login");
-    fireEvent.click(loginItem);
+    const menuItem = within(startMenu).getByTestId("start-menu-item");
+    fireEvent.click(menuItem);
 
     // Wait for Login Window to open
     await waitFor(() => {
@@ -144,5 +149,42 @@ describe("Auth Login Window", () => {
     // Alternative: check by window title text
     const windowTitle = screen.getByText(/Internet Explorer/i);
     expect(windowTitle).toBeTruthy();
+  });
+
+  it("VITE_DEV_AUTH=true: Click Telegram... -> devAuth, no IE window, user authed", async () => {
+    vi.stubEnv("VITE_DEV_AUTH", "true");
+    mockApi.authDev({ role: "Organizer" });
+    mockApi.authMe({ role: "Organizer" });
+
+    const { container } = renderAppRoot({ platform: "desktop" });
+
+    await waitFor(() => {
+      const desktop = container.querySelector('[data-testid="desktop-shell"]') ||
+        container.querySelector(".desktop-background");
+      expect(desktop).toBeTruthy();
+    });
+
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByTestId("start-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("start-menu")).toBeTruthy();
+    });
+
+    fireEvent.click(within(screen.getByTestId("start-menu")).getByTestId("start-menu-item"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("login-window")).toBeTruthy();
+    }, { timeout: 3000 });
+
+    const loginWindow = screen.getByTestId("login-window");
+    const telegramButton = within(loginWindow).getByTestId("login-window-telegram-button");
+    fireEvent.click(telegramButton);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("ie-window")).toBeNull();
+    }, { timeout: 2000 });
+
+    expect(localStorage.getItem("birdmaid_token")).toBeTruthy();
   });
 });

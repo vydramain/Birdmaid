@@ -55,6 +55,7 @@ export function Taskbar() {
             onClick={handleStartClick}
             className="win-taskbar-start-button"
           >
+            <Icon type="system-start" size="16x16" />
             Start
           </button>
         </div>

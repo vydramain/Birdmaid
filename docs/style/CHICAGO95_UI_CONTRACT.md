@@ -8,6 +8,19 @@
 
 > **⚠️ OPEN-SOURCE CONSTRAINT:** This contract is built from measurements and observations of Windows 95 screenshots and open-source references. **NO Windows assets, source code, or ripped resources are used.** All fonts, icons, and visual elements must be open-source alternatives or custom implementations.
 
+## Inspiration (OSS + Visual References)
+
+We do not copy Windows assets or source code. We implement our own tokens, mixins, and components.
+
+| Reference | URL | Purpose |
+|-----------|-----|---------|
+| 98.css | https://jdan.github.io/98.css/ | Win98-inspired CSS library — design inspiration |
+| GuidebookGallery Win95 GUI | https://guidebookgallery.org/guis/windows/win95 | Historical reference |
+| GuidebookGallery Win95 Tutorial | https://guidebookgallery.org/tutorials/windows95 | Historical reference |
+| GuidebookGallery Win95 Screenshots | https://guidebookgallery.org/screenshots/win95 | Historical reference |
+
+**Chicago95:** This contract describes a "Chicago95-like" experience. Chicago95 is optional inspiration; we do not bundle it. We implement our own tokens and components.
+
 ## Overview
 
 This contract defines the complete UI specification for achieving a Chicago95-like Windows 95 experience. The contract is applicable to both the style guide and real window implementations. It specifies tokens, metrics, state rules, "No-Web rules", and "OS illusion rules" that must be followed to create an authentic Windows 95 aesthetic.
