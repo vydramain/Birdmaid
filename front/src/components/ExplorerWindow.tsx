@@ -163,7 +163,7 @@ export function ExplorerWindow() {
       <div className="explorer-grid-container">
         {/* Toolbar */}
         <div className="explorer-toolbar">
-          <button onClick={handleUp} disabled={currentPath === "/"} className="explorer-up-button">
+          <button onClick={handleUp} disabled={currentPath === "/"} className="win-btn explorer-up-button">
             ↑
           </button>
           <div data-testid="explorer-path" className="explorer-path">

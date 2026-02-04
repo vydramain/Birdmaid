@@ -7,17 +7,17 @@ type StartMenuProps = {
 };
 
 /**
- * StartMenu - Windows 95 styled start menu.
- * 
- * Contains:
- * - Log In... (enabled if guest, disabled if authed)
- * - Log Out... (enabled if authed, disabled if guest)
+ * StartMenu - Windows 95 styled start menu shell.
+ *
+ * Win95-authentic empty shell with:
+ * - Left vertical "Windows 95" brand strip
+ * - Single menu item: "Log In..." (guest) or "Log Out..." (authed)
  */
 export function StartMenu({ isOpen, onClose }: StartMenuProps) {
   const auth = useAuth();
   const { openWindow } = useWindowRegistry();
 
-  const isLoggedIn = auth.user !== null && auth.state === 'authed';
+  const isLoggedIn = auth.user !== null && auth.state === "authed";
 
   const handleLogin = () => {
     if (!isLoggedIn) {
@@ -39,28 +39,34 @@ export function StartMenu({ isOpen, onClose }: StartMenuProps) {
 
   return (
     <>
-      {/* Backdrop to close menu on click outside */}
       <div className="start-menu-backdrop" onClick={onClose} />
-      {/* Menu */}
       <div data-testid="start-menu" className="start-menu">
-        <button
-          data-testid="start-menu-item-login"
-          type="button"
-          onClick={handleLogin}
-          disabled={isLoggedIn}
-          className="start-menu-item"
-        >
-          Log In...
-        </button>
-        <button
-          data-testid="start-menu-item-logout"
-          type="button"
-          onClick={handleLogout}
-          disabled={!isLoggedIn}
-          className="start-menu-item"
-        >
-          Log Out...
-        </button>
+        <div data-testid="start-menu-brand" className="start-menu-brand">
+          Omsky Gamedev
+        </div>
+        <div className="start-menu-content">
+          <div className="start-menu-spacer" />
+          <div className="start-menu-separator" />
+          {isLoggedIn ? (
+            <button
+              data-testid="start-menu-item"
+              type="button"
+              className="start-menu-item start-menu-item-primary"
+              onClick={handleLogout}
+            >
+              Log Out...
+            </button>
+          ) : (
+            <button
+              data-testid="start-menu-item"
+              type="button"
+              className="start-menu-item start-menu-item-primary"
+              onClick={handleLogin}
+            >
+              Log In...
+            </button>
+          )}
+        </div>
       </div>
     </>
   );

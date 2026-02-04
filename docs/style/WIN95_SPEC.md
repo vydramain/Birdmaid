@@ -434,6 +434,17 @@ Since we cannot use MS Sans Serif, we use:
 - All states are observed from screenshots and documented
 - No reverse engineering of Windows code is used
 
+## Inspiration (OSS + Visual References)
+
+We do not copy Windows assets or source code. We implement our own tokens, mixins, and components based on visual analysis and open-source references.
+
+| Reference | URL | Purpose |
+|-----------|-----|---------|
+| 98.css | https://jdan.github.io/98.css/ | Win98-inspired CSS library — design inspiration |
+| GuidebookGallery Win95 GUI | https://guidebookgallery.org/guis/windows/win95 | Historical reference |
+| GuidebookGallery Win95 Tutorial | https://guidebookgallery.org/tutorials/windows95 | Historical reference |
+| GuidebookGallery Win95 Screenshots | https://guidebookgallery.org/screenshots/win95 | Historical reference |
+
 ## References
 
 - **Visual References:** `docs/design/references/screenshots/` (reference-only, not assets)

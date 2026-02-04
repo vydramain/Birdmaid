@@ -1,14 +1,9 @@
-import { ButtonHTMLAttributes, ReactNode } from "react";
+/**
+ * Win95Button - Alias for WinButton (backward compatibility).
+ * @deprecated Use WinButton from same module.
+ */
 
-type Win95ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  children: ReactNode;
-};
+import { WinButton } from "./WinButton";
 
-export function Win95Button({ children, className = "", ...props }: Win95ButtonProps) {
-  return (
-    <button className={`win-btn ${className}`} {...props}>
-      {children}
-    </button>
-  );
-}
+export const Win95Button = WinButton;
 

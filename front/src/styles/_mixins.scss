@@ -24,6 +24,7 @@
  * 
  * Usage:
  *   @include bevel-inset;
+ *   @include win-inset; // alias
  */
 @mixin bevel-inset {
   border-top: 0.0625rem solid var(--win-gray-dark, #808080); // 1px
@@ -33,12 +34,17 @@
   box-shadow: inset 0.0625rem 0.0625rem 0 var(--win-black, #000); // 1px 1px
 }
 
+@mixin win-inset {
+  @include bevel-inset;
+}
+
 /**
  * Outset bevel (raised panel)
  * Top/left: light, bottom/right: dark
  * 
  * Usage:
  *   @include bevel-outset;
+ *   @include win-outset; // alias
  */
 @mixin bevel-outset {
   border-top: 0.0625rem solid var(--win-white, #fff); // 1px
@@ -46,6 +52,10 @@
   border-right: 0.0625rem solid var(--win-gray-dark, #808080); // 1px
   border-bottom: 0.0625rem solid var(--win-gray-dark, #808080); // 1px
   box-shadow: 0.0625rem 0.0625rem 0 var(--win-black, #000); // 1px 1px
+}
+
+@mixin win-outset {
+  @include bevel-outset;
 }
 
 /**
@@ -139,7 +149,7 @@
 }
 
 /**
- * Button disabled state
+ * Button disabled state (engraved text, no hover/pressed, cursor default)
  * 
  * Usage:
  *   button:disabled {
@@ -147,9 +157,28 @@
  *   }
  */
 @mixin button-disabled {
+  @include win-engraved-text;
+
+  cursor: default;
+  pointer-events: none;
+}
+
+/**
+ * Engraved text effect (light shadow + gray main)
+ * Used for disabled button text.
+ */
+@mixin win-engraved-text {
   color: var(--win-text-disabled, #808080);
   text-shadow: 0.0625rem 0.0625rem var(--win-white, #fff); // 1px 1px
-  cursor: not-allowed;
+}
+
+/**
+ * Dotted focus rectangle (inner, must not break 3D frame)
+ * Win95 focus-visible: dotted outline inside button.
+ */
+@mixin win-dotted-focus {
+  outline: 0.0625rem dotted var(--win-black, #000);
+  outline-offset: -0.125rem; // inner
 }
 
 // ============================================================================

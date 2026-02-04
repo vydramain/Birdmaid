@@ -1,65 +1,120 @@
-# Документация проекта
+# Documentation Hub
 
-Навигация по документации проекта.
+Canonical entrypoint for Birdmaid documentation. All docs are reachable from here.
 
-## Основные документы (sources of truth)
+## Product Contract
 
-Основные документы находятся в [`core/`](./core/):
+| Document | Purpose |
+|----------|---------|
+| [FP7](fps/FP7.md) | **Canonical product spec** — shell-only platform, Win95 UI, auth, VFS, content model |
 
-| Документ | Описание |
-|---------|----------|
-| [REQUIREMENTS.md](./core/REQUIREMENTS.md) | Требования (FR + NFR), constraints (project level) |
-| [API.yaml](./core/API.yaml) | OpenAPI contract (single source) |
-| [MODEL.sql](./core/MODEL.sql) | SQL/ER model |
-| [UX_MAP.md](./core/UX_MAP.md) | UI Action Map: CTA → Endpoint → State → Page (React) → mock_status + FP diagrams |
-| [TESTS.md](./core/TESTS.md) | Strategy, UAT/BDD, Acceptance, RTM (YAML: requirement→tests→code) |
-| [QNA_DECISIONS.md](./core/QNA_DECISIONS.md) | Questions/answers/gaps + short ADRs (single file) |
-| [WORKPLAN.yaml](./core/WORKPLAN.yaml) | FP statuses, stages, risks, ACK/reflection, thresholds, artifacts |
+FP7 is the single source of truth for product behavior. If other docs conflict with FP7, FP7 wins.
 
-> **Важно:** Новые документы/папки запрещены (кроме artifacts) и должны быть обоснованы ADR в `QNA_DECISIONS.md`.
+## Quickstart
 
+- **Local dev:** [README.md](../README.md#local-setup)
+- **Docker:** [README.md](../README.md#docker-compose)
 
-## Связь с workflow
+## Architecture
 
-Все workflow-роли (`ai/roles/`) работают с документами из `core/` и `fps/`:
+| Document | Purpose |
+|----------|---------|
+| [STRUCTURE.md](../STRUCTURE.md) | Repository structure, navigation |
+| [PRODUCT_DESCRIPTION.md](../PRODUCT_DESCRIPTION.md) | Product overview |
 
-- **plan** — читает core документы, создает/обновляет `fps/FP<N>.md`
-- **design** — синхронизирует UX_MAP с API.yaml и MODEL.sql, обновляет `fps/FP<N>.md`
-- **build** — читает `fps/FP<N>.md`, реализует фичу, обновляет статус
-- **release** — проверяет готовность, обновляет `fps/FP<N>.md` со статусом released
+## Style System / Win95 Spec
 
-## Связь с агентами-специалистами
+| Document | Purpose |
+|----------|---------|
+| [GUIDE_STYLE.md](style/GUIDE_STYLE.md) | Style guide, tokens, mixins, guardrails |
+| [WIN95_SPEC.md](style/WIN95_SPEC.md) | Win95 UI specification (typography, colors, metrics) |
+| [CHICAGO95_UI_CONTRACT.md](style/CHICAGO95_UI_CONTRACT.md) | Chicago95-like UI contract |
+| [THEME_CONTRACT.md](style/THEME_CONTRACT.md) | Theme switching |
+| [VISUAL_TESTS.md](style/VISUAL_TESTS.md) | Visual regression testing |
 
-Агенты-специалисты (`ai/agents/`) работают с Feature Pack файлами (`fps/FP<N>.md`):
+## Content Model / VFS Rules
 
-- **Product Lead** → определяет scope, outcome, приоритеты
-- **Designer** → строит journey map, требования, бизнес-правила
-- **Analyst** → определяет метрики, события, воронки
-- **Engineer** → оценивает feasibility, архитектуру, риски
-- **Delivery** → составляет план релиза, управляет рисками
-- **Compliance** → проверяет security, privacy, compliance
+- **VFS rules, RBAC (Guest/Participant/Organizer):** [FP7](fps/FP7.md)
+- **Help files (help.txt, admin_help.txt):** authored in [front/src/os/fs/vfs-init.ts](../front/src/os/fs/vfs-init.ts)
 
-Все артефакты интегрируются в единый файл `fps/FP<N>.md`.
+## How to Use the Platform (mirrors on-desktop help)
 
-## Структура документации
+The on-desktop help content is authored in [front/src/os/fs/vfs-init.ts](../front/src/os/fs/vfs-init.ts).
 
+### Guest / Participant (help.txt)
+
+- **Navigation:** Double-click Desktop icons to open files and applications. Use Explorer to browse the file system.
+- **Opening files:** Double-click any file to open it in the appropriate viewer (ImageViewer, VideoViewer, Notepad, Internet Explorer).
+- **Explorer:** Tree view (left) for folder structure; Grid view (right) for contents. Single-click to select, double-click to open.
+- **Login:** Click the User Icon in the Taskbar (bottom right). Use the User Panel to view account information.
+
+### Organizer (admin_help.txt)
+
+- **Content management:** Upload files via Explorer; move and delete files; create folders within system folders.
+- **Folder rules:** Create folders anywhere inside Disk A, B, C. Root-level system folders are immutable.
+- **System folders:** /Disk C/desktop, /Disk C/images, /Disk C/videos, /Disk C/documents.
+
+## Auth
+
+- **Auth flow (Telegram, DEV MODE, `/api/auth/me`):** [FP7](fps/FP7.md)
+- **Auth endpoints:** FP7 Decisions section
+
+## Tests
+
+| Document | Purpose |
+|----------|---------|
+| [FP7_TEST_CONTRACT.md](tests/FP7_TEST_CONTRACT.md) | FP7 test contract, data-testid, scenarios |
+| [VISUAL_TESTS.md](style/VISUAL_TESTS.md) | Visual regression (smoke + Playwright) |
+
+**Run tests:** `cd front && npm test` / `cd back && npm test`
+
+## Agents Workflow
+
+| Document | Purpose |
+|----------|---------|
+| [AGENTS.md](../AGENTS.md) | Main workflow rules (6 agents, 4 stages) |
+| [WORKFLOW.md](agents/WORKFLOW.md) | How to run agents, output contract, guardrails, conflict resolution |
+
+## History (FP1–FP6)
+
+Released Feature Packs (reference only; FP7 is canonical for current product):
+
+| FP | File | Status |
+|----|------|--------|
+| FP1 | [FP1.md](fps/FP1.md) | released |
+| FP2 | [FP2.md](fps/FP2.md) | released |
+| FP3 | [FP3.md](fps/FP3.md) | released |
+| FP4 | [FP4.md](fps/FP4.md) | released |
+| FP5 | [FP5.md](fps/FP5.md) | released |
+| FP6 | [FP6.md](fps/FP6.md) | released |
+
+## Other Docs
+
+| Folder/Doc | Purpose |
+|------------|---------|
+| [fps/](fps/README.md) | Feature Pack catalog, TEMPLATE |
+| [dev/](dev/GUARDRAILS.md) | Guardrails, agent contract |
+| [design/](design/) | Design references, WIN95 tokens |
+| [compliance/](compliance/) | Asset policy, provenance |
+| [audit/](audit/) | FP7 compliance, legacy surface map |
+
+## Legacy / Deprecated
+
+- **docs/core/:** Referenced in older docs (REQUIREMENTS, API, MODEL, UX_MAP). For FP7, product contract is consolidated in [FP7](fps/FP7.md). Core docs may be reintroduced later.
+- **CUTLIST.md, REWRITE_CHECKLIST.md:** FP7 cutline/rewrite plans — still relevant for implementation tracking.
+
+## Link Validation
+
+Run the doc link checker to verify internal relative links resolve:
+
+```bash
+node scripts/check-doc-links.cjs
 ```
-docs/
-├── README.md              # Этот файл
-├── core/                   # Основные документы (sources of truth)
-│   ├── REQUIREMENTS.md
-│   ├── API.yaml
-│   ├── MODEL.sql
-│   ├── UX_MAP.md
-│   ├── TESTS.md
-│   ├── QNA_DECISIONS.md
-│   └── WORKPLAN.yaml
-└── fps/                    # Feature Pack файлы (единый файл для каждого FP)
-    ├── README.md
-    ├── TEMPLATE.md
-    ├── FP1.md             # Browse & Play + Admin Authoring
-    ├── FP2.md             # Team System and Game Editing
-    ├── FP3.md             # Windows 95 UI Behavior
-    ├── FP4.md             # User Accounts & Windows 95 UI
-    └── FP5.md             # UI/UX Fixes and Polish
+
+To check only the docs folder:
+
+```bash
+node scripts/check-doc-links.cjs docs/
 ```
+
+External links are not validated (no CI failure if external URLs are down). The script only verifies that internal relative links point to existing files.

@@ -59,6 +59,11 @@ Windows-95-стилизованная веб-платформа в форме п
    VITE_API_BASE_URL=http://localhost:3000
    ```
 
+   **Dev mode (логин без Telegram):** для локальной разработки можно включить обход Telegram auth:
+   - Backend: `AUTH_MODE=dev` в `back/.env`
+   - Frontend: `VITE_DEV_AUTH=true` в `front/.env`
+   - В окне логина кнопка "Telegram..." сразу выдаёт доступ (роль Organizer) без OAuth
+
 4. **Запустить инфраструктуру (MongoDB + MinIO):**
    ```bash
    docker compose up -d mongo minio minio-init
@@ -283,8 +288,18 @@ VITE_API_BASE_URL=https://api.yourdomain.com
 
 ## Documentation
 
+See [docs/README.md](./docs/README.md) for the full documentation hub.
+
+| Section | Links |
+|---------|-------|
+| **Product Contract** | [FP7](docs/fps/FP7.md) — canonical product spec (shell-only, Win95 UI) |
+| **Quickstart** | [Local Setup](#local-setup) above |
+| **Architecture** | [STRUCTURE.md](./STRUCTURE.md), [Code Structure](#code-structure) |
+| **Style System** | [GUIDE_STYLE.md](docs/style/GUIDE_STYLE.md), [WIN95_SPEC.md](docs/style/WIN95_SPEC.md) |
+| **Content Model / VFS** | [FP7 VFS](docs/fps/FP7.md) (VFS rules, RBAC), [vfs-init.ts](front/src/os/fs/vfs-init.ts) |
+| **Auth** | [FP7 Auth](docs/fps/FP7.md) (Telegram, DEV MODE, `/api/auth/me`) |
+| **Tests** | [Testing](#testing) above, [FP7_TEST_CONTRACT](docs/tests/FP7_TEST_CONTRACT.md), [VISUAL_TESTS](docs/style/VISUAL_TESTS.md) |
+| **Agents Workflow** | [AGENTS.md](./AGENTS.md), [docs/agents/WORKFLOW.md](docs/agents/WORKFLOW.md) |
+| **History (FP1–FP6)** | [docs/fps/](docs/fps/README.md) — FP1–FP6 (released) |
+
 - **Product Description**: [PRODUCT_DESCRIPTION.md](./PRODUCT_DESCRIPTION.md)
-- **Structure**: [STRUCTURE.md](./STRUCTURE.md)
-- **Agents Workflow**: [AGENTS.md](./AGENTS.md)
-- **Feature Packs**: [docs/fps/README.md](./docs/fps/README.md)
-- **Core Documents**: [docs/README.md](./docs/README.md)

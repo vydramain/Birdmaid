@@ -50,35 +50,24 @@ describe("Auth Boot", () => {
       expect(userIcon).toHaveAttribute("title", "Not logged in");
     });
 
-    // Check Start menu: should have Log In... enabled, Log Out... disabled
-    // First, find Start button and click it
+    // Check Start menu: only Log In... exists (guest)
     const startButton = screen.getByTestId("start-button");
     expect(startButton).toBeTruthy();
     
-    // Click Start button to open menu
     const { fireEvent } = await import("@testing-library/react");
     fireEvent.click(startButton);
 
-    // Wait for Start menu to appear
     await waitFor(() => {
       const startMenu = screen.getByTestId("start-menu");
       expect(startMenu).toBeTruthy();
     });
 
-    // Check menu items within start-menu container
     const startMenu = screen.getByTestId("start-menu");
-    const loginItem = within(startMenu).getByTestId("start-menu-item-login");
-    const logoutItem = within(startMenu).getByTestId("start-menu-item-logout");
-
-    // Log In... should be enabled
-    expect(loginItem).toBeTruthy();
-    expect(loginItem).not.toBeDisabled();
-    expect(loginItem).toHaveTextContent("Log In...");
-
-    // Log Out... should be disabled
-    expect(logoutItem).toBeTruthy();
-    expect(logoutItem).toBeDisabled();
-    expect(logoutItem).toHaveTextContent("Log Out...");
+    const menuItem = within(startMenu).getByTestId("start-menu-item");
+    expect(menuItem).toBeTruthy();
+    expect(menuItem).not.toBeDisabled();
+    expect(menuItem).toHaveTextContent("Log In...");
+    expect(within(startMenu).queryByText("Log Out...")).toBeNull();
   });
 
   it("2. Boot authed: есть токен, /api/auth/me=200 -> user виден, есть Log Out", async () => {
@@ -106,33 +95,24 @@ describe("Auth Boot", () => {
     const userIcon = screen.getByTestId("tray-user-icon");
     expect(userIcon).toHaveAttribute("title", expect.stringContaining("testuser"));
 
-    // Check Start menu: should have Log In... disabled, Log Out... enabled
+    // Check Start menu: only Log Out... exists (authed)
     const startButton = screen.getByTestId("start-button");
     expect(startButton).toBeTruthy();
     
     const { fireEvent } = await import("@testing-library/react");
     fireEvent.click(startButton);
 
-    // Wait for Start menu to appear
     await waitFor(() => {
       const startMenu = screen.getByTestId("start-menu");
       expect(startMenu).toBeTruthy();
     });
 
-    // Check menu items within start-menu container
     const startMenu = screen.getByTestId("start-menu");
-    const loginItem = within(startMenu).getByTestId("start-menu-item-login");
-    const logoutItem = within(startMenu).getByTestId("start-menu-item-logout");
-
-    // Log In... should be disabled
-    expect(loginItem).toBeTruthy();
-    expect(loginItem).toBeDisabled();
-    expect(loginItem).toHaveTextContent("Log In...");
-
-    // Log Out... should be enabled
-    expect(logoutItem).toBeTruthy();
-    expect(logoutItem).not.toBeDisabled();
-    expect(logoutItem).toHaveTextContent("Log Out...");
+    const menuItem = within(startMenu).getByTestId("start-menu-item");
+    expect(menuItem).toBeTruthy();
+    expect(menuItem).not.toBeDisabled();
+    expect(menuItem).toHaveTextContent("Log Out...");
+    expect(within(startMenu).queryByText("Log In...")).toBeNull();
   });
 
   it("3. Boot 401: есть токен, /api/auth/me=401 -> токен очищен, guest state", async () => {
@@ -162,32 +142,23 @@ describe("Auth Boot", () => {
       expect(userIcon).toHaveAttribute("title", "Not logged in");
     });
 
-    // Check Start menu: should have Log In... enabled, Log Out... disabled (guest state)
+    // Check Start menu: only Log In... exists (guest state)
     const startButton = screen.getByTestId("start-button");
     expect(startButton).toBeTruthy();
     
     const { fireEvent } = await import("@testing-library/react");
     fireEvent.click(startButton);
 
-    // Wait for Start menu to appear
     await waitFor(() => {
       const startMenu = screen.getByTestId("start-menu");
       expect(startMenu).toBeTruthy();
     });
 
-    // Check menu items within start-menu container
     const startMenu = screen.getByTestId("start-menu");
-    const loginItem = within(startMenu).getByTestId("start-menu-item-login");
-    const logoutItem = within(startMenu).getByTestId("start-menu-item-logout");
-
-    // Log In... should be enabled (guest state)
-    expect(loginItem).toBeTruthy();
-    expect(loginItem).not.toBeDisabled();
-    expect(loginItem).toHaveTextContent("Log In...");
-
-    // Log Out... should be disabled (guest state)
-    expect(logoutItem).toBeTruthy();
-    expect(logoutItem).toBeDisabled();
-    expect(logoutItem).toHaveTextContent("Log Out...");
+    const menuItem = within(startMenu).getByTestId("start-menu-item");
+    expect(menuItem).toBeTruthy();
+    expect(menuItem).not.toBeDisabled();
+    expect(menuItem).toHaveTextContent("Log In...");
+    expect(within(startMenu).queryByText("Log Out...")).toBeNull();
   });
 });

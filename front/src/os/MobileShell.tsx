@@ -12,6 +12,8 @@ export function MobileShell() {
       <h1>Mobile View</h1>
       <p>Coming Soon (FP8)</p>
       <button
+        type="button"
+        className="win-btn"
         onClick={() => {
           localStorage.setItem("birdmaid_platform", "desktop");
           window.location.reload();

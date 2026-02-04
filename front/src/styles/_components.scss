@@ -192,12 +192,16 @@
 }
 
 .win-taskbar-start-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 0.25rem);
+
   @include bevel-outset;
 
   background-color: var(--win-gray, #c0c0c0);
-  border: 0.0625rem solid var(--win-black, #000); // 1px
-  padding: 0.25rem 0.75rem; // 4px 12px
-  font-size: var(--font-size-normal, 0.688rem); // 11px
+  border: 0.0625rem solid var(--win-black, #000);
+  padding: 0.25rem;
+  font-size: var(--font-size-normal, 0.688rem);
   font-weight: var(--font-weight-bold, bold);
   color: var(--win-text, #000);
   cursor: pointer;
@@ -227,39 +231,70 @@
 
 .start-menu {
   position: fixed;
-  bottom: var(--taskbar-height, 2.5rem); // above taskbar
-  left: var(--spacing-sm, 0.25rem); // 4px
-  min-width: 9.375rem; // 150px
+  bottom: var(--taskbar-height, 2.5rem);
+  left: var(--spacing-sm, 0.25rem);
+  min-width: 10rem;
+  min-height: 20rem;
   z-index: var(--z-taskbar-menu, 10000);
+  display: flex;
 
   @include bevel-outset;
 
   background-color: var(--win-gray, #c0c0c0);
-  border: 0.125rem solid var(--win-black, #000); // 2px
-  padding: 0.125rem; // 2px
-  box-shadow: 0.25rem 0.25rem 0 var(--win-black, #000); // 4px 4px
+  border: 0.125rem solid var(--win-black, #000);
+  padding: 0;
+  box-shadow: 0.25rem 0.25rem 0 var(--win-black, #000);
+
+  .start-menu-brand {
+    width: 1.5rem;
+    background: var(--win-gray-darker, #404040);
+    color: var(--win-text-inverse, #fff);
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    text-align: left;
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-small, 0.625rem);
+  }
+
+  .start-menu-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-xs);
+  }
+
+  .start-menu-spacer {
+    flex: 1;
+    min-height: 2rem;
+  }
+
+  .start-menu-separator {
+    height: 0;
+    border-top: 0.0625rem solid var(--win-gray-dark, #808080);
+    border-bottom: 0.0625rem solid var(--win-white, #fff);
+    margin: var(--spacing-xs) 0;
+  }
 
   .start-menu-item {
     display: block;
     width: 100%;
-    padding: 0.25rem 1.25rem 0.25rem 0.25rem; // 4px 20px 4px 4px
+    padding: 0.25rem 1.25rem 0.25rem 0.25rem;
     text-align: left;
-    background-color: transparent;
+    background: transparent;
     border: none;
-    font-size: var(--font-size-normal, 0.688rem); // 11px
+    font-size: var(--font-size-normal, 0.688rem);
     color: var(--win-text, #000);
     cursor: pointer;
     user-select: none;
-    min-height: 1.375rem; // 22px
+    min-height: 1.375rem;
 
-    &:disabled {
-      color: var(--win-text-disabled, #808080);
-      cursor: not-allowed;
-    }
-
-    &:hover:not(:disabled) {
+    &:hover {
       background-color: var(--win-blue, #000080);
       color: var(--win-white, #fff);
+    }
+
+    &:focus-visible {
+      outline: 0.0625rem dotted var(--win-black, #000);
     }
   }
 }
@@ -869,6 +904,12 @@
   margin-bottom: var(--spacing-md, 0.5rem); // 8px
 }
 
+.login-window-error {
+  font-size: var(--font-size-normal, 0.688rem); // 11px
+  color: var(--win-error, #c00);
+  margin-bottom: var(--spacing-sm, 0.25rem); // 4px
+}
+
 .login-window-buttons {
   display: flex;
   gap: var(--spacing-sm, 0.25rem); // 4px
@@ -948,7 +989,15 @@
 }
 
 // ============================================================================
-// Button Component Classes
+// Button Component Classes (Win95 Button System)
+// ============================================================================
+// Spec: WIN95_SPEC.md, docs/style/WIN95_SPEC.md
+// 1) Normal: 3D outset, system gray bg, black text
+// 2) Pressed: 3D inset + content shift 1px down-right
+// 3) Focus-visible: inner dotted focus rectangle
+// 4) Disabled: engraved text, no hover/pressed, cursor default
+// 5) Default: outer emphasis border (dialog default)
+// 6) Toggle: pressed via [aria-pressed="true"] or .is-pressed
 // ============================================================================
 
 .win-btn {
@@ -958,21 +1007,44 @@
     @include button-active;
   }
 
+  &:focus-visible {
+    @include win-dotted-focus;
+  }
+
   &:disabled {
     @include button-disabled;
   }
 }
 
+// Default button (dialog default action, Enter key)
+// Additional outer emphasis border around normal 3D outset
 .win-btn-default {
   @include button-default;
+
+  box-shadow:
+    0 0 0 0.0625rem var(--win-black, #000), // outer emphasis ring
+    0.0625rem 0.0625rem 0 var(--win-black, #000),
+    inset -0.0625rem -0.0625rem 0 var(--win-gray-dark, #808080);
 
   &:active {
     @include button-active;
   }
 
+  &:focus-visible {
+    @include win-dotted-focus;
+  }
+
   &:disabled {
     @include button-disabled;
   }
+}
+
+// Toggle button pressed state (inset + content shift)
+.win-btn-toggle.is-pressed,
+.win-btn-toggle[aria-pressed="true"] {
+  @include bevel-inset;
+
+  transform: translate(0.0625rem, 0.0625rem);
 }
 
 .win-btn-primary {
@@ -987,6 +1059,10 @@
 
   &:active {
     @include button-active;
+  }
+
+  &:focus-visible {
+    @include win-dotted-focus;
   }
 
   &:disabled {

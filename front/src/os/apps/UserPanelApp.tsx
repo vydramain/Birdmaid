@@ -59,7 +59,7 @@ export function UserPanelApp({ onClose }: UserPanelAppProps) {
           <button
             type="button"
             onClick={handleManagement}
-            className="win-btn-default user-panel-button"
+            className="win-btn win-btn-default user-panel-button"
           >
             Management Functions
           </button>
@@ -71,7 +71,7 @@ export function UserPanelApp({ onClose }: UserPanelAppProps) {
             data-testid="user-logout"
             type="button"
             onClick={handleLogout}
-            className="win-btn-default user-panel-button"
+            className="win-btn win-btn-default user-panel-button"
           >
             Log out
           </button>

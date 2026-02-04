@@ -17,6 +17,7 @@
 import React, { useState } from 'react';
 import '../../styles/style-guide.scss';
 import { Icon } from '../../ui/icons';
+import { CaptionButtons } from '../../ui/primitives';
 
 export function StyleGuideApp() {
   const [activeWindow, setActiveWindow] = useState<'left' | 'right'>('left');
@@ -40,11 +41,7 @@ export function StyleGuideApp() {
           >
             <div className="win-titlebar">
               <span className="title">Active Window</span>
-              <div className="win-window-controls">
-                <button className="control-button">−</button>
-                <button className="control-button">□</button>
-                <button className="control-button close">×</button>
-              </div>
+              <CaptionButtons onMinimize={() => {}} onMaximize={() => {}} onClose={() => {}} />
             </div>
             <div className="win-content">
               <p>This window is active (focused). Title bar has blue gradient.</p>
@@ -57,11 +54,7 @@ export function StyleGuideApp() {
           >
             <div className="win-titlebar">
               <span className="title">Inactive Window</span>
-              <div className="win-window-controls">
-                <button className="control-button">−</button>
-                <button className="control-button">□</button>
-                <button className="control-button close">×</button>
-              </div>
+              <CaptionButtons onMinimize={() => {}} onMaximize={() => {}} onClose={() => {}} />
             </div>
             <div className="win-content">
               <p>This window is inactive (unfocused). Title bar is gray.</p>
@@ -74,23 +67,28 @@ export function StyleGuideApp() {
       <section className="style-guide-section">
         <h2>Button States</h2>
         <div className="style-guide-buttons">
-          <button
-            className={`win-btn ${buttonPressed === 'default' ? 'pressed' : ''}`}
-            onMouseDown={() => setButtonPressed('default')}
-            onMouseUp={() => setButtonPressed(null)}
-            onMouseLeave={() => setButtonPressed(null)}
-          >
-            Default Button
+          <button className="win-btn">
+            Normal
+          </button>
+          <button className="win-btn">
+            Pressed (hold to see :active)
           </button>
           <button className="win-btn" disabled>
-            Disabled Button
+            Disabled
+          </button>
+          <button className="win-btn" data-testid="style-guide-focus-button">
+            Focus (tab to me)
+          </button>
+          <button className="win-btn win-btn-default">
+            Default (dialog)
           </button>
           <button
-            className="win-btn close-hover"
-            onMouseEnter={(e) => e.currentTarget.classList.add('hover')}
-            onMouseLeave={(e) => e.currentTarget.classList.remove('hover')}
+            type="button"
+            className={`win-btn win-btn-toggle ${buttonPressed === 'toggle' ? 'is-pressed' : ''}`}
+            aria-pressed={buttonPressed === 'toggle'}
+            onClick={() => setButtonPressed((p) => (p === 'toggle' ? null : 'toggle'))}
           >
-            Close Button (Hover)
+            Toggle
           </button>
         </div>
       </section>

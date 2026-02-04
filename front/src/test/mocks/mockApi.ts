@@ -256,6 +256,20 @@ export const mockApi = {
   },
 
   /**
+   * Mock POST /api/auth/dev - returns user and token (dev mode auth)
+   */
+  authDev: (user?: Partial<User & { role?: 'Guest' | 'Participant' | 'Organizer' }>, token?: string) => {
+    if (!fetchMock || typeof fetchMock.json !== 'function') {
+      console.warn('[mockApi] fetchMock is not available, skipping authDev mock');
+      return;
+    }
+    const fixtureUser = makeUser(user);
+    const userWithRole = { ...fixtureUser, role: (user?.role as 'Guest' | 'Participant' | 'Organizer') || 'Organizer' };
+    const fixtureToken = token || `mock.dev.${btoa(JSON.stringify({ userId: userWithRole.id, role: userWithRole.role }))}.sig`;
+    mockApi.post("/api/auth/dev", () => fetchMock.json({ user: userWithRole, token: fixtureToken }));
+  },
+
+  /**
    * Mock POST /auth/recovery/verify - returns token
    */
   authRecoveryVerify: (user?: Partial<User>, token?: string) => {

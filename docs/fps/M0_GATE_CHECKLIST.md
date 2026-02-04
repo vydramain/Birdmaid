@@ -2,7 +2,7 @@
 
 **Версия:** 1.0  
 **Дата:** 2026-01-22  
-**Связано с:** [FP7.md](./FP7.md), [REWRITE_CHECKLIST.md](../../REWRITE_CHECKLIST.md), [CUTLIST.md](../../CUTLIST.md)
+**Связано с:** [FP7.md](./FP7.md), [REWRITE_CHECKLIST.md](../REWRITE_CHECKLIST.md), [CUTLIST.md](../../CUTLIST.md)
 
 ## M0 PASS/REJECT Checklist (10 пунктов)
 

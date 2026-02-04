@@ -63,10 +63,11 @@ describe("Auth Logout Confirmation", () => {
 
     // Click Log Out... item
     const startMenu = screen.getByTestId("start-menu");
-    const logoutItem = within(startMenu).getByTestId("start-menu-item-logout");
-    expect(logoutItem).toBeTruthy();
-    expect(logoutItem).not.toBeDisabled();
-    fireEvent.click(logoutItem);
+    const menuItem = within(startMenu).getByTestId("start-menu-item");
+    expect(menuItem).toBeTruthy();
+    expect(menuItem).not.toBeDisabled();
+    expect(menuItem).toHaveTextContent("Log Out...");
+    fireEvent.click(menuItem);
 
     // Wait for Logout Confirmation Dialog to appear
     await waitFor(() => {
@@ -114,7 +115,7 @@ describe("Auth Logout Confirmation", () => {
       expect(userIcon).toHaveAttribute("title", "Not logged in");
     });
 
-    // Check Start menu: Log In... enabled, Log Out... disabled
+    // Check Start menu: only Log In... exists (guest)
     const startButton2 = screen.getByTestId("start-button");
     fireEvent.click(startButton2);
 
@@ -124,10 +125,8 @@ describe("Auth Logout Confirmation", () => {
     });
 
     const startMenu2 = screen.getByTestId("start-menu");
-    const loginItem = within(startMenu2).getByTestId("start-menu-item-login");
-    const logoutItem2 = within(startMenu2).getByTestId("start-menu-item-logout");
-
-    expect(loginItem).not.toBeDisabled();
-    expect(logoutItem2).toBeDisabled();
+    const menuItemAfterLogout = within(startMenu2).getByTestId("start-menu-item");
+    expect(menuItemAfterLogout).toHaveTextContent("Log In...");
+    expect(within(startMenu2).queryByText("Log Out...")).toBeNull();
   });
 });

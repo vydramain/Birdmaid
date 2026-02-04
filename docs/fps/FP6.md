@@ -922,7 +922,7 @@ FP6 превращает Birdmaid из обычного веб-сайта в п�
 
 **Date:** 2026-01-22  
 **Status:** FP6 was refactored by FP7  
-**Audit:** See [FP6 Reality Check & Platform Contracts Audit](../../testing/FP6_REALITY_CHECK.md) for platform contract validation
+**Audit:** Platform contract validation — see [FP7_TEST_CONTRACT](../tests/FP7_TEST_CONTRACT.md) for current test contract (FP6 audit doc deprecated)
 
 ### What Still Exists
 

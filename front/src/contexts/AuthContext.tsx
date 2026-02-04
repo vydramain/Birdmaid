@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [telegramAuth]);
 
   const devAuth = async (userId?: string, role?: UserRole) => {
-    const response = await apiClient.json<{ user: User; token: string }>("/auth/dev", {
+    const response = await apiClient.json<{ user: User; token: string }>("/api/auth/dev", {
       method: "POST",
       body: JSON.stringify({ userId, role }),
     });
