@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { apiClient } from "../api/client";
+import { vfs } from "../os/fs/VirtualFileSystem";
 
 export type UserRole = 'Guest' | 'Participant' | 'Organizer';
 
@@ -74,6 +75,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void bootstrapAuth();
   }, [bootstrapAuth]);
+
+  // Sync VFS role when user is authenticated (for in-memory VFS used by Desktop/Explorer).
+  // When guest (no user), do not overwrite vfs — tests may have set vfs.setUserRole explicitly.
+  useEffect(() => {
+    if (user) {
+      vfs.setUserRole(user.role ?? "Guest");
+    }
+  }, [user]);
 
   // Listen for hardLogout events from apiClient
   useEffect(() => {

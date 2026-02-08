@@ -190,6 +190,27 @@ export class S3Service {
   }
 
   /**
+   * Create directory (empty object with trailing /)
+   */
+  async mkdir(key: string): Promise<void> {
+    const normalizedKey = key.replace(/^\//, "").replace(/\/$/, "") + "/";
+
+    const command = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: normalizedKey,
+      Body: Buffer.from(""),
+      ContentType: "application/x-directory",
+    });
+
+    try {
+      await this.s3Client.send(command);
+    } catch (error) {
+      console.error(`[S3Service] Error creating directory ${key}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Check if object exists
    */
   async exists(key: string): Promise<boolean> {

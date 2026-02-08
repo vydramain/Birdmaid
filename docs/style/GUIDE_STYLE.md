@@ -273,6 +273,13 @@ Inline styles разрешены **только** для следующих сл
 .start-menu { bottom: var(--taskbar-h); }
 ```
 
+**Context Menu positioning (FP7 A4):**
+- Позиционирование только через CSS variables `--cm-x`, `--cm-y` (setProperty).
+- **Без px:** значения задаются в rem: `xRem = x / rootFontSize`; `setProperty('--cm-x', xRem + 'rem')`; аналогично для y. Inline style objects и px запрещены.
+- Меню clamp внутри viewport: если справа/снизу не помещается — пересчёт x/y в JS.
+- data-testid: `context-menu`, data-owner, data-target-path для тестов.
+- within() scope при дублировании labels (tree vs grid).
+
 **Запрещённые свойства в inline styles:**
 - ❌ `color`, `backgroundColor`, `borderColor` — используй классы
 - ❌ `border`, `borderWidth`, `borderStyle` — используй mixins
@@ -718,10 +725,13 @@ We do not copy Windows assets or source code. We implement our own tokens, mixin
 
 | Reference | URL | Purpose |
 |-----------|-----|---------|
-| 98.css | https://jdan.github.io/98.css/ | Win98-inspired CSS library — design inspiration |
+| **98.css** | https://jdan.github.io/98.css/ | **Mandatory** — Win98 design system, canonical reference for FP7 |
+| [DESIGN_SYSTEM_98.css.md](./DESIGN_SYSTEM_98.css.md) | — | FP7 design system doc, 98.css ↔ Birdmaid mapping |
 | GuidebookGallery Win95 GUI | https://guidebookgallery.org/guis/windows/win95 | Historical reference |
 | GuidebookGallery Win95 Tutorial | https://guidebookgallery.org/tutorials/windows95 | Historical reference |
 | GuidebookGallery Win95 Screenshots | https://guidebookgallery.org/screenshots/win95 | Historical reference |
+
+**98.css (FP7):** Неприкословно обязателен для FP7. См. [DESIGN_SYSTEM_98.css.md](./DESIGN_SYSTEM_98.css.md) для маппинга компонентов и tokens.
 
 **Chicago95:** Mentioned as optional design inspiration (Chicago95-like palette). We do not bundle Chicago95; we implement our own tokens and mixins.
 

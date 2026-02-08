@@ -3,6 +3,8 @@
 **Роль:** @Delivery  
 **Режим:** FP=FP7 mode=release  
 **Дата:** 2026-01-22  
+**Обновлено:** 2026-02-07  
+**Product Lead Decision:** ✅ **RELEASED** (2026-02-07)  
 **Время на проверку:** 15 минут (1-проходный сценарий)
 
 ## Цель Gate
@@ -11,6 +13,7 @@
 - Desktop: окна/Explorer/открытие типов/viewport boundary
 - Auth: dev-auth локально, роль из БД
 - Organizer: upload/move/delete работает
+- **Context Menu:** правый клик Desktop/Explorer → Win95-меню; Organizer: Create folder, Upload, Delete, Rename, Move; Guest: Refresh only; Tree view отключено
 - Guest: write запрещён
 - Security: sandbox/postMessage
 - Mobile: отдельная сборка запускается
@@ -205,6 +208,26 @@ curl -X POST http://localhost:3000/api/auth/dev \
 **Ожидаемый результат:**
 - ✅ Попытка удалить/переименовать/переместить system folder → ошибка `PermissionDenied`
 - ✅ System folders остаются неизменными
+
+### 4.5 Context Menu (Desktop + Explorer)
+
+**Проверка:**
+- Авторизоваться как Organizer
+- Правый клик на Desktop (пустое место) → Win95-меню: Create folder, Upload file, Refresh
+- Правый клик на Explorer Grid (пустое место) → Create folder, Upload, Refresh
+- Правый клик на файле/папке в Explorer → Delete, Rename, Move, Refresh
+- Правый клик на `/Disk A` (или root) в Explorer → Delete, Rename, Move скрыты или disabled
+- Правый клик по Tree view Explorer → контекстное меню отключено (не показывается)
+- Create folder → Win95-диалог → папка создаётся; mkdir API `POST /api/vfs/mkdir` работает
+- Авторизоваться как Guest → правый клик Desktop/Explorer → только Refresh
+
+**Ожидаемый результат:**
+- ✅ Desktop: Organizer видит Create folder, Upload, Refresh
+- ✅ Explorer empty: Organizer видит Create folder, Upload, Refresh
+- ✅ Explorer item: Organizer видит Delete, Rename, Move, Refresh (для roots — скрыты)
+- ✅ Tree view: контекстное меню не показывается
+- ✅ Guest: только Refresh
+- ✅ mkdir API работает, 409 (папка существует) → Win95 message box
 
 ---
 

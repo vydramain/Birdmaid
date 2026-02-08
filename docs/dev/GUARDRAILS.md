@@ -123,10 +123,32 @@ Fix the code to comply; do not relax the rules.
 
 ---
 
-## 6. Enforcement
+## 6. VFS Backend-Only Rule
+
+**Desktop/Explorer VFS = backend-only.** Backend (S3 via `/api/vfs/*`) is the single source of truth.
+
+### MUST
+- All VFS reads (list, read) come from `VfsApiClient` (backend API)
+- All VFS mutations (mkdir, upload, move, delete) go through backend API only
+- Context menu actions use `targetPath` **only** from `ContextMenuContext` — never "global current directory" or desktop cwd
+
+### MUST NOT
+- Use in-memory VFS as source of truth for Desktop/Explorer rendering or mutations
+- Call `vfs.mkdir`, `vfs.writeFile`, etc. for user-visible persistence (backend-only)
+- Use desktop cwd when context menu was invoked from Explorer
+
+### Allowed
+- In-memory VFS as **cache** for session (refetch on invalidate)
+- In-memory VFS for **unit tests** (mock)
+- Tree view may use vfs for structure during transition; grid must use API
+
+---
+
+## 7. Enforcement
 
 | Check | Tool | When |
 |-------|------|------|
+| VFS backend-only | Code review | PR |
 | Inline styles allow-tag v2 | `front/scripts/check-inline-styles.cjs` | pre-commit (lint-staged) |
 | Literal-only inline styles | `check-inline-styles.cjs` | pre-commit |
 | layout-calc evidence | `check-inline-styles.cjs` | pre-commit |

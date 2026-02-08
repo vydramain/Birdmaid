@@ -366,6 +366,72 @@ export const mockApi = {
   },
 
   /**
+   * Mock GET /api/vfs/list - List files in path
+   * itemsByPath: map path -> VfsListItem[]; or use getItems(path) for dynamic
+   */
+  vfsList: (itemsByPath: Record<string, { name: string; type: "file" | "dir" }[]>) => {
+    if (!fetchMock || typeof fetchMock.json !== 'function') return;
+    mockApi.get(/\/api\/vfs\/list/, async (url) => {
+      const u = new URL(url.startsWith('http') ? url : `http://x${url}`);
+      const path = u.searchParams.get('path') ?? '/';
+      const items = itemsByPath[path] ?? itemsByPath['/'] ?? [];
+      return fetchMock.json({ items });
+    });
+  },
+
+  /**
+   * Mock GET /api/vfs/read - Read file content
+   * contentByKey: map key -> string content
+   */
+  vfsRead: (contentByKey: Record<string, string>) => {
+    if (!fetchMock || typeof fetchMock.json !== 'function') return;
+    mockApi.get(/\/api\/vfs\/read/, async (url) => {
+      const u = new URL(url.startsWith('http') ? url : `http://x${url}`);
+      const key = u.searchParams.get('key') ?? '';
+      const content = contentByKey[key];
+      if (content === undefined) {
+        return new Response('Not Found', { status: 404 });
+      }
+      return new Response(content, {
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    });
+  },
+
+  /**
+   * Mock POST /api/vfs/mkdir - Create folder
+   * Returns success or 409/403 based on handler
+   */
+  vfsMkdir: (options?: { existingPaths?: string[]; reject403?: boolean }) => {
+    if (!fetchMock || typeof fetchMock.json !== 'function') return;
+    const existingPaths = new Set(options?.existingPaths ?? []);
+    mockApi.post("/api/vfs/mkdir", async (_url, init) => {
+      if (options?.reject403) {
+        return fetchMock.json(
+          { statusCode: 403, message: "PermissionDenied: mkdir requires Organizer role" },
+          403
+        );
+      }
+      try {
+        const body = init?.body ? JSON.parse(init.body as string) : {};
+        const path = body?.path;
+        if (!path) {
+          return fetchMock.json({ statusCode: 400, message: "path is required" }, 400);
+        }
+        if (existingPaths.has(path)) {
+          return fetchMock.json(
+            { statusCode: 409, message: "A file with that name already exists" },
+            409
+          );
+        }
+        return fetchMock.json({ success: true, item: { name: path.split("/").pop(), type: "dir", path, s3Key: path } });
+      } catch {
+        return fetchMock.json({ statusCode: 400, message: "Invalid path" }, 400);
+      }
+    });
+  },
+
+  /**
    * Setup default mocks for common test scenarios
    * Safe defaults that prevent crashes
    */
@@ -379,6 +445,9 @@ export const mockApi = {
     mockApi.teams([]);
     // Mock /jam/current endpoint (used by LandingWindow in FP6/FP7)
     mockApi.get('/jam/current', () => fetchMock.json(null));
+    // VFS list/read - empty by default; tests that need Desktop/Explorer data call mockApi.vfsList() and mockApi.vfsRead()
+    mockApi.vfsList({});
+    mockApi.vfsRead({});
     // Don't mock auth/login by default - tests should explicitly set it
     // Don't mock auth/me by default - tests should explicitly set it
   },

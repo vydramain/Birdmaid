@@ -2,6 +2,7 @@ import { mockApi } from "../mocks/mockApi";
 import { fetchMock } from "./mock-fetch";
 
 export * from "./render";
+export { renderWithContextMenu } from "./render";
 export { fetchMock, setupFetchMock } from "./mock-fetch";
 export * from "../fixtures/game";
 export * from "../fixtures/team";

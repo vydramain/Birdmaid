@@ -24,7 +24,7 @@ export function WindowManager() {
         }
 
         const isGame = win.appId === "executor";
-        const contentProps = { ...win.content, onClose: () => closeWindow(win.id) };
+        const contentProps = { ...win.content, onClose: () => closeWindow(win.id), windowId: win.id };
 
         return (
           <WindowFrame
