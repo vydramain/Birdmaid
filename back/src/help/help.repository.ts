@@ -13,6 +13,7 @@ export class HelpRepository {
   private dbPromise: Promise<ReturnType<MongoClient["db"]>> | null = null;
   private useMemory = process.env.NODE_ENV === "test";
   private memoryHelp: Help | null = null;
+  private memoryAdminHelp: Help | null = null;
 
   constructor() {
     this.mongoClient = new MongoClient(process.env.MONGO_URL ?? "mongodb://localhost:27017/birdmaid");
@@ -66,6 +67,41 @@ Welcome to Birdmaid!
 - **Teams**: Collaborate with other developers
 
 For more information, visit the catalog or contact support.
+`,
+    };
+  }
+
+  async getAdminContent(): Promise<{ content: string }> {
+    const db = await this.getDb();
+
+    if (this.useMemory || !db) {
+      if (this.memoryAdminHelp) {
+        return { content: this.memoryAdminHelp.content };
+      }
+    } else {
+      const collection = db.collection<Help>("adminHelp");
+      const adminDoc = await collection.findOne({}, { sort: { updatedAt: -1 } });
+      if (adminDoc) {
+        return { content: adminDoc.content };
+      }
+    }
+
+    return {
+      content: `# ADMIN_HELP.TXT
+
+Organizer instructions.
+
+## Desktop & Explorer
+
+- Create folder: right-click → Create folder
+- Upload file: right-click → Upload file
+- Delete/Rename/Move: right-click on file/folder (system roots are immutable)
+
+## System Folders
+
+- Disk A, Disk B, Disk C — immutable
+- Disk C top folders (desktop, documents, images, videos, games) — immutable names
+- You can create subfolders and upload files inside these folders.
 `,
     };
   }

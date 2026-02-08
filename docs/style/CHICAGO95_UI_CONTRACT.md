@@ -14,7 +14,8 @@ We do not copy Windows assets or source code. We implement our own tokens, mixin
 
 | Reference | URL | Purpose |
 |-----------|-----|---------|
-| 98.css | https://jdan.github.io/98.css/ | Win98-inspired CSS library — design inspiration |
+| **98.css** | https://jdan.github.io/98.css/ | **Mandatory** for FP7 — Win98 design system, canonical reference |
+| [DESIGN_SYSTEM_98.css.md](./DESIGN_SYSTEM_98.css.md) | — | FP7 design system, 98.css ↔ Birdmaid mapping |
 | GuidebookGallery Win95 GUI | https://guidebookgallery.org/guis/windows/win95 | Historical reference |
 | GuidebookGallery Win95 Tutorial | https://guidebookgallery.org/tutorials/windows95 | Historical reference |
 | GuidebookGallery Win95 Screenshots | https://guidebookgallery.org/screenshots/win95 | Historical reference |

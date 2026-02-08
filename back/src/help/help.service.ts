@@ -8,4 +8,8 @@ export class HelpService {
   async getContent() {
     return this.helpRepository.getContent();
   }
+
+  async getAdminContent() {
+    return this.helpRepository.getAdminContent();
+  }
 }

@@ -106,33 +106,15 @@
   --desktop-icon-padding: 0.5rem; // 8px
 
   // ============================================================================
-  // Explorer (see docs/style/EXPLORER_UI_CONTRACT.md)
+  // Explorer
   // ============================================================================
 
-  --explorer-menubar-height: 1.25rem;
-  --explorer-toolbar-height: 1.5rem;
-  --explorer-addressbar-height: 1.5rem;
-  --explorer-statusbar-height: 1.25rem;
-  --explorer-menubar-padding: 0 0.25rem;
-  --explorer-menu-item-padding: 0.25rem 0.5rem;
-  --explorer-toolbar-padding: 0.125rem 0.25rem;
-  --explorer-toolbar-gap: 0.125rem;
-  --explorer-addressbar-padding: 0.125rem 0.25rem;
-  --explorer-addressbar-gap: 0.25rem;
-  --explorer-statusbar-padding: 0.125rem 0.25rem;
-  --explorer-tree-icon-size: 1rem;
-  --explorer-grid-icon-size: 2rem;
-  --explorer-toolbar-btn-size: 1.5rem;
-  --explorer-grid-cell-width: 4rem;
-  --explorer-grid-cell-height: 4.5rem;
-  --explorer-grid-gap: 0.5rem;
-  --explorer-tree-row-height: 1.25rem;
-  --explorer-tree-indent-step: 1rem;
-  --explorer-tree-toggle-size: 0.5rem;
-  --explorer-divider-width: 0.25rem;
-  --explorer-tree-width: 12.5rem;
-  --explorer-tree-min-width: 9.375rem;
-  --explorer-tree-max-width: 25rem;
+  --explorer-divider-width: 0.25rem; // 4px
+  --explorer-tree-width: 12.5rem; // 200px
+  --explorer-tree-min-width: 9.375rem; // 150px
+  --explorer-tree-max-width: 25rem; // 400px
+  --explorer-grid-item-width: 4rem; // 64px
+  --explorer-grid-item-icon-size: 2rem; // 32px
 
   // ============================================================================
   // Scrollbar

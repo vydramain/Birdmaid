@@ -21,8 +21,8 @@ type Listener = (e: VFSChangeEvent) => void;
 // Root-level system folders (immutable)
 const ROOT_LEVEL_SYSTEM_FOLDERS = ['Disk A', 'Disk B', 'Disk C'];
 
-// System subfolders inside Disk C
-const DISK_C_SYSTEM_FOLDERS = ['desktop', 'images', 'videos', 'documents'];
+// System subfolders inside Disk C (first-level, immutable)
+const DISK_C_SYSTEM_FOLDERS = ['desktop', 'documents', 'images', 'videos', 'games'];
 
 export class VirtualFileSystem {
   root: VFSNode;

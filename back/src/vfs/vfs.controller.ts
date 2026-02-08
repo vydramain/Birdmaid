@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Query, Param, Body, UseGuards, UseInterceptors, UploadedFile, BadRequestException, Res } from "@nestjs/common";
+import { Controller, Get, Post, Delete, Query, Body, UseGuards, UseInterceptors, UploadedFile, BadRequestException, Res } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 import { JwtAuthGuard } from "../auth/auth.guard";
@@ -100,6 +100,26 @@ export class VfsController {
 
     return {
       success: true,
+    };
+  }
+
+  /**
+   * Create directory
+   * POST /api/vfs/mkdir
+   * Body: { path: string }
+   */
+  @Post("mkdir")
+  async mkdir(@Body() body: { path: string }, @CurrentUser() user: any) {
+    if (!body?.path || typeof body.path !== "string") {
+      throw new BadRequestException("path is required");
+    }
+
+    const role = this.getUserRole(user);
+    const item = await this.vfsService.mkdir(body.path, role);
+
+    return {
+      success: true,
+      item,
     };
   }
 

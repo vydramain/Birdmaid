@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { VfsService } from "../../src/vfs/vfs.service";
 import { S3Service } from "../../src/vfs/s3.service";
-import { ForbiddenException } from "@nestjs/common";
+import { ForbiddenException, ConflictException } from "@nestjs/common";
 import { UserRole } from "../../src/users/users.repository";
 
 describe("VFS RBAC", () => {
@@ -21,6 +21,7 @@ describe("VFS RBAC", () => {
             move: jest.fn(),
             delete: jest.fn(),
             exists: jest.fn(),
+            mkdir: jest.fn(),
           },
         },
       ],
@@ -83,6 +84,15 @@ describe("VFS RBAC", () => {
         "delete requires Organizer role"
       );
     });
+
+    it("should deny mkdir operation", async () => {
+      await expect(vfsService.mkdir("/Disk C/desktop/New Folder", guestRole)).rejects.toThrow(
+        ForbiddenException
+      );
+      await expect(vfsService.mkdir("/Disk C/desktop/New Folder", guestRole)).rejects.toThrow(
+        "mkdir requires Organizer role"
+      );
+    });
   });
 
   describe("Participant (read-only)", () => {
@@ -122,6 +132,10 @@ describe("VFS RBAC", () => {
       await expect(vfsService.delete("/Disk C/desktop/file.txt", participantRole)).rejects.toThrow(
         "delete requires Organizer role"
       );
+
+      await expect(
+        vfsService.mkdir("/Disk C/desktop/New Folder", participantRole)
+      ).rejects.toThrow("mkdir requires Organizer role");
     });
   });
 
@@ -133,6 +147,7 @@ describe("VFS RBAC", () => {
       (s3Service.upload as jest.Mock).mockResolvedValue(undefined);
       (s3Service.move as jest.Mock).mockResolvedValue(undefined);
       (s3Service.delete as jest.Mock).mockResolvedValue(undefined);
+      (s3Service.mkdir as jest.Mock).mockResolvedValue(undefined);
 
       // List
       await expect(vfsService.list("/Disk C/desktop", organizerRole)).resolves.toBeDefined();
@@ -162,6 +177,59 @@ describe("VFS RBAC", () => {
 
       // Delete
       await expect(vfsService.delete("/Disk C/desktop/file.txt", organizerRole)).resolves.toBeUndefined();
+
+      // Mkdir
+      const mkdirResult = await vfsService.mkdir("/Disk C/desktop/New Folder", organizerRole);
+      expect(mkdirResult).toBeDefined();
+      expect(mkdirResult.name).toBe("New Folder");
+      expect(mkdirResult.type).toBe("dir");
     });
+  });
+});
+
+describe("VFS mkdir", () => {
+  let vfsService: VfsService;
+  let s3Service: S3Service;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        VfsService,
+        {
+          provide: S3Service,
+          useValue: {
+            list: jest.fn(),
+            mkdir: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    vfsService = module.get<VfsService>(VfsService);
+    s3Service = module.get<S3Service>(S3Service);
+  });
+
+  it("should return 409 when folder already exists", async () => {
+    (s3Service.list as jest.Mock).mockResolvedValue([
+      { key: "Disk C/desktop/New Folder/", isDirectory: true },
+    ]);
+
+    await expect(
+      vfsService.mkdir("/Disk C/desktop/New Folder", "Organizer")
+    ).rejects.toThrow(ConflictException);
+    await expect(
+      vfsService.mkdir("/Disk C/desktop/New Folder", "Organizer")
+    ).rejects.toThrow("A file with that name already exists");
+  });
+
+  it("should create folder when it does not exist", async () => {
+    (s3Service.list as jest.Mock).mockResolvedValue([]);
+    (s3Service.mkdir as jest.Mock).mockResolvedValue(undefined);
+
+    const result = await vfsService.mkdir("/Disk C/desktop/New Folder", "Organizer");
+
+    expect(result.name).toBe("New Folder");
+    expect(result.type).toBe("dir");
+    expect(s3Service.mkdir).toHaveBeenCalledWith("Disk C/desktop/New Folder");
   });
 });

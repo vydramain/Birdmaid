@@ -1,10 +1,13 @@
-import { Injectable, ForbiddenException, BadRequestException } from "@nestjs/common";
+import { Injectable, ForbiddenException, BadRequestException, ConflictException } from "@nestjs/common";
 import { S3Service } from "./s3.service";
 import { UserRole } from "../users/users.repository";
+
+export type NodeKind = 'dir' | 'text' | 'image' | 'video' | 'html' | 'webappBundle' | 'archive' | 'other';
 
 export interface ContentItem {
   name: string;
   type: 'file' | 'dir';
+  kind?: NodeKind;
   contentType?: 'image' | 'video' | 'txt' | 'html' | 'webapp';
   path: string;
   size?: number;
@@ -17,8 +20,8 @@ export interface ContentItem {
 // Root-level system folders (immutable)
 const ROOT_LEVEL_SYSTEM_FOLDERS = ['Disk A', 'Disk B', 'Disk C'];
 
-// System subfolders inside Disk C
-const DISK_C_SYSTEM_FOLDERS = ['desktop', 'images', 'videos', 'documents'];
+// System subfolders inside Disk C (first-level only, immutable names)
+const DISK_C_SYSTEM_FOLDERS = ['desktop', 'documents', 'images', 'videos', 'games'];
 
 @Injectable()
 export class VfsService {
@@ -44,12 +47,27 @@ export class VfsService {
   }
 
   /**
-   * Check if operation would modify a root-level system folder
+   * Check if path is a Disk C first-level system folder (immutable)
+   */
+  private isDiskCFirstLevelFolder(path: string): boolean {
+    const normalized = path.replace(/^\/+|\/+$/g, "");
+    const parts = normalized.split("/");
+    if (parts.length !== 2) return false;
+    return parts[0] === "Disk C" && DISK_C_SYSTEM_FOLDERS.includes(parts[1]);
+  }
+
+  /**
+   * Check if operation would modify a root-level or Disk C first-level system folder
    */
   private checkSystemFolderImmutable(operation: string, path: string): void {
     if (this.isRootLevelSystemFolder(path)) {
       throw new ForbiddenException(
         `PermissionDenied: Cannot ${operation} root-level system folders (${path}). System folders are immutable.`
+      );
+    }
+    if (this.isDiskCFirstLevelFolder(path)) {
+      throw new ForbiddenException(
+        `PermissionDenied: Cannot ${operation} Disk C first-level system folder (${path}). System folders are immutable.`
       );
     }
   }
@@ -92,7 +110,7 @@ export class VfsService {
   }
 
   /**
-   * Determine content type from extension
+   * Determine content type from extension (legacy)
    */
   private getContentType(path: string): 'image' | 'video' | 'txt' | 'html' | 'webapp' | undefined {
     const ext = this.getFileExtension(path);
@@ -108,6 +126,27 @@ export class VfsService {
     if (htmlExts.includes(ext)) return 'html';
     if (webappExts.includes(ext)) return 'webapp';
     return undefined;
+  }
+
+  /**
+   * Map contentType/extension to node.kind (FP7 A3 Content Typing)
+   */
+  private getKind(name: string, isDir: boolean, metadata?: { kind?: NodeKind }): NodeKind {
+    if (metadata?.kind) return metadata.kind;
+    if (isDir) return 'dir';
+    const ext = this.getFileExtension(name);
+    const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+    const videoExts = ['mp4', 'webm', 'ogg'];
+    const txtExts = ['txt', 'md'];
+    const htmlExts = ['html', 'htm'];
+    const webappExts = ['app', 'zip'];
+
+    if (imageExts.includes(ext)) return 'image';
+    if (videoExts.includes(ext)) return 'video';
+    if (txtExts.includes(ext)) return 'text';
+    if (htmlExts.includes(ext)) return 'html';
+    if (webappExts.includes(ext)) return 'webappBundle'; // zip with index.html detected at upload
+    return 'other';
   }
 
   /**
@@ -130,10 +169,13 @@ export class VfsService {
         : obj.key.replace(s3Prefix, "");
 
       if (name) {
+        const contentType = obj.isDirectory ? undefined : this.getContentType(name);
+        const kind = this.getKind(name, !!obj.isDirectory, (obj as any).metadata);
         items.push({
           name,
           type: obj.isDirectory ? 'dir' : 'file',
-          contentType: obj.isDirectory ? undefined : this.getContentType(name),
+          kind,
+          contentType,
           path: vfsPath,
           size: obj.size,
           modified: obj.lastModified,
@@ -142,16 +184,32 @@ export class VfsService {
       }
     }
 
-    // If listing root, ensure system folders exist
+    // If listing root, ensure system folders exist (virtualization)
     if (path === "/" || path === "") {
-      // Add system folders if they don't exist in S3
       for (const folderName of ROOT_LEVEL_SYSTEM_FOLDERS) {
         if (!items.find(item => item.name === folderName)) {
           items.push({
             name: folderName,
             type: 'dir',
+            kind: 'dir',
             path: `/${folderName}`,
             s3Key: `${folderName}/`,
+          });
+        }
+      }
+    }
+
+    // If listing /Disk C, ensure first-level system folders exist (virtualization)
+    const diskCPath = path.replace(/^\/+|\/+$/g, "");
+    if (diskCPath === "Disk C") {
+      for (const folderName of DISK_C_SYSTEM_FOLDERS) {
+        if (!items.find(item => item.name === folderName)) {
+          items.push({
+            name: folderName,
+            type: 'dir',
+            kind: 'dir',
+            path: `/Disk C/${folderName}`,
+            s3Key: `Disk C/${folderName}/`,
           });
         }
       }
@@ -225,6 +283,54 @@ export class VfsService {
     const newS3Key = this.vfsPathToS3Key(newPath);
 
     await this.s3Service.move(oldS3Key, newS3Key);
+  }
+
+  /**
+   * Create directory
+   * POST /api/vfs/mkdir Body: { path: string }
+   */
+  async mkdir(path: string, role: UserRole): Promise<ContentItem> {
+    this.checkWritePermission(role, "mkdir");
+
+    const normalizedPath = path.replace(/^\/+|\/+$/g, "");
+    if (!normalizedPath) {
+      throw new BadRequestException("Invalid path: path is required");
+    }
+
+    if (this.isRootLevelSystemFolder(normalizedPath)) {
+      throw new ForbiddenException(
+        `PermissionDenied: Cannot create root-level system folder (${path}). Create inside Disk A, B, or C.`
+      );
+    }
+
+    if (!this.isInsideSystemFolder(normalizedPath)) {
+      throw new BadRequestException(
+        `Invalid path: ${path}. Files must be created inside system folders (Disk A, Disk B, Disk C).`
+      );
+    }
+
+    const pathParts = normalizedPath.split("/");
+    const dirName = pathParts[pathParts.length - 1];
+    const parentPath = pathParts.slice(0, -1).join("/");
+    const parentPrefix = parentPath ? parentPath + "/" : "";
+
+    const list = await this.s3Service.list(parentPrefix);
+    const alreadyExists = list.some((item) => {
+      const name = item.key.replace(parentPrefix, "").replace(/\/$/, "");
+      return name === dirName;
+    });
+    if (alreadyExists) {
+      throw new ConflictException("A file with that name already exists");
+    }
+
+    await this.s3Service.mkdir(parentPrefix + dirName);
+
+    return {
+      name: dirName,
+      type: "dir",
+      path: this.s3KeyToVfsPath(parentPrefix + dirName + "/"),
+      s3Key: parentPrefix + dirName + "/",
+    };
   }
 
   /**

@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useWindowRegistry } from "../os/wm/WindowRegistry";
 import { vfs, VFSNode } from "../os/fs/VirtualFileSystem";
+import { vfsApiClient, onVfsChanged, type VfsListItem } from "../os/fs/VfsApiClient";
+import { useContextMenu } from "../os/ui/ContextMenu";
 import { appRegistry } from "../os/apps/AppRegistry";
-import { StatusBar, MenuBar, MenuItem } from "../ui/primitives";
+import { StatusBar } from "../ui/primitives";
 import { Icon } from "../ui/icons";
 import { resolveIconForVFSNode } from "../ui/icons";
-
-const MENU_ITEMS = ["File", "Edit", "View", "Go", "Bookmarks", "Help"] as const;
 
 interface TreeItemProps {
   node: VFSNode;
@@ -31,14 +31,13 @@ function TreeItem({ node, path, currentPath, onSelect, level }: TreeItemProps) {
     }
   };
 
-  const levelClass = `tree-item-level-${Math.min(level, 19)}`;
-
   return (
     <div>
       <div
         onClick={handleClick}
-        className={`tree-item ${levelClass} ${isSelected ? "selected" : ""}`}
-        data-level={level}
+        className={`tree-item ${isSelected ? "selected" : ""}`}
+        // inline-style: allowed (reason: performance; why: CSS var for tree indent from level; revisit: FP7)
+        style={{ ["--tree-level" as string]: `${level}` } as React.CSSProperties}
         data-testid={`tree-item-${path}`}
       >
         {isDir && <span className="tree-expand-icon">{expanded ? "▼" : "▶"}</span>}
@@ -66,65 +65,90 @@ function TreeItem({ node, path, currentPath, onSelect, level }: TreeItemProps) {
   );
 }
 
-export function ExplorerWindow() {
-  const [currentPath, setCurrentPath] = useState("/");
-  const [files, setFiles] = useState<VFSNode[]>([]);
-  const [selectedItemPath, setSelectedItemPath] = useState<string | null>(null);
+function toVfsNode(item: VfsListItem): VFSNode {
+  return { name: item.name, type: item.type };
+}
+
+export function ExplorerWindow(props: { windowId?: string; content?: { initialPath?: string } }) {
+  const windowId = props.windowId ?? "explorer-default";
+  const initialPath = props.content?.initialPath ?? "/";
+  const [currentPath, setCurrentPath] = useState(initialPath);
+  const [files, setFiles] = useState<VfsListItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const { openWindow } = useWindowRegistry();
+  const { openContextMenu } = useContextMenu();
+
+  const fetchList = useCallback(async (path: string) => {
+    setLoading(true);
+    try {
+      const items = await vfsApiClient.list(path);
+      setFiles(items);
+    } catch (e) {
+      console.error("[Explorer] list failed:", e);
+      setFiles([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const updateFiles = () => {
-      try {
-        const nodes = vfs.readDir(currentPath);
-        setFiles(nodes);
-      } catch (e) {
-        console.error(e);
-        setFiles([]);
+    void fetchList(currentPath);
+  }, [currentPath, fetchList]);
+
+  useEffect(() => {
+    const handleInvalidated = (e: CustomEvent<{ path: string }>) => {
+      const p = e.detail?.path;
+      if (!p) return;
+      if (p === currentPath || currentPath.startsWith(p + "/")) {
+        void fetchList(currentPath);
       }
     };
-
-    updateFiles();
-    return vfs.subscribe(currentPath, updateFiles);
-  }, [currentPath]);
+    const unsub = onVfsChanged((path) => {
+      if (path === currentPath || currentPath.startsWith(path + "/")) {
+        void fetchList(currentPath);
+      }
+    });
+    window.addEventListener("vfs:invalidated", handleInvalidated as EventListener);
+    return () => {
+      window.removeEventListener("vfs:invalidated", handleInvalidated as EventListener);
+      unsub();
+    };
+  }, [currentPath, fetchList]);
 
   const handleNavigate = (path: string) => {
     setCurrentPath(path);
   };
 
-  // Helper to get full path of a node
-  const getNodePath = (node: VFSNode, basePath: string): string => {
-    if (basePath === "/") {
-      return `/${node.name}`;
-    }
+  const getNodePath = (node: VfsListItem, basePath: string): string => {
+    if (basePath === "/") return `/${node.name}`;
     return `${basePath}/${node.name}`;
   };
 
-  const handleOpen = (node: VFSNode) => {
+  const handleOpen = async (node: VfsListItem) => {
     if (node.type === "dir") {
-      // Navigate
       const newPath = currentPath === "/" ? `/${node.name}` : `${currentPath}/${node.name}`;
       setCurrentPath(newPath);
     } else {
-      // Open file using AppRegistry
       if (node.name.endsWith(".url")) {
-        // Special handling for .url link files
         try {
-          const data = JSON.parse(node.content as string);
+          const key = getNodePath(node, currentPath);
+          const buf = await vfsApiClient.read(key);
+          const text = new TextDecoder().decode(buf);
+          const data = JSON.parse(text);
           if (data.target) {
             openWindow(data.target);
           }
-        } catch (_e) {
-          console.error("Failed to parse link");
+        } catch (e) {
+          console.error("Failed to parse link:", e);
         }
       } else {
-        // Resolve app for file using AppRegistry
         const appId = appRegistry.resolveAppForFile(node.name);
         if (appId) {
           const fullPath = getNodePath(node, currentPath);
-          // Pass node and path to the viewer
+          const vfsNode = toVfsNode(node);
           openWindow(appId, {
             content: {
-              node: node,
+              node: vfsNode,
               path: fullPath,
             },
             title: node.name,
@@ -145,116 +169,108 @@ export function ExplorerWindow() {
     setCurrentPath(newPath);
   };
 
+  const targetPathForMenu = currentPath;
+
+  const handleGridBackgroundContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openContextMenu(
+      {
+        owner: "explorer",
+        kind: "grid-background",
+        windowId,
+        targetPath: targetPathForMenu,
+      },
+      e.clientX,
+      e.clientY
+    );
+  };
+
+  const handleGridItemContextMenu = (e: React.MouseEvent, itemPath: string, itemType: "file" | "dir") => {
+    e.preventDefault();
+    e.stopPropagation();
+    openContextMenu(
+      {
+        owner: "explorer",
+        kind: "grid-item",
+        windowId,
+        targetPath: targetPathForMenu,
+        itemPath,
+        itemType,
+      },
+      e.clientX,
+      e.clientY
+    );
+  };
+
   const rootNode = vfs.stat("/");
   if (!rootNode) {
     return <div>Error: Root not found</div>;
   }
 
-  const addressDisplay = currentPath === "/" ? "My Computer" : currentPath;
-
   return (
-    <div className="win-explorer">
-      <MenuBar data-testid="explorer-menubar" className="explorer-menubar">
-        {MENU_ITEMS.map((label) => (
-          <MenuItem key={label} label={label} onClick={() => {}} />
-        ))}
-      </MenuBar>
-
-      <div data-testid="explorer-toolbar" className="explorer-toolbar">
-        <button
-          type="button"
-          className="win-btn-icon explorer-toolbar-back"
-          disabled
-          aria-label="Back"
-        >
-          ←
-        </button>
-        <button
-          type="button"
-          className="win-btn-icon explorer-toolbar-forward"
-          disabled
-          aria-label="Forward"
-        >
-          →
-        </button>
-        <span className="explorer-toolbar-separator" aria-hidden />
-        <button
-          type="button"
-          onClick={handleUp}
-          disabled={currentPath === "/"}
-          className="win-btn-icon explorer-up-button"
-          data-testid="explorer-up-button"
-          aria-label="Up"
-        >
-          ↑
-        </button>
-        <button
-          type="button"
-          className="win-btn-icon explorer-toolbar-refresh"
-          aria-label="Refresh"
-        >
-          ↻
-        </button>
-      </div>
-
-      <div data-testid="explorer-address" className="explorer-addressbar">
-        <span className="explorer-addressbar-icon" aria-hidden>
-          <Icon type={currentPath === "/" ? "system-computer" : "dir"} size="16x16" />
-        </span>
-        <input
-          type="text"
-          className="win-input explorer-addressbar-input"
-          readOnly
-          value={addressDisplay}
-          aria-label="Current path"
-          data-testid="explorer-address-input"
+    <div className="win-explorer" data-cm-scope="explorer" data-testid="explorer-window">
+      <div data-testid="explorer-tree" className="explorer-tree">
+        <TreeItem
+          node={rootNode}
+          path="/"
+          currentPath={currentPath}
+          onSelect={handleNavigate}
+          level={0}
         />
       </div>
 
-      <div className="explorer-main">
-        <div data-testid="explorer-tree" className="explorer-tree">
-          <TreeItem
-            node={rootNode}
-            path="/"
-            currentPath={currentPath}
-            onSelect={handleNavigate}
-            level={0}
-          />
+      <div className="explorer-grid-container">
+        <div className="explorer-toolbar">
+          <button onClick={handleUp} disabled={currentPath === "/"} className="win-btn explorer-up-button" data-testid="explorer-up-button">
+            ↑
+          </button>
+          <div data-testid="explorer-address-input" className="explorer-path">
+            {currentPath === "/" ? "My Computer" : currentPath}
+          </div>
         </div>
 
-        <div className="explorer-divider" aria-hidden />
-
-        <div className="explorer-content">
-          <div className="explorer-grid-view">
-            <div data-testid="explorer-grid" className="explorer-grid">
-              {files.map((node) => {
+        <div
+          data-testid="explorer-grid"
+          className="explorer-grid-view"
+          onContextMenu={handleGridBackgroundContextMenu}
+        >
+          <div className="explorer-grid">
+            {loading ? (
+              <div className="explorer-grid-loading">Loading...</div>
+            ) : (
+              files.map((node) => {
                 const itemPath = getNodePath(node, currentPath);
-                const iconType = resolveIconForVFSNode(node, currentPath);
-                const isSelected = selectedItemPath === itemPath;
+                const iconType = resolveIconForVFSNode(toVfsNode(node), currentPath);
                 return (
                   <div
                     key={node.name}
-                    onClick={() => setSelectedItemPath(itemPath)}
                     onDoubleClick={() => handleOpen(node)}
-                    className={`explorer-grid-item ${isSelected ? "explorer-grid-item-selected" : ""}`}
+                    onContextMenu={(e) => handleGridItemContextMenu(e, itemPath, node.type)}
+                    onClick={() => {
+                      if (node.type === "dir") {
+                        const newPath =
+                          currentPath === "/" ? `/${node.name}` : `${currentPath}/${node.name}`;
+                        setCurrentPath(newPath);
+                      }
+                    }}
+                    className="explorer-grid-item"
                     data-testid={`explorer-grid-item-${itemPath}`}
                   >
                     <div className="explorer-icon">
                       <Icon type={iconType} size="32x32" />
                     </div>
-                    <div className="explorer-filename">
-                      {node.name}
-                    </div>
+                    <div className="explorer-filename">{node.name}</div>
                   </div>
                 );
-              })}
-            </div>
+              })
+            )}
           </div>
-
-          <StatusBar data-testid="explorer-status">
-            {files.length} item(s)
-          </StatusBar>
         </div>
+
+        <StatusBar data-testid="explorer-status">
+          {files.length} item(s)
+        </StatusBar>
       </div>
     </div>
   );
