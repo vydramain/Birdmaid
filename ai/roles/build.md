@@ -37,10 +37,7 @@
 
 ## Allowed edits
 
-- `front/src/**` — frontend code
-- `back/src/**` — backend code
-- `front/__tests__/**` — frontend tests
-- `back/__tests__/**` — backend tests
+- Your project's frontend/backend source and tests (e.g. `front/src/**`, `back/src/**`, `front/__tests__/**`, `back/__tests__/**` when present)
 - `docs/fps/FP<N>.md` — обновить статус
 
 ## Exit criteria

@@ -3,6 +3,8 @@ name: birdmaid-ux-modern-baseline
 description: Apply and verify the Birdmaid modern UX baseline across docs (REQUIREMENTS, UX_MAP, TESTS) and design-first workflow. Use when aligning UX states, tokens, or tests for FP1.
 ---
 
+<!-- PROJECT-SPECIFIC EXAMPLE: This skill came from the Birdmaid project. Replace or remove when using this template for another product. -->
+
 # birdmaid-ux-modern-baseline
 
 ## Steps

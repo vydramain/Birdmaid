@@ -5,9 +5,9 @@
 ## Global Guardrails (MUST follow)
 
 **All agents MUST follow these canonical sources:**
-- `docs/dev/GUARDRAILS.md` — canonical rules (inline styles, units, output contract)
-- `docs/style/GUIDE_STYLE.md` — style guide + guardrails policy
-- `docs/fps/FP7.md` — product contract (when working on FP7)
+- `docs/dev/GUARDRAILS.md` — canonical rules (output contract, style/units when applicable)
+- `docs/style/STYLE_GUIDE.md` — style guide + guardrails policy
+- `docs/fps/FP<N>.md` — product contract for the current FP (e.g. docs/fps/FP_EXAMPLE.md as reference)
 
 **Engineer/Developer Hard Rules (no exceptions):**
 - No lazy allow-tags: allow-tag v2 requires `reason`, `why`, `revisit`

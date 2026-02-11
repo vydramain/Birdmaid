@@ -5,10 +5,10 @@ description: "Applies coding standards for clean, maintainable code. Use when: w
 
 # Development Rules
 
-## MUST READ (Birdmaid project)
+## MUST READ (project)
 
-- **docs/dev/GUARDRAILS.md** — canonical rules (inline styles, units, output contract)
-- **docs/style/GUIDE_STYLE.md** — style guide
+- **docs/dev/GUARDRAILS.md** — canonical rules (output contract, style/units when applicable)
+- **docs/style/STYLE_GUIDE.md** — style guide
 
 ## MUST NOT (style)
 

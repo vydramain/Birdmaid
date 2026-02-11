@@ -1,6 +1,6 @@
 ---
 name: fp-bootstrap
-description: Create or refresh FP scope for Birdmaid; use when starting discovery for an FP or when asked to turn an idea into FP artifacts (WORKPLAN, UX_MAP, QNA_DECISIONS).
+description: Create or refresh FP scope for the project; use when starting discovery for an FP or when asked to turn an idea into FP artifacts (WORKPLAN, UX_MAP, QNA_DECISIONS).
 ---
 
 # fp-bootstrap

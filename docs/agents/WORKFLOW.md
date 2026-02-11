@@ -10,7 +10,7 @@
 Mention the agent in chat:
 
 ```
-@Product Lead: нужно определить scope для FP7
+@Product Lead: нужно определить scope для FP1
 @Designer: построить journey map для авторизации
 @Engineer: оценить feasibility
 ```
@@ -18,10 +18,10 @@ Mention the agent in chat:
 ### Workflow Stages (FP=FPN mode=MODE)
 
 ```
-FP=FP7 mode=plan    # Планирование: discovery + plan
-FP=FP7 mode=design  # Дизайн: design-first + architecture
-FP=FP7 mode=build  # Реализация: tests-red → implement → tests-green
-FP=FP7 mode=release # Релиз: gate + acceptance
+FP=FP1 mode=plan    # Планирование: discovery + plan
+FP=FP1 mode=design  # Дизайн: design-first + architecture
+FP=FP1 mode=build   # Реализация: tests-red → implement → tests-green
+FP=FP1 mode=release # Релиз: gate + acceptance
 ```
 
 Each stage reads and updates `docs/fps/FP<N>.md`.
@@ -41,13 +41,13 @@ Every engineering response must include:
 
 | Document | Purpose |
 |----------|---------|
-| [docs/dev/GUARDRAILS.md](../dev/GUARDRAILS.md) | Canonical rules (inline styles, units, output contract) |
-| [docs/style/GUIDE_STYLE.md](../style/GUIDE_STYLE.md) | Style guide + guardrails policy |
-| [docs/fps/FP7.md](../fps/FP7.md) | Product contract (when working on FP7) |
+| [docs/dev/GUARDRAILS.md](../dev/GUARDRAILS.md) | Canonical rules (output contract, style/units when applicable) |
+| [docs/style/STYLE_GUIDE.md](../style/STYLE_GUIDE.md) | Style guide + guardrails policy |
+| `docs/fps/FP<N>.md` | Product contract for the current FP (see [FP_EXAMPLE.md](../fps/FP_EXAMPLE.md)) |
 
 **Engineer hard rules (no exceptions):**
 
-- No lazy allow-tags: allow-tag v2 requires `reason`, `why`, `revisit`
+- No lazy allow-tags: if using allow-tag, require `reason`, `why`, `revisit`
 - No `px` in CSS/SCSS (use `rem`); `px` only in transform/translate for drag
 - No `!important`
 - No constant inline styles (all literals) — even with allow-tag

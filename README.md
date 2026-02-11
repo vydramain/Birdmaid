@@ -1,305 +1,71 @@
-# Birdmaid
+# Agent Template
 
-Windows-95-стилизованная веб-платформа в форме псевдо-ОС: пользователь попадает на рабочий стол Windows 95 (desktop) или Windows Mobile 6.0 (mobile), где контент представлен как файловая система. Платформа служит кураторским архивом и витриной: игры с джемов и вне джемов, фото/видео, справочные материалы, запускаемые/открываемые в соответствующих окнах.
+Reusable template for **agent-driven product workflow**: 6 specialist agents, 4 workflow stages (plan → design → build → release), Cursor rules, Codex skills, and core docs. No product code—only the structure to run and enforce the workflow.
 
-Навигация происходит исключительно через Desktop Icons и Explorer — никакого "обычного сайта". Контент открывается в соответствующих окнах (ImageViewer, VideoViewer, Notepad, Internet Explorer, Executor). Организаторы могут создавать/размещать любой контент через VFS, синхронизированный с S3-совместимым хранилищем.
+## Quickstart
 
-## Current Status
+### Use agents
 
-- **FP1**: Browse & Play + Admin Authoring (status: release)
-- **FP2**: Team System and Game Editing (status: release)
-- **FP3**: Windows 95 UI Behavior (status: release)
-- **FP4**: User Accounts & Windows 95 UI (status: release)
-- **FP5**: UI/UX Fixes and Polish (status: release)
-- **FP6**: Desktop Workspace & Window Manager (status: release)
-- **FP7**: Shell-only Platform (status: plan+design) — переписывание на shell-only архитектуру
+In chat (e.g. Cursor), mention an agent or a stage:
 
-## Development
+- **By agent:** `@Product Lead: определить scope для FP1`  
+- **By stage:** `FP=FP1 mode=plan` (then `mode=design`, `mode=build`, `mode=release`)
 
-### Prerequisites
+Each stage reads and updates **one file per FP:** `docs/fps/FP<N>.md`.
 
-- Node.js 20+ and npm
-- Docker and Docker Compose (для локальной разработки с MongoDB и MinIO)
-- MongoDB (опционально, если не используете Docker Compose)
-- S3-compatible storage (MinIO для локальной разработки, Selectel S3 для продакшена)
+### Create a new Feature Pack
 
-### Local Setup
+1. Copy [docs/fps/TEMPLATE.md](docs/fps/TEMPLATE.md) to `docs/fps/FP<N>.md` (e.g. FP1.md).
+2. Fill Scope, Questions, Requirements, UX Map, Architecture, Tests, Plan.
+3. Run stages: `FP=FP1 mode=plan` → … → `FP=FP1 mode=release`.
+4. For release, use [docs/fps/RELEASE_GATE_TEMPLATE.md](docs/fps/RELEASE_GATE_TEMPLATE.md) as checklist.
 
-1. **Клонировать репозиторий:**
-   ```bash
-   git clone <repository-url>
-   cd Birdmaid
-   ```
+### Where things live
 
-2. **Установить зависимости:**
-   ```bash
-   # Frontend
-   cd front && npm install && cd ..
-   
-   # Backend
-   cd back && npm install && cd ..
-   ```
+| What | Where |
+|------|--------|
+| Workflow rules | [AGENTS.md](AGENTS.md) |
+| How to run agents, guardrails, conflicts | [docs/agents/WORKFLOW.md](docs/agents/WORKFLOW.md) |
+| Guardrails (output contract, style) | [docs/dev/GUARDRAILS.md](docs/dev/GUARDRAILS.md), [docs/style/STYLE_GUIDE.md](docs/style/STYLE_GUIDE.md) |
+| One FP = one file | `docs/fps/FP<N>.md` (see [FP_EXAMPLE.md](docs/fps/FP_EXAMPLE.md)) |
+| Core contracts (API, model, UX map, etc.) | [docs/core/](docs/core/) |
+| Agents & roles | [ai/agents/](ai/agents/), [ai/roles/](ai/roles/) |
+| Cursor rules | [.cursor/rules/](.cursor/rules/) |
+| Codex skills | [.codex/skills/](.codex/skills/) |
+| Repo structure | [STRUCTURE.md](STRUCTURE.md) |
 
-3. **Настроить переменные окружения:**
-   
-   Backend (создать `back/.env`):
-   ```env
-   MONGO_URL=mongodb://localhost:27017/birdmaid
-   S3_ENDPOINT=http://localhost:9000
-   S3_ACCESS_KEY=minioadmin
-   S3_SECRET_KEY=minioadmin
-   S3_BUCKET=birdmaid-builds
-   S3_PUBLIC_URL=http://localhost:9000
-   JWT_SECRET=your-secret-key-here
-   JWT_EXPIRES_IN=7d
-   ```
-   
-   Frontend (создать `front/.env`):
-   ```env
-   VITE_API_BASE_URL=http://localhost:3000
-   ```
+## Roles and agents
 
-   **Dev mode (логин без Telegram):** для локальной разработки можно включить обход Telegram auth:
-   - Backend: `AUTH_MODE=dev` в `back/.env`
-   - Frontend: `VITE_DEV_AUTH=true` в `front/.env`
-   - В окне логина кнопка "Telegram..." сразу выдаёт доступ (роль Organizer) без OAuth
+- **Workflow stages:** plan, design, build, release — see [ai/roles/README.md](ai/roles/README.md).
+- **Specialist agents:** Product Lead, Designer, Analyst, Engineer, Delivery, Compliance — see [ai/agents/README.md](ai/agents/README.md). Each has a skill in `.codex/skills/agents/<name>/`.
+- **Audit roles:** analyst, inspector, supervisor — in [ai/roles/audit/](ai/roles/audit/).
 
-4. **Запустить инфраструктуру (MongoDB + MinIO):**
-   ```bash
-   docker compose up -d mongo minio minio-init
-   ```
+## Guardrails and output contract
 
-5. **Запустить backend:**
-   ```bash
-   cd back
-   npm run start:dev
-   ```
-   Backend будет доступен на `http://localhost:3000`
+- **Canonical rules:** [docs/dev/GUARDRAILS.md](docs/dev/GUARDRAILS.md). All agents must follow.
+- **Style:** [docs/style/STYLE_GUIDE.md](docs/style/STYLE_GUIDE.md). Replace with your design system when you add UI.
+- **Output contract:** Every engineering response must include Evidence (files changed), Minimal patch plan, Tests (commands), DoD checklist. See [docs/agents/WORKFLOW.md](docs/agents/WORKFLOW.md) and [docs/dev/AGENT_CONTRACT_SUMMARY.md](docs/dev/AGENT_CONTRACT_SUMMARY.md).
 
-6. **Запустить frontend (в отдельном терминале):**
-   ```bash
-   cd front
-   npm run dev
-   ```
-   Frontend будет доступен на `http://localhost:5173`
+## Core contracts (docs/core)
 
-### Development Commands
+Fill these for your project so roles and skills have a single source of truth:
 
-**Frontend:**
-- `npm run dev` - запуск dev-сервера с hot reload
-- `npm test` - запуск тестов
-- `npm run test:watch` - запуск тестов в watch режиме
-- `npm run coverage` - генерация coverage отчета
-- `npm run build` - сборка production build
-- `npm run preview` - предпросмотр production build
+- **REQUIREMENTS.md** — FR/NFR  
+- **API.yaml** — OpenAPI (or your API contract)  
+- **MODEL.sql** — data model (DDL)  
+- **UX_MAP.md** — CTA → Endpoint → State → Page  
+- **TESTS.md** — test strategy, UAT/BDD  
+- **QNA_DECISIONS.md** — questions and ADRs  
+- **WORKPLAN.yaml** — FP statuses, milestones, risks  
 
-**Backend:**
-- `npm run start:dev` - запуск dev-сервера с hot reload (ts-node)
-- `npm test` - запуск тестов
-- `npm run test:ci` - запуск тестов в CI режиме
-- `npm run coverage` - генерация coverage отчета
-- `npm run build` - сборка TypeScript в JavaScript
-- `npm start` - запуск production build
+The template ships minimal stubs. Copy and replace with your content.
 
-### Code Structure
+## Tooling
 
-**Frontend (`front/src/`):**
-- `os/` - операционная система (Desktop Shell, Window Manager, VFS)
-- `components/` - React компоненты
-- `contexts/` - React Context провайдеры
-- `api/` - API клиент
-- `__tests__/` - тесты, организованные по FP
+- **Doc links:** `node tools/check-doc-links.cjs` or `node tools/check-doc-links.cjs docs/` — checks that internal Markdown links resolve. See [tools/README.md](tools/README.md).
 
-**Backend (`back/src/`):**
-- `auth/` - аутентификация и авторизация
-- `vfs/` - виртуальная файловая система (FP7)
-- `games/` - управление играми
-- `teams/` - управление командами
-- `users/` - управление пользователями
-- `comments/` - комментарии к играм
-- `jam/` - информация о джемах
-- `help/` - справка HELP.TXT
-- `__tests__/` - тесты, организованные по FP
+When you add product code, add your own lint/test and (optionally) pre-commit/CI; document commands in your FP or README.
 
-### Testing
+## License
 
-**Запуск всех тестов:**
-```bash
-# Frontend
-cd front && npm test
-
-# Backend
-cd back && npm test
-```
-
-**Запуск тестов для конкретного FP:**
-```bash
-# Frontend
-cd front && npm test fp7
-
-# Backend
-cd back && npm test __tests__/fp7/
-```
-
-**Coverage:**
-```bash
-# Frontend
-cd front && npm run coverage
-
-# Backend
-cd back && npm run coverage
-```
-
-### Docker Compose
-
-**Запустить все сервисы:**
-```bash
-docker compose up --build
-```
-
-Или в фоновом режиме:
-```bash
-docker compose up -d --build
-```
-
-**Остановить все сервисы:**
-```bash
-docker compose down
-```
-
-**Просмотр логов:**
-```bash
-# Все сервисы
-docker compose logs -f
-
-# Конкретный сервис
-docker compose logs -f back
-docker compose logs -f front
-```
-
-**Доступные сервисы:**
-- Frontend: `http://localhost:5173`
-- Backend: `http://localhost:3002/health`
-- MongoDB: `mongodb://localhost:27017/birdmaid`
-- MinIO API: `http://localhost:9002`
-- MinIO Console: `http://localhost:9003` (user/pass: `minioadmin`)
-
-> **Примечание:** Порты могут отличаться, если стандартные порты заняты другими сервисами. В этом случае порты автоматически изменяются в `docker-compose.yml`.
-
-## Deployment
-
-### Production Build
-
-**Frontend:**
-```bash
-cd front
-npm run build
-# Production build будет в front/dist/
-```
-
-**Backend:**
-```bash
-cd back
-npm run build
-# Production build будет в back/dist/
-```
-
-### Docker Deployment
-
-Проект использует multi-stage Docker builds для оптимизации размера образов.
-
-**Build production images:**
-```bash
-# Frontend
-docker build -f front/Dockerfile.prod -t birdmaid-front:latest ./front
-
-# Backend
-docker build -f back/Dockerfile.prod -t birdmaid-back:latest ./back
-```
-
-**Environment Variables для Production:**
-
-Backend:
-```env
-NODE_ENV=production
-MONGO_URL=mongodb://your-mongo-host:27017/birdmaid
-S3_ENDPOINT=https://s3.storage.selcloud.ru
-S3_ACCESS_KEY=your-access-key
-S3_SECRET_KEY=your-secret-key
-S3_BUCKET=birdmaid-builds
-S3_PUBLIC_URL=https://your-bucket.s3.storage.selcloud.ru
-JWT_SECRET=your-strong-secret-key
-JWT_EXPIRES_IN=7d
-```
-
-Frontend:
-```env
-VITE_API_BASE_URL=https://api.yourdomain.com
-```
-
-### Production Checklist
-
-- [ ] Все тесты проходят (`npm test` в обоих проектах)
-- [ ] Production build успешно собирается
-- [ ] Environment variables настроены
-- [ ] MongoDB доступна и настроена
-- [ ] S3 storage доступен и bucket создан
-- [ ] JWT_SECRET установлен (сильный случайный ключ)
-- [ ] Health check endpoint работает (`/health`)
-- [ ] CORS настроен правильно (если frontend и backend на разных доменах)
-- [ ] SSL/TLS сертификаты настроены
-- [ ] Reverse proxy настроен (nginx/traefik)
-- [ ] Логирование настроено
-- [ ] Мониторинг настроен
-
-## Project Structure
-
-См. [STRUCTURE.md](./STRUCTURE.md) для подробного описания структуры репозитория.
-
-Основные директории:
-- `front/` - React + Vite + TypeScript frontend (Windows 95 UI styling)
-- `back/` - NestJS backend (MongoDB + S3-compatible storage)
-- `docs/core/` - Основные документы проекта (sources of truth)
-- `docs/fps/` - Feature Pack файлы (единый файл для каждого FP)
-- `ai/agents/` - Агенты-специалисты (6 агентов)
-- `ai/roles/` - Workflow-роли (4 этапа: plan, design, build, release)
-- `artifacts/` - Test logs, coverage, and evidence (not committed to git)
-
-## Technology Stack
-
-### Frontend
-- React 18.2.0
-- Vite 5.1.0
-- TypeScript 5.4.0
-- Vitest for testing
-- Windows 95 styled UI components (custom)
-
-### Backend
-- NestJS 10.3.0
-- MongoDB 6
-- S3-compatible storage (MinIO)
-- JWT authentication (@nestjs/jwt)
-
-### Infrastructure
-- Docker Compose for local development
-- MongoDB for data storage
-- MinIO for S3-compatible object storage
-- Node.js runtime
-
-## Documentation
-
-See [docs/README.md](./docs/README.md) for the full documentation hub.
-
-| Section | Links |
-|---------|-------|
-| **Product Contract** | [FP7](docs/fps/FP7.md) — canonical product spec (shell-only, Win95 UI) |
-| **Quickstart** | [Local Setup](#local-setup) above |
-| **Architecture** | [STRUCTURE.md](./STRUCTURE.md), [Code Structure](#code-structure) |
-| **Style System** | [GUIDE_STYLE.md](docs/style/GUIDE_STYLE.md), [WIN95_SPEC.md](docs/style/WIN95_SPEC.md) |
-| **Content Model / VFS** | [FP7 VFS](docs/fps/FP7.md) (VFS rules, RBAC), [vfs-init.ts](front/src/os/fs/vfs-init.ts) |
-| **Auth** | [FP7 Auth](docs/fps/FP7.md) (Telegram, DEV MODE, `/api/auth/me`) |
-| **Tests** | [Testing](#testing) above, [FP7_TEST_CONTRACT](docs/tests/FP7_TEST_CONTRACT.md), [VISUAL_TESTS](docs/style/VISUAL_TESTS.md) |
-| **Agents Workflow** | [AGENTS.md](./AGENTS.md), [docs/agents/WORKFLOW.md](docs/agents/WORKFLOW.md) |
-| **History (FP1–FP6)** | [docs/fps/](docs/fps/README.md) — FP1–FP6 (released) |
-
-- **Product Description**: [PRODUCT_DESCRIPTION.md](./PRODUCT_DESCRIPTION.md)
+See [LICENSE](LICENSE) if present.

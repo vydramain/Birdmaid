@@ -210,5 +210,5 @@ FP=FP6 mode=plan
 
 - **Cursor runtime rules:** [.cursor/rules/agents.md](./.cursor/rules/agents.md)
 - **Canonical guardrails:** [docs/dev/GUARDRAILS.md](./docs/dev/GUARDRAILS.md)
-- **Style contract:** [docs/style/GUIDE_STYLE.md](./docs/style/GUIDE_STYLE.md)
-- **FP contract:** [docs/fps/FP7.md](./docs/fps/FP7.md)
+- **Style contract:** [docs/style/STYLE_GUIDE.md](./docs/style/STYLE_GUIDE.md)
+- **FP contract:** `docs/fps/FP<N>.md` (see [docs/fps/FP_EXAMPLE.md](./docs/fps/FP_EXAMPLE.md))

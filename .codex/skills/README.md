@@ -4,9 +4,9 @@ Skills for Codex agents. All Codex agents MUST follow the same guardrails as Cur
 
 ## MUST READ (all agents)
 
-- **docs/dev/GUARDRAILS.md** — canonical rules (inline styles, units, output contract)
-- **docs/style/GUIDE_STYLE.md** — style guide + guardrails policy
-- **docs/fps/FP7.md** — product contract (when working on FP7)
+- **docs/dev/GUARDRAILS.md** — canonical rules (output contract, style/units when applicable)
+- **docs/style/STYLE_GUIDE.md** — style guide + guardrails policy
+- **docs/fps/FP<N>.md** — product contract for the current FP (see docs/fps/FP_EXAMPLE.md as reference)
 
 ## Output Contract (matches Cursor)
 
