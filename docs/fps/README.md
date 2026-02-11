@@ -39,9 +39,11 @@
 3. **Читать FP:**
    Просто открой `docs/fps/FP<N>.md` — там всё.
 
-## Шаблон
+## Шаблон и пример
 
-См. [TEMPLATE.md](./TEMPLATE.md) для шаблона нового FP.
+- [TEMPLATE.md](./TEMPLATE.md) — пустая структура для нового FP
+- [FP_EXAMPLE.md](./FP_EXAMPLE.md) — пример заполненного FP (reference)
+- [RELEASE_GATE_TEMPLATE.md](./RELEASE_GATE_TEMPLATE.md) — шаблон чеклиста release gate
 
 ## Связь с другими документами
 

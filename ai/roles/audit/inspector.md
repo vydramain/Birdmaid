@@ -23,9 +23,9 @@ Purpose: audit actual code implementation; checks repository, executable code, i
 
 - Run Skill Runs (required) in order.
 - Read actual source files (not documentation):
-  - Frontend: `front/src/**/*.tsx`, `front/src/**/*.ts`
-  - Backend: `back/src/**/*.ts`
-  - Tests: `front/__tests__/**`, `back/__tests__/**`
+  - Frontend: your project's frontend source (e.g. `front/src/**` or equivalent)
+  - Backend: your project's backend source (e.g. `back/src/**` or equivalent)
+  - Tests: your project's test directories (e.g. `front/__tests__/**`, `back/__tests__/**`)
 - Trace execution paths:
   - Find entry points (main.ts, App.tsx, controllers)
   - Follow call chains

@@ -1,8 +1,7 @@
 # Agent Contract Summary
 
-**Version:** 1.0  
-**Created:** 2026-02-02  
-**Purpose:** What each agent must output, must never do, and how violations are caught.
+**Version:** 1.1 (template)  
+**Purpose:** What each agent must output, must never do, and how violations can be caught once you add product code.
 
 ---
 
@@ -22,43 +21,28 @@
 
 ## What Each Agent MUST NOT Do
 
-| Rule | Applies To | Enforcement |
-|------|------------|-------------|
-| No `!important` | Engineer, any code changes | stylelint |
-| No `px` in CSS/SCSS (use `rem`) | Engineer | stylelint |
-| No constant inline styles (all literals) | Engineer | check-inline-styles.cjs |
-| No lazy allow-tags (must have reason, why, revisit) | Engineer | check-inline-styles.cjs |
-| No `reason=layout-calc` without measurement API evidence | Engineer | check-inline-styles.cjs |
+| Rule | Applies To | When you have code |
+|------|------------|--------------------|
+| No `!important` | Engineer, any code changes | Enforce via stylelint or equivalent |
+| No absolute units in CSS/SCSS (use `rem`) where defined | Engineer | Enforce via stylelint |
+| No constant inline styles (all literals) | Engineer | Enforce via custom script or lint rule |
+| No lazy allow-tags (must have reason, why, revisit) | Engineer | Enforce via custom script if you use allow-tag |
 | No patching docs to justify violations | All | Manual review |
-| No absolute units in inline styles (except transform/translate) | Engineer | check-inline-styles.cjs |
-| No fixed fullscreen backdrop via inline | Engineer | check-inline-styles.cjs |
-| No zIndex magic numbers (4+ digits) | Engineer | check-inline-styles.cjs |
 
 ---
 
-## How Violations Are Caught
+## How to Catch Violations (after you add product code)
 
-| Violation | Tool | When |
-|-----------|------|------|
-| `!important` | stylelint | pre-commit, CI |
-| Absolute units (CSS/SCSS) | stylelint | pre-commit, CI |
-| Inline style without allow-tag v2 | check-inline-styles.cjs | pre-commit, CI |
-| Inline style all literals (even with allow-tag) | check-inline-styles.cjs | pre-commit, CI |
-| layout-calc without measurement evidence | check-inline-styles.cjs | pre-commit, CI |
-| Absolute units in inline | check-inline-styles.cjs | pre-commit, CI |
-| Fixed backdrop, zIndex magic | check-inline-styles.cjs | pre-commit, CI |
+- Add lint (ESLint, stylelint) and run in CI.
+- Add pre-commit hooks if desired (e.g. husky + lint-staged).
+- Document verification commands in your FP or README (e.g. `npm run lint`, `npm run test`).
 
-**Verification:**
-```bash
-cd front
-npm run lint          # Full lint
-npm run lint:canary   # Canary tests (should-fail + should-pass)
-```
+This template does not ship product-specific enforcement scripts. See [GUARDRAILS.md](./GUARDRAILS.md) and [tools/README.md](../../tools/README.md).
 
 ---
 
 ## References
 
 - [docs/dev/GUARDRAILS.md](./GUARDRAILS.md)
-- [docs/style/GUIDE_STYLE.md](../style/GUIDE_STYLE.md)
+- [docs/style/STYLE_GUIDE.md](../style/STYLE_GUIDE.md)
 - [.cursor/rules/agents.md](../../.cursor/rules/agents.md)

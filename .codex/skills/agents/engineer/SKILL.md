@@ -7,9 +7,9 @@ description: "Technical skills: feasibility assessment, architecture design, NFR
 
 ## MUST READ (before code changes)
 
-- **docs/dev/GUARDRAILS.md** — canonical rules (inline styles, units, output contract)
-- **docs/style/GUIDE_STYLE.md** — style guide
-- **docs/fps/FP7.md** — product contract (when working on FP7)
+- **docs/dev/GUARDRAILS.md** — canonical rules (output contract, style/units when applicable)
+- **docs/style/STYLE_GUIDE.md** — style guide
+- **docs/fps/FP<N>.md** — product contract for the current FP (see docs/fps/FP_EXAMPLE.md)
 
 ## MUST NOT (code quality)
 

@@ -1,0 +1,43 @@
+# OpenAPI 3 skeleton — Core API contract
+
+# Purpose: Canonical API contract for the project. Referenced by agents (design,
+# build), ux-map-sync, and FP docs. Add your endpoints here.
+
+openapi: 3.0.3
+info:
+  title: Project API
+  version: 0.1.0
+  description: Replace with your API description.
+
+servers:
+  - url: http://localhost:3000
+    description: Local
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  # Add more as needed
+
+  # Add your paths below, e.g.:
+  # /api/resources:
+  #   get:
+  #     summary: List resources
+  #     responses:
+  #       "200":
+  #         description: OK
+
+components:
+  schemas: {}
+  securitySchemes: {}
