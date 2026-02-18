@@ -1,0 +1,34 @@
+# FP1 Dev Domain — Traefik + dev-server (ADR#8)
+# Convenience: run from project root: docker compose -f docker-compose.dev.yml up -d
+# Same as infra/docker-compose.dev.yml
+
+services:
+  traefik:
+    image: traefik:v3.2
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  dev-server:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.dev
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.shell.rule=Host(`shell.local`)"
+      - "traefik.http.routers.shell.entrypoints=web"
+      - "traefik.http.services.shell.loadbalancer.server.port=5173"
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development

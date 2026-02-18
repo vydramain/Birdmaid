@@ -1,0 +1,35 @@
+# FP1 Dev Domain — Traefik + dev-server
+# ADR#8: Dev domain via Traefik + docker-compose
+# Usage: from repo root: docker compose -f infra/docker-compose.dev.yml up -d
+# Note: volumes use ../ to mount repo root (compose file is in infra/)
+
+services:
+  traefik:
+    image: traefik:v3.2
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"  # Traefik dashboard (optional)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  dev-server:
+    build:
+      context: ..
+      dockerfile: Dockerfile.dev
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.shell.rule=Host(`shell.local`)"
+      - "traefik.http.routers.shell.entrypoints=web"
+      - "traefik.http.services.shell.loadbalancer.server.port=5173"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../:/app
+      - /app/node_modules  # prevent host node_modules override
+    environment:
+      - NODE_ENV=development

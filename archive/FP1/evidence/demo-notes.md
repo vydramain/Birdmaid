@@ -1,6 +1,7 @@
 # FP1 Shell MVP — Demo Notes
 
-**Archived:** See [archive/FP1/evidence/demo-notes.md](../archive/FP1/evidence/demo-notes.md) for full content.
+**Purpose:** Что проверить руками при демо FP1.  
+**M6 Gate:** PASS (2025-02-18)
 
 ## Commands
 
