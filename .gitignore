@@ -34,6 +34,7 @@ pnpm-debug.log*
 **/junit.xml
 **/reports/
 **/test-results/
+**/playwright-report/
 
 ## Logs
 logs/

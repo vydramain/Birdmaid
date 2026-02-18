@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test App</title>
+</head>
+<body>
+  <p>FP1 Test App — sends APP_READY and WINDOW_TITLE</p>
+  <script>
+    (function() {
+      function send(type, payload) {
+        if (window.parent !== window) {
+          try {
+            window.parent.postMessage({ type, payload, timestamp: Date.now() }, '*');
+          } catch (_) {}
+        }
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          send('APP_READY', { appId: 'fp1-testapp', version: '0.1.0' });
+          send('WINDOW_TITLE', { title: 'Test App' });
+        });
+      } else {
+        send('APP_READY', { appId: 'fp1-testapp', version: '0.1.0' });
+        send('WINDOW_TITLE', { title: 'Test App' });
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+:root {
+  --wm-scale: 1;
+  --wm-titlebar-height-base: 28px;
+  --wm-border-width-base: 2px;
+  --wm-taskbar-height-base: 32px;
+  --wm-window-min-width-base: 200px;
+  --wm-window-min-height-base: 150px;
+  --wm-gap-1-base: 4px;
+  --wm-gap-2-base: 8px;
+  --wm-padding-1-base: 4px;
+  --wm-padding-2-base: 8px;
+  --wm-font-size-base: 12px;
+  --wm-titlebar-height: calc(var(--wm-titlebar-height-base) * var(--wm-scale));
+  --wm-border-width: calc(var(--wm-border-width-base) * var(--wm-scale));
+  --wm-taskbar-height: calc(var(--wm-taskbar-height-base) * var(--wm-scale));
+  --wm-window-min-width: calc(var(--wm-window-min-width-base) * var(--wm-scale));
+  --wm-window-min-height: calc(var(--wm-window-min-height-base) * var(--wm-scale));
+  --wm-gap-1: calc(var(--wm-gap-1-base) * var(--wm-scale));
+  --wm-gap-2: calc(var(--wm-gap-2-base) * var(--wm-scale));
+  --wm-padding-1: calc(var(--wm-padding-1-base) * var(--wm-scale));
+  --wm-padding-2: calc(var(--wm-padding-2-base) * var(--wm-scale));
+  --wm-font-size: calc(var(--wm-font-size-base) * var(--wm-scale));
+  --wm-bg: #f0f0f0;
+  --wm-fg: #333;
+  --wm-border: #ccc;
+  --wm-accent: #0078d4;
+  --wm-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  --wm-font-family: system-ui;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}

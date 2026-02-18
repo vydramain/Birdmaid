@@ -1,71 +1,37 @@
-# Agent Template
+# Birdmaid Shell
 
-Reusable template for **agent-driven product workflow**: 6 specialist agents, 4 workflow stages (plan → design → build → release), Cursor rules, Codex skills, and core docs. No product code—only the structure to run and enforce the workflow.
+Browser-based window manager + taskbar + AppHost for iframe applications. FP1 (Shell MVP) released.
 
-## Quickstart
+## Dev run (shell.local)
 
-### Use agents
+1. Add `127.0.0.1 shell.local` to `/etc/hosts`
+2. `docker compose -f docker-compose.dev.yml up -d` (or `docker compose -f infra/docker-compose.dev.yml up -d`)
+3. Open http://shell.local
 
-In chat (e.g. Cursor), mention an agent or a stage:
+**Standalone (no Docker):** `pnpm dev` → http://localhost:5173
 
-- **By agent:** `@Product Lead: определить scope для FP1`  
-- **By stage:** `FP=FP1 mode=plan` (then `mode=design`, `mode=build`, `mode=release`)
+See [docs/dev/DEV_DOMAIN.md](docs/dev/DEV_DOMAIN.md) for details.
 
-Each stage reads and updates **one file per FP:** `docs/fps/FP<N>.md`.
+## Test run
 
-### Create a new Feature Pack
+| Command | Description |
+|---------|-------------|
+| `pnpm lint` | ESLint (front, e2e, configs) |
+| `pnpm test` | Unit tests (Vitest, 14) |
+| `pnpm test:e2e` | E2E tests (Playwright, 10) |
 
-1. Copy [docs/fps/TEMPLATE.md](docs/fps/TEMPLATE.md) to `docs/fps/FP<N>.md` (e.g. FP1.md).
-2. Fill Scope, Questions, Requirements, UX Map, Architecture, Tests, Plan.
-3. Run stages: `FP=FP1 mode=plan` → … → `FP=FP1 mode=release`.
-4. For release, use [docs/fps/RELEASE_GATE_TEMPLATE.md](docs/fps/RELEASE_GATE_TEMPLATE.md) as checklist.
+## Project structure
 
-### Where things live
+| Area | Path |
+|------|------|
+| Shell core | `front/core/` — WindowManager, AppHost, protocol, analytics, ThemeScaleProvider |
+| UI adapter | `front/ui/` — DesktopView, WindowChromeView, TaskbarView, TaskbarItemView |
+| Shell wiring | `front/Shell.tsx`, `front/App.tsx` |
+| TestApp | `public/testapp.html` |
+| Docs | `docs/` — core specs, fps, dev |
+| FP1 archive | `archive/FP1/` — evidence, transcripts, reports |
 
-| What | Where |
-|------|--------|
-| Workflow rules | [AGENTS.md](AGENTS.md) |
-| How to run agents, guardrails, conflicts | [docs/agents/WORKFLOW.md](docs/agents/WORKFLOW.md) |
-| Guardrails (output contract, style) | [docs/dev/GUARDRAILS.md](docs/dev/GUARDRAILS.md), [docs/style/STYLE_GUIDE.md](docs/style/STYLE_GUIDE.md) |
-| One FP = one file | `docs/fps/FP<N>.md` (see [FP_EXAMPLE.md](docs/fps/FP_EXAMPLE.md)) |
-| Core contracts (API, model, UX map, etc.) | [docs/core/](docs/core/) |
-| Agents & roles | [ai/agents/](ai/agents/), [ai/roles/](ai/roles/) |
-| Cursor rules | [.cursor/rules/](.cursor/rules/) |
-| Codex skills | [.codex/skills/](.codex/skills/) |
-| Repo structure | [STRUCTURE.md](STRUCTURE.md) |
+## References
 
-## Roles and agents
-
-- **Workflow stages:** plan, design, build, release — see [ai/roles/README.md](ai/roles/README.md).
-- **Specialist agents:** Product Lead, Designer, Analyst, Engineer, Delivery, Compliance — see [ai/agents/README.md](ai/agents/README.md). Each has a skill in `.codex/skills/agents/<name>/`.
-- **Audit roles:** analyst, inspector, supervisor — in [ai/roles/audit/](ai/roles/audit/).
-
-## Guardrails and output contract
-
-- **Canonical rules:** [docs/dev/GUARDRAILS.md](docs/dev/GUARDRAILS.md). All agents must follow.
-- **Style:** [docs/style/STYLE_GUIDE.md](docs/style/STYLE_GUIDE.md). Replace with your design system when you add UI.
-- **Output contract:** Every engineering response must include Evidence (files changed), Minimal patch plan, Tests (commands), DoD checklist. See [docs/agents/WORKFLOW.md](docs/agents/WORKFLOW.md) and [docs/dev/AGENT_CONTRACT_SUMMARY.md](docs/dev/AGENT_CONTRACT_SUMMARY.md).
-
-## Core contracts (docs/core)
-
-Fill these for your project so roles and skills have a single source of truth:
-
-- **REQUIREMENTS.md** — FR/NFR  
-- **API.yaml** — OpenAPI (or your API contract)  
-- **MODEL.sql** — data model (DDL)  
-- **UX_MAP.md** — CTA → Endpoint → State → Page  
-- **TESTS.md** — test strategy, UAT/BDD  
-- **QNA_DECISIONS.md** — questions and ADRs  
-- **WORKPLAN.yaml** — FP statuses, milestones, risks  
-
-The template ships minimal stubs. Copy and replace with your content.
-
-## Tooling
-
-- **Doc links:** `node tools/check-doc-links.cjs` or `node tools/check-doc-links.cjs docs/` — checks that internal Markdown links resolve. See [tools/README.md](tools/README.md).
-
-When you add product code, add your own lint/test and (optionally) pre-commit/CI; document commands in your FP or README.
-
-## License
-
-See [LICENSE](LICENSE) if present.
+- [docs/fps/FP1.md](docs/fps/FP1.md) — FP1 spec, Freeze Index, Evidence
+- [AGENTS.md](AGENTS.md) — Workflow, agents, stages
