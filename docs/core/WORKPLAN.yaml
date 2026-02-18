@@ -3,26 +3,56 @@
 # Purpose: High-level plan and status per Feature Pack. Used by audit roles and
 # fp-bootstrap / ux-map-sync skills. Replace with your project's plan.
 
-name: Project Workplan
+name: Web-OS Shell Workplan
 overview: |
 
-  One-line or short description of the project and current phase.
+  Web-OS Shell (Windows 98-like): браузерный оконный менеджер с iframe-приложениями.
+  FP1 — Shell MVP (окна + таскбар + AppHost). FS через backend gateway (FP2).
 
-todos: []
-#  - id: FP1
-#    title: First feature pack
-#    status: plan | design | build | release
-#    owner: (optional)
+todos:
+  - id: FP1
+    title: Shell MVP — окна + таскбар + AppHost
+    status: plan
+  - id: FP2
+    title: Backend Gateway + FS contract (MinIO)
+    status: pending
+  - id: FP3
+    title: Explorer App + интеграция с Shell
+    status: pending
+  - id: FP4
+    title: Базовые viewers (image/video/audio/text)
+    status: pending
+  - id: FP5
+    title: App packages из S3 + sandbox hardening
+    status: pending
 
-milestones: []
-#  - id: M1
-#    name: Milestone name
-#    target: YYYY-MM-DD
-#    fps: [FP1]
+milestones:
+  - id: M1
+    name: FP1 Shell MVP released
+    target: TBD
+    fps: [FP1]
+  - id: M2
+    name: FP2 Gateway + FS
+    target: TBD
+    fps: [FP2]
+  - id: M3
+    name: FP3 Explorer
+    target: TBD
+    fps: [FP3]
+  - id: M4
+    name: FP4 Viewers
+    target: TBD
+    fps: [FP4]
+  - id: M5
+    name: FP5 App packages + sandbox
+    target: TBD
+    fps: [FP5]
 
-risks: []
-#  - description: Risk text
-#    mitigation: Mitigation text
+risks:
+  - description: Layout thrash при drag/resize
+    mitigation: transform/translate, requestAnimationFrame
+  - description: S3 ключи в браузере
+    mitigation: Backend gateway только, никаких ключей во фронте
 
 # Optional: time tracking, scope completion (for audit analyst)
 # planned_hours: 0
