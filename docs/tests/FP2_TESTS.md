@@ -98,14 +98,15 @@
 
 ## 3. Test File Location
 
-- **Integration:** `gateway/__tests__/api-fs.integration.test.ts` (or `back/__tests__/fp2/api-fs.test.ts` per FP2)
-- **Runner:** `pnpm test:api` (to be added in build)
+- **Integration:** `back/__tests__/fp2/api-fs.integration.test.ts`
+- **Runner:** `pnpm test:api`
+- **Config:** `vitest.api.config.ts` (node env, 10s timeout)
 
 ---
 
 ## 4. Fixtures Dependency
 
-Tests assume MinIO init has run (fixtures: DISK_C, APPS). Use `infra/minio/init.sh` or docker-compose minio-init service.
+Tests assume MinIO init has run (fixtures: DISK_C, APPS). Use `docker compose -f infra/docker-compose.dev.yml up -d` — minio-init service loads fixtures automatically. Manual: `infra/minio/init.sh` or mc commands.
 
 ---
 

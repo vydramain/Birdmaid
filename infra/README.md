@@ -12,6 +12,6 @@
 
 **dev-server:** контейнеризован, собирается из Dockerfile.dev, монтирует репо. Работает на Linux (и macOS/Windows).
 
-**gateway:** placeholder (`sleep infinity`) до mode=build M3. Реализация — в build.
+**gateway:** M1 — реальный сервер (Node + Fastify) в `back/`, volume mount, без Dockerfile.gateway.
 
 **Prerequisite:** `/etc/hosts` entries for shell.local, api.shell.local, s3.shell.local. See [docs/dev/DEV_DOMAIN.md](../docs/dev/DEV_DOMAIN.md).

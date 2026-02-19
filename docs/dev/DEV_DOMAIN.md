@@ -27,7 +27,32 @@ Without this, `http://shell.local`, `http://api.shell.local`, `http://s3.shell.l
 
 ---
 
-## 2. Ports
+## 2. Проверка запуска (Smoke)
+
+**Prerequisite:** `/etc/hosts` с `127.0.0.1 shell.local api.shell.local s3.shell.local` (см. секцию 1).
+
+Одна команда для проверки, что платформа запущена:
+
+```bash
+./infra/smoke.sh
+# или
+pnpm smoke
+```
+
+**Ожидаемый результат:** `PLATFORM OK` — стек поднят, gateway отвечает на /health и /api/fs/roots. При наличии `jq` дополнительно проверяется open-url и GET signed URL.
+
+**При FAIL:** скрипт выводит `docker compose ps` и `gateway logs --tail=200` для диагностики.
+
+**Fallback (без /etc/hosts):** smoke автоматически использует `curl -H "Host: api.shell.local" http://127.0.0.1/...`. Ручные команды:
+
+```bash
+curl -H "Host: api.shell.local" http://127.0.0.1/health
+curl -H "Host: api.shell.local" http://127.0.0.1/api/fs/roots
+```
+
+---
+
+## 3. Ports
 
 | Service | Port | Purpose |
 |---------|------|---------|
@@ -80,17 +105,15 @@ pnpm dev
 
 ## 5. /health Checks (FP2 DoD)
 
-**После mode=build M3** (gateway skeleton реализован):
+**После M1** (gateway skeleton): health check проходит. **После M5** (FS endpoints): roots + signed URL.
 
-| Check | Command | Expected |
-|-------|---------|----------|
-| Gateway health | `curl http://api.shell.local/health` | 200, `{ "status": "ok" }` |
-| Roots | `curl http://api.shell.local/api/fs/roots` | 200, `{ "roots": [...] }` |
-| Signed URL | `curl -I <signed_url>` (URL from open-url, points to s3.shell.local) | 200 |
+| Check | Command | Expected | M |
+|-------|---------|----------|---|
+| Gateway health | `curl http://api.shell.local/health` | 200, `{ "status": "ok" }` | M1 |
+| Roots | `curl http://api.shell.local/api/fs/roots` | 200, `{ "roots": [...] }` | M5 |
+| Signed URL | `curl -I <signed_url>` (URL from open-url, points to s3.shell.local) | 200 | M5 |
 
 All checks must pass **via domains** (api.shell.local, s3.shell.local), not localhost ports.
-
-**В design:** gateway — placeholder (`sleep infinity`), api.shell.local → 502 до build.
 
 ---
 
