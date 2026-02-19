@@ -81,4 +81,13 @@ OUTPUT: <формат артефакта>
 
 Агенты работают с Feature Packs через единый файл `docs/fps/FP<N>.md`, где вся информация о FP в одном месте.
 
+## Правила разработки
+
+При разработке агенты опираются на:
+
+- **docs/dev/GUARDRAILS.md** — canonical rules
+- **docs/dev/COMMITS.md** — Conventional Commits
+- **docs/dev/ARCHITECTURE.md** — слои front/back
+- **docs/dev/CODE_REVIEW.md**, **SECURITY.md**, **TWELVE_FACTOR.md**
+
 См. также: [ai/roles/README.md](../roles/README.md) для workflow-этапов

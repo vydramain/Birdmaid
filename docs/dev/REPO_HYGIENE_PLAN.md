@@ -264,6 +264,14 @@ node tools/check-doc-links.cjs docs/
 
 ---
 
+## FP7: front/index.css stylelint + px→rem
+
+**Milestone:** FP7.  
+**Scope:** Снять `front/index.css` из `.stylelintignore`; мигрировать `:root` base-переменные с `px` на `rem`.  
+**Ref:** [REPO_COMPLIANCE_REVIEW.md](REPO_COMPLIANCE_REVIEW.md) §3.
+
+---
+
 ## W4: Future — Nx affected (опционально)
 
 При росте репо (pnpm workspace с несколькими пакетами, CI >5 мин) рассмотреть:

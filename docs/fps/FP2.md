@@ -426,3 +426,49 @@ sequenceDiagram
 | **Error schema** | 400/403/404/500       | `{ error: { code, message, details? } }`                                                   |
 
 **Base URL:** `http://api.shell.local` (dev-domain)
+
+---
+
+## FP2 Freeze Index
+
+**A) Scope summary:** Gateway API (api.shell.local), FS Contract v0 (list, stat, open-url, roots), MinIO via s3.shell.local, Traefik routes, integration tests, error model, structured logging. Read-only, signed URLs, single bucket + prefixes.
+
+**B) Code evidence (paths):**
+
+- back/src/index.ts
+- back/src/fs.ts
+- back/src/path.ts
+- back/**tests**/fp2/api-fs.integration.test.ts
+- vitest.api.config.ts
+- infra/docker-compose.dev.yml
+- infra/minio/init.sh
+- infra/minio/cors.json
+- infra/minio/fixtures/\*\*
+
+**C) Spec/design artifacts (paths):**
+
+- docs/core/API.yaml
+- docs/core/FS_CONTRACT_v0.md
+- docs/core/CORS_SIGNED_URLS.md
+- docs/tests/FP2_TESTS.md
+- docs/dev/DEV_DOMAIN.md
+- docs/audit/FP2_AUDIT_REPORT.md
+
+**D) Archive link:**
+
+- [archive/FP2/README.md](../../archive/FP2/README.md) (описание состава)
+- archive/FP2/transcripts/\* (design/build transcripts)
+
+**E) Verification commands (canonical):**
+
+- Start stack: `docker compose -f infra/docker-compose.dev.yml up -d traefik minio minio-init gateway`
+- Smoke: `./infra/smoke.sh`
+- API tests (canonical container):
+  ```bash
+  docker run --rm --add-host api.shell.local:host-gateway --add-host s3.shell.local:host-gateway \
+    -v $(pwd):/app -w /app node:22 sh -c "git config --global --add safe.directory /app && corepack enable pnpm && pnpm install && pnpm test:api"
+  ```
+
+**F) Known caveats:**
+
+- Host `pnpm install` may fail (EACCES) — canonical verification uses container. See [docs/dev/GUARDRAILS.md](../dev/GUARDRAILS.md).

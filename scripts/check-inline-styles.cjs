@@ -7,8 +7,9 @@
  * Allow-tag v2 format: // inline-style: allowed (reason: X; why: <runtime dynamic>; revisit: <milestone>)
  *
  * Usage:
- *   node scripts/check-inline-styles.cjs [file1] [file2] ...
- *   If no files provided, scans entire src directory
+ *   node scripts/check-inline-styles.cjs [dir|file ...]
+ *   If no args: scans front, e2e, back
+ *   Dir arg: recursively finds .ts/.tsx
  */
 
 const fs = require("fs");
@@ -28,8 +29,9 @@ const ALLOW_TAG_V1_PATTERN =
 const LAYOUT_CALC_EVIDENCE_PATTERN =
   /getBoundingClientRect|ResizeObserver|visualViewport|window\.inner(Width|Height)|clientWidth|clientHeight|offsetWidth|offsetHeight/;
 
-// Runtime value indicator: template literal or variable reference
-const RUNTIME_VALUE_PATTERN = /\$\{|\.current\b|useState\b|useRef\b|state\.|ref\.|props\./;
+// Runtime value indicator: template literal or variable reference (incl. .bounds for window state)
+const RUNTIME_VALUE_PATTERN =
+  /\$\{|\.current\b|useState\b|useRef\b|state\.|ref\.|props\.|\.bounds\b/;
 
 // Absolute units that are forbidden (px, pt, pc, in, cm, mm, q, Q)
 const ABSOLUTE_UNITS_PATTERN = /\b\d+(\.\d+)?(px|pt|pc|in|cm|mm|[qQ])\b/gi;
@@ -176,20 +178,31 @@ function findTsxFiles(dir, fileList = []) {
   return fileList;
 }
 
-// Main execution
-// lint-staged passes files as arguments
+function resolveFiles(args) {
+  const cwd = process.cwd();
+  const defaultDirs = ["front", "e2e", "back"];
+  const dirsOrFiles = args.length > 0 ? args : defaultDirs;
+  const files = new Set();
+
+  for (const arg of dirsOrFiles) {
+    const fullPath = path.isAbsolute(arg) ? arg : path.join(cwd, arg);
+    if (!fs.existsSync(fullPath)) continue;
+    const stat = fs.statSync(fullPath);
+    if (stat.isDirectory()) {
+      findTsxFiles(fullPath, []).forEach((f) => files.add(f));
+    } else if (arg.endsWith(".tsx") || arg.endsWith(".ts")) {
+      files.add(fullPath);
+    }
+  }
+
+  return [...files].filter((p) => {
+    const normalized = p.replace(/\\/g, "/");
+    return !normalized.includes("__tests__/style-guardrails/");
+  });
+}
+
 const args = process.argv.slice(2);
-const defaultScanDir = path.join(__dirname, "..", "front", "src");
-const filesToCheck =
-  args.length > 0
-    ? args.filter((arg) => {
-        const fullPath = path.isAbsolute(arg) ? arg : path.join(process.cwd(), arg);
-        return fs.existsSync(fullPath) && (arg.endsWith(".tsx") || arg.endsWith(".ts"));
-      })
-    : findTsxFiles(defaultScanDir).filter((p) => {
-        const normalized = p.replace(/\\/g, "/");
-        return !normalized.includes("__tests__/style-guardrails/");
-      });
+const filesToCheck = resolveFiles(args);
 
 const allErrors = [];
 

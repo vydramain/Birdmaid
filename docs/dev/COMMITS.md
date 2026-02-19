@@ -43,6 +43,7 @@
 | `e2e`     | E2E тесты              |
 | `scripts` | Скрипты проверок       |
 | `deps`    | Зависимости            |
+| `dev`     | Dev tooling, process, rules |
 
 ---
 

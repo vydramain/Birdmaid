@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint front e2e back vite.config.ts playwright.config.ts vitest.config.ts vitest.api.config.ts --max-warnings 0 && stylelint \"front/**/*.{css,scss}\" --max-warnings 0 --allow-empty-input",
+    "lint": "pnpm check:styles && eslint front e2e back vite.config.ts playwright.config.ts vitest.config.ts vitest.api.config.ts --max-warnings 0 && stylelint \"front/**/*.{css,scss}\" --max-warnings 0 --allow-empty-input",
     "format": "prettier -w .",
     "format:check": "prettier -c .",
     "lint:staged": "lint-staged",
@@ -15,7 +15,8 @@
     "test": "vitest run",
     "smoke": "bash infra/smoke.sh",
     "test:api": "vitest run --config vitest.api.config.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "check:styles": "node scripts/check-inline-styles.cjs front e2e back"
   },
   "dependencies": {
     "react": "^18.3.1",

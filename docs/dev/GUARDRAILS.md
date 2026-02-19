@@ -143,7 +143,7 @@ W2.1 did a **one-time** Prettier sweep. Going forward: format only via `pnpm for
 | check-inline-styles.cjs          | Enforced (lint-staged)                                                                                |
 | check-asset-provenance.cjs       | **TODO / warning-only** — placeholder, always exit 0; add real checks when ASSET_PROVENANCE.md exists |
 | check-primitives-enforcement.cjs | Not in lint-staged; run manually if needed                                                            |
-| eslint-plugin-style-guardrails   | TODO (file not in repo)                                                                               |
+| eslint-plugin-style-guardrails   | **TODO** — not enforced; add when plugin available                                                    |
 | front/index.css stylelint        | Temporary exception (.stylelintignore until FP7)                                                      |
 
 ---

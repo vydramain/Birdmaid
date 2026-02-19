@@ -9,6 +9,13 @@
 - `docs/style/STYLE_GUIDE.md` — style guide + guardrails policy
 - `docs/fps/FP<N>.md` — product contract for the current FP (e.g. docs/fps/FP_EXAMPLE.md as reference)
 
+**Process docs (при разработке):**
+- `docs/dev/COMMITS.md` — Conventional Commits (commitlint в pre-commit)
+- `docs/dev/CODE_REVIEW.md` — критерии code review
+- `docs/dev/ARCHITECTURE.md` — слои front/back, Clean Architecture
+- `docs/dev/SECURITY.md` — secrets, deps, Node.js security
+- `docs/dev/TWELVE_FACTOR.md` — конфиг через env, 12-factor для back/infra
+
 **Engineer/Developer Hard Rules (no exceptions):**
 - No lazy allow-tags: allow-tag v2 requires `reason`, `why`, `revisit`
 - No `px` in CSS/SCSS (use `rem`); `px` only in transform/translate for drag
@@ -19,8 +26,10 @@
 **Output Contract (every engineering response):**
 - Evidence: files/paths changed
 - Minimal patch plan: what was added/changed/removed
-- Tests: commands to run (`npm run lint`, `npm run test`)
-- DoD checklist: [ ] Lint passes, [ ] Tests pass, [ ] No new violations
+- Tests: commands to run (`pnpm lint`, `pnpm test`, `pnpm format:check`)
+- DoD checklist: [ ] Lint passes, [ ] Format check passes, [ ] Tests pass, [ ] No new violations
+
+**Pre-commit gates (enforced):** lint-staged → check-inline-styles, ESLint, stylelint, Prettier; commitlint (Conventional Commits).
 
 ---
 
@@ -118,5 +127,6 @@ FP=FP6 mode=release # Релиз
 
 - **Feature Pack:** `docs/fps/FP<N>.md` — единый файл со всей информацией о FP
 - **Общие документы:** `docs/core/` — REQUIREMENTS.md, API.yaml, MODEL.sql, UX_MAP.md
+- **Процесс:** `docs/dev/` — GUARDRAILS.md, COMMITS.md, CODE_REVIEW.md, ARCHITECTURE.md, SECURITY.md, TWELVE_FACTOR.md
 - **Агенты:** `ai/agents/` — промпты агентов
 - **Workflow:** `ai/roles/` — этапы работы (plan, design, build, release)

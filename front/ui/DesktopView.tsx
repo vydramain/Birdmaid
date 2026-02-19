@@ -15,12 +15,6 @@ export function DesktopView({ children, onClick }: DesktopViewProps) {
       onClick={onClick}
       onMouseDown={onClick}
       role="presentation"
-      style={{
-        position: "absolute",
-        inset: 0,
-        background: "var(--wm-bg, #f0f0f0)",
-        overflow: "hidden",
-      }}
     >
       {children}
     </div>

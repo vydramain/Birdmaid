@@ -8,6 +8,14 @@ Skills for Codex agents. All Codex agents MUST follow the same guardrails as Cur
 - **docs/style/STYLE_GUIDE.md** — style guide + guardrails policy
 - **docs/fps/FP<N>.md** — product contract for the current FP (see docs/fps/FP_EXAMPLE.md as reference)
 
+## Process docs (при разработке)
+
+- **docs/dev/COMMITS.md** — Conventional Commits
+- **docs/dev/CODE_REVIEW.md** — критерии code review
+- **docs/dev/ARCHITECTURE.md** — слои front/back
+- **docs/dev/SECURITY.md** — secrets, deps
+- **docs/dev/TWELVE_FACTOR.md** — 12-factor для back/infra
+
 ## Output Contract (matches Cursor)
 
 Every Codex agent response that proposes or makes code changes MUST include:
