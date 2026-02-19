@@ -47,7 +47,7 @@ interface WindowChromeViewProps {
 interface WindowState {
   id: string;
   title: string;
-  state: 'normal' | 'minimized' | 'maximized';
+  state: "normal" | "minimized" | "maximized";
   bounds: { x: number; y: number; width: number; height: number };
   placeholder?: string; // e.g. "App not responding"
 }
@@ -61,7 +61,7 @@ interface WindowActions {
   onResizeStart: (edge: ResizeEdge, e: React.MouseEvent | React.PointerEvent) => void;
 }
 
-type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+type ResizeEdge = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 ```
 
 ### 2.3 TaskbarView
@@ -115,11 +115,13 @@ interface ThemeTokenSet {
 ## 3. Dependency rule
 
 **Rule:** WindowManager and AppHost must NOT import:
+
 - CSS/SCSS files
 - Icon assets (SVG, PNG)
 - Font files
 
 They may only:
+
 - Use tokens (CSS variables) for styling
 - Render slot components via `uiAdapter`
 - Pass `theme` and `scale` to slots

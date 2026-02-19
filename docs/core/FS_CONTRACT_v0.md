@@ -20,15 +20,15 @@
 
 ## 2. Canonicalization Rules
 
-| Rule | Description |
-|------|-------------|
-| Leading slash | All paths start with `/` |
-| Dir trailing slash | Dir paths end with `/` (e.g. `/@root/DISK_C/docs/`) |
-| File no trailing slash | File paths never end with `/` |
-| name | Never contains `/` |
-| maxLen | 1024 characters |
-| Forbidden | `..`, `\`, double slashes `//` |
-| Decode | URL-decode once; reject invalid encoding |
+| Rule                   | Description                                         |
+| ---------------------- | --------------------------------------------------- |
+| Leading slash          | All paths start with `/`                            |
+| Dir trailing slash     | Dir paths end with `/` (e.g. `/@root/DISK_C/docs/`) |
+| File no trailing slash | File paths never end with `/`                       |
+| name                   | Never contains `/`                                  |
+| maxLen                 | 1024 characters                                     |
+| Forbidden              | `..`, `\`, double slashes `//`                      |
+| Decode                 | URL-decode once; reject invalid encoding            |
 
 **Validation order:** decode → reject forbidden → normalize slashes → check length → root isolation.
 
@@ -46,8 +46,9 @@
 
 **Rule:** A directory has `isApp: true` iff `{dir}/index.html` exists.
 
-**Method:** `HEAD` on S3 object `{prefix}{dir}index.html`.  
-- 200 → `isApp: true`  
+**Method:** `HEAD` on S3 object `{prefix}{dir}index.html`.
+
+- 200 → `isApp: true`
 - 404/other → `isApp: false`
 
 **When:** During `list` for each dir item. FP3 uses this to know what to launch.
@@ -123,12 +124,12 @@ GET /api/fs/list?path=/@root/APPS/empty/
 
 ## 8. Error Codes
 
-| Code | HTTP | When |
-|------|------|------|
-| BAD_PATH | 400 | Invalid format, traversal, length, encoding |
-| ROOT_NOT_FOUND | 403 | ROOT_ID not in roots |
-| NOT_FOUND | 404 | Path valid but item not in S3 |
-| INTERNAL_ERROR | 500 | S3/MinIO error, unhandled exception |
+| Code           | HTTP | When                                        |
+| -------------- | ---- | ------------------------------------------- |
+| BAD_PATH       | 400  | Invalid format, traversal, length, encoding |
+| ROOT_NOT_FOUND | 403  | ROOT_ID not in roots                        |
+| NOT_FOUND      | 404  | Path valid but item not in S3               |
+| INTERNAL_ERROR | 500  | S3/MinIO error, unhandled exception         |
 
 ---
 

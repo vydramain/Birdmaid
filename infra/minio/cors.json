@@ -1,20 +1,10 @@
 {
   "CORSRules": [
     {
-      "AllowedOrigins": [
-        "http://shell.local",
-        "http://api.shell.local",
-        "http://localhost:5173"
-      ],
+      "AllowedOrigins": ["http://shell.local", "http://api.shell.local", "http://localhost:5173"],
       "AllowedMethods": ["GET", "HEAD"],
       "AllowedHeaders": ["Accept", "Range", "Origin", "Content-Type"],
-      "ExposeHeaders": [
-        "Accept-Ranges",
-        "Content-Range",
-        "Content-Length",
-        "Content-Type",
-        "ETag"
-      ]
+      "ExposeHeaders": ["Accept-Ranges", "Content-Range", "Content-Length", "Content-Type", "ETag"]
     }
   ]
 }

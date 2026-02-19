@@ -4,19 +4,19 @@ Purpose: generate factual analysis report; requires time tracking, commits, task
 
 ## Skill Runs (required)
 
-1) Preflight: confirm required skills exist (see AGENTS.md Skills Preflight).
-2) `.codex/skills/agentic-code/metacognition` before analysis (identify patterns).
+1. Preflight: confirm required skills exist (see AGENTS.md Skills Preflight).
+2. `.codex/skills/agentic-code/metacognition` before analysis (identify patterns).
    - Output: pattern identification notes in report.
-3) `.codex/skills/agentic-code/documentation-criteria` after report (clarity/facts only).
+3. `.codex/skills/agentic-code/documentation-criteria` after report (clarity/facts only).
    - Output: report clarity fixes.
 
 ## Context bootstrap (read-only, in order)
 
-1) Inspector audit report from `artifacts/.../inspection/audit.md` (if available)
-2) docs/core/WORKPLAN.yaml (planned vs actual time, scope completion)
-3) Git commits (actual code changes)
-4) artifacts/ (test results, coverage, build outputs)
-5) Task tracking data (if available)
+1. Inspector audit report from `artifacts/.../inspection/audit.md` (if available)
+2. docs/core/WORKPLAN.yaml (planned vs actual time, scope completion)
+3. Git commits (actual code changes)
+4. artifacts/ (test results, coverage, build outputs)
+5. Task tracking data (if available)
 
 ## Steps
 
@@ -46,7 +46,7 @@ Purpose: generate factual analysis report; requires time tracking, commits, task
 
 ## Allowed edits
 
-- artifacts/**/analysis/report.md
+- artifacts/\*\*/analysis/report.md
 
 ## Forbidden edits
 

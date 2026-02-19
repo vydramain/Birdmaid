@@ -44,7 +44,9 @@ test.describe("FP1 Shell — C: Drag", () => {
     const openBtn = page.getByRole("button", { name: /open|new window|create/i });
     await openBtn.click();
 
-    const titlebar = page.locator("[data-testid='window-titlebar'], .wm-titlebar, [data-draggable]").first();
+    const titlebar = page
+      .locator("[data-testid='window-titlebar'], .wm-titlebar, [data-draggable]")
+      .first();
     await expect(titlebar).toBeVisible();
 
     const box = await titlebar.boundingBox();
@@ -103,8 +105,9 @@ test.describe("FP1 Shell — F: AppHost handshake", () => {
     const openBtn = page.getByRole("button", { name: /new window/i });
     await openBtn.click();
 
-    await expect(page.locator("[data-testid='window-title'], .wm-window-title").first())
-      .toContainText("Test App", { timeout: 5000 });
+    await expect(
+      page.locator("[data-testid='window-title'], .wm-window-title").first()
+    ).toContainText("Test App", { timeout: 5000 });
     expect(true).toBe(true);
   });
 
@@ -128,11 +131,15 @@ test.describe("FP1 Shell — Theme/Scale (THEMING_v0 asserts)", () => {
     await themeBtn.click();
     const root = page.locator(":root");
     const bgBefore = await root.evaluate((el) =>
-      getComputedStyle(el as Element).getPropertyValue("--wm-bg").trim()
+      getComputedStyle(el as Element)
+        .getPropertyValue("--wm-bg")
+        .trim()
     );
     await themeBtn.click();
     const bgAfter = await root.evaluate((el) =>
-      getComputedStyle(el as Element).getPropertyValue("--wm-bg").trim()
+      getComputedStyle(el as Element)
+        .getPropertyValue("--wm-bg")
+        .trim()
     );
     expect(bgAfter).not.toBe(bgBefore);
   });
@@ -142,11 +149,15 @@ test.describe("FP1 Shell — Theme/Scale (THEMING_v0 asserts)", () => {
     const root = page.locator(":root");
     await root.evaluate((el) => (el as HTMLElement).style.setProperty("--wm-scale", "1"));
     const h1 = await root.evaluate((el) =>
-      getComputedStyle(el as Element).getPropertyValue("--wm-titlebar-height").trim()
+      getComputedStyle(el as Element)
+        .getPropertyValue("--wm-titlebar-height")
+        .trim()
     );
     await root.evaluate((el) => (el as HTMLElement).style.setProperty("--wm-scale", "1.5"));
     const h2 = await root.evaluate((el) =>
-      getComputedStyle(el as Element).getPropertyValue("--wm-titlebar-height").trim()
+      getComputedStyle(el as Element)
+        .getPropertyValue("--wm-titlebar-height")
+        .trim()
     );
     expect(h2).not.toBe(h1);
   });

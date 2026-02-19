@@ -3,11 +3,7 @@ import cors from "@fastify/cors";
 import { S3Client } from "@aws-sdk/client-s3";
 import { getRoots, listDir, statItem, getOpenUrl } from "./fs.js";
 
-const ALLOWED_ORIGINS = [
-  "http://shell.local",
-  "http://api.shell.local",
-  "http://localhost:5173",
-];
+const ALLOWED_ORIGINS = ["http://shell.local", "http://api.shell.local", "http://localhost:5173"];
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
@@ -103,13 +99,20 @@ app.get("/api/fs/list", async (req, reply) => {
     logEvent(app.log, "fs_list", { path, count: r.items.length, durationMs, status: "ok" });
     return reply.send({ items: r.items });
   }
-  const reason = r.code === "BAD_PATH" ? "bad_path" : r.code === "ROOT_NOT_FOUND" ? "bad_root" : "s3_error";
-  logEvent(app.log, "request_rejected", { reason, path, ...(r.code === "INTERNAL_ERROR" && { s3Error: r.message }) });
+  const reason =
+    r.code === "BAD_PATH" ? "bad_path" : r.code === "ROOT_NOT_FOUND" ? "bad_root" : "s3_error";
+  logEvent(app.log, "request_rejected", {
+    reason,
+    path,
+    ...(r.code === "INTERNAL_ERROR" && { s3Error: r.message }),
+  });
   if (r.code === "INTERNAL_ERROR") {
     logEvent(app.log, "s3_error", { op: "list", code: "INTERNAL", durationMs });
   }
-  if (r.code === "BAD_PATH") return reply.status(400).send({ error: { code: r.code, message: r.message } });
-  if (r.code === "ROOT_NOT_FOUND") return reply.status(403).send({ error: { code: r.code, message: r.message } });
+  if (r.code === "BAD_PATH")
+    return reply.status(400).send({ error: { code: r.code, message: r.message } });
+  if (r.code === "ROOT_NOT_FOUND")
+    return reply.status(403).send({ error: { code: r.code, message: r.message } });
   return reply.status(500).send({ error: { code: r.code, message: r.message } });
 });
 
@@ -123,14 +126,20 @@ app.get("/api/fs/stat", async (req, reply) => {
     return reply.send(r.item);
   }
   if (r.code === "BAD_PATH" || r.code === "ROOT_NOT_FOUND") {
-    logEvent(app.log, "request_rejected", { reason: r.code === "BAD_PATH" ? "bad_path" : "bad_root", path });
+    logEvent(app.log, "request_rejected", {
+      reason: r.code === "BAD_PATH" ? "bad_path" : "bad_root",
+      path,
+    });
   }
   if (r.code === "INTERNAL_ERROR") {
     logEvent(app.log, "s3_error", { op: "stat", code: "INTERNAL", durationMs });
   }
-  if (r.code === "BAD_PATH") return reply.status(400).send({ error: { code: r.code, message: r.message } });
-  if (r.code === "ROOT_NOT_FOUND") return reply.status(403).send({ error: { code: r.code, message: r.message } });
-  if (r.code === "NOT_FOUND") return reply.status(404).send({ error: { code: r.code, message: r.message } });
+  if (r.code === "BAD_PATH")
+    return reply.status(400).send({ error: { code: r.code, message: r.message } });
+  if (r.code === "ROOT_NOT_FOUND")
+    return reply.status(403).send({ error: { code: r.code, message: r.message } });
+  if (r.code === "NOT_FOUND")
+    return reply.status(404).send({ error: { code: r.code, message: r.message } });
   return reply.status(500).send({ error: { code: r.code, message: r.message } });
 });
 
@@ -145,7 +154,7 @@ app.post("/api/fs/open-url", async (req, reply) => {
     path ?? "",
     ttlSec,
     process.env.FS_SIGNED_URL_TTL_SEC,
-    (s3Presign instanceof S3Client ? s3Presign : undefined)
+    s3Presign instanceof S3Client ? s3Presign : undefined
   );
   const durationMs = Date.now() - start;
   if (r.ok) {
@@ -153,14 +162,20 @@ app.post("/api/fs/open-url", async (req, reply) => {
     return reply.send({ url: r.url, expiresIn: r.expiresIn });
   }
   if (r.code === "BAD_PATH" || r.code === "ROOT_NOT_FOUND") {
-    logEvent(app.log, "request_rejected", { reason: r.code === "BAD_PATH" ? "bad_path" : "bad_root", path });
+    logEvent(app.log, "request_rejected", {
+      reason: r.code === "BAD_PATH" ? "bad_path" : "bad_root",
+      path,
+    });
   }
   if (r.code === "INTERNAL_ERROR") {
     logEvent(app.log, "s3_error", { op: "open_url", code: "INTERNAL", durationMs });
   }
-  if (r.code === "BAD_PATH") return reply.status(400).send({ error: { code: r.code, message: r.message } });
-  if (r.code === "ROOT_NOT_FOUND") return reply.status(403).send({ error: { code: r.code, message: r.message } });
-  if (r.code === "NOT_FOUND") return reply.status(404).send({ error: { code: r.code, message: r.message } });
+  if (r.code === "BAD_PATH")
+    return reply.status(400).send({ error: { code: r.code, message: r.message } });
+  if (r.code === "ROOT_NOT_FOUND")
+    return reply.status(403).send({ error: { code: r.code, message: r.message } });
+  if (r.code === "NOT_FOUND")
+    return reply.status(404).send({ error: { code: r.code, message: r.message } });
   return reply.status(500).send({ error: { code: r.code, message: r.message } });
 });
 

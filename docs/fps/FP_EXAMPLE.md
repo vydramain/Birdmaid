@@ -21,15 +21,15 @@
 
 ## Questions
 
-| # | Question | Answer | Status |
-|---|----------|--------|--------|
-| 1 | (open question) | (when answered) | open/closed |
+| #   | Question        | Answer          | Status      |
+| --- | --------------- | --------------- | ----------- |
+| 1   | (open question) | (when answered) | open/closed |
 
 ## Decisions (ADRs)
 
-| # | Decision | Rationale | Status |
-|---|----------|-----------|--------|
-| 1 | (e.g. Use REST for X) | Consistency | accepted |
+| #   | Decision              | Rationale   | Status   |
+| --- | --------------------- | ----------- | -------- |
+| 1   | (e.g. Use REST for X) | Consistency | accepted |
 
 ## Requirements
 
@@ -46,9 +46,9 @@
 
 ## UX Map
 
-| CTA | Endpoint | State | Page | Mock | Status |
-|-----|----------|-------|------|------|--------|
-| (action) | GET /api/… | ui.done | PageName | yes | todo |
+| CTA      | Endpoint   | State   | Page     | Mock | Status |
+| -------- | ---------- | ------- | -------- | ---- | ------ |
+| (action) | GET /api/… | ui.done | PageName | yes  | todo   |
 
 ## Architecture
 

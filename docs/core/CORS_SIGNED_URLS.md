@@ -74,12 +74,12 @@ ETag
 
 ## 4. What We Do NOT Allow
 
-| Item | Reason |
-|------|--------|
-| PUT/POST/DELETE on signed URLs | FP2 read-only |
-| PUT/POST/DELETE on MinIO CORS | Read-only |
-| `*` origin | Security: explicit allowlist |
-| Credentials in client | No S3 keys in frontend |
+| Item                           | Reason                       |
+| ------------------------------ | ---------------------------- |
+| PUT/POST/DELETE on signed URLs | FP2 read-only                |
+| PUT/POST/DELETE on MinIO CORS  | Read-only                    |
+| `*` origin                     | Security: explicit allowlist |
+| Credentials in client          | No S3 keys in frontend       |
 
 ---
 

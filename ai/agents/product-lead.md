@@ -7,6 +7,7 @@
 ## Required Skills
 
 Before starting work, run the following skill:
+
 - `.codex/skills/agents/product-lead` — Product management skills: strategy, prioritization, stakeholder management, problem framing, outcome definition
 
 This skill provides frameworks, best practices, and quality checklists for product management work.
@@ -30,7 +31,7 @@ This skill provides frameworks, best practices, and quality checklists for produ
 2. **Prioritized Backlog** (таблица):
    | Epic/Feature | Priority | Rationale | Dependencies |
    |--------------|----------|-----------|--------------|
-   | ...          | ...      | ...       | ...          |
+   | ... | ... | ... | ... |
 
 3. **Product Packet** (если координирует команду):
    - Problem statement

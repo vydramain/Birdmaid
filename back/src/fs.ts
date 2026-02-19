@@ -119,11 +119,7 @@ export async function listDir(
   }
 }
 
-async function checkIsApp(
-  s3: S3Client,
-  bucket: string,
-  dirPrefix: string
-): Promise<boolean> {
+async function checkIsApp(s3: S3Client, bucket: string, dirPrefix: string): Promise<boolean> {
   try {
     await s3.send(
       new HeadObjectCommand({
@@ -153,9 +149,7 @@ export async function statItem(
   const key = toS3Key(v.rootId, v.suffix);
 
   try {
-    const head = await s3.send(
-      new HeadObjectCommand({ Bucket: bucket, Key: key })
-    );
+    const head = await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
 
     const name = key.slice(key.lastIndexOf("/") + 1) || key;
     const mime = inferMime(name, head.ContentType ?? undefined);

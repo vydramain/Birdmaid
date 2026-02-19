@@ -5,6 +5,7 @@
 ## Структура
 
 Каждый FP имеет файл `docs/fps/FP<N>.md` со всей информацией:
+
 - Scope (что входит/не входит)
 - Questions (открытые вопросы)
 - Decisions (ADRs)
@@ -23,17 +24,21 @@
 ## Как использовать
 
 1. **Создать новый FP:**
+
    ```
    FP=FP6 mode=plan
    ```
+
    Создаст `docs/fps/FP6.md` с шаблоном.
 
 2. **Работать с FP:**
+
    ```
    FP=FP6 mode=design
    FP=FP6 mode=build
    FP=FP6 mode=release
    ```
+
    Каждый этап обновляет `docs/fps/FP6.md`.
 
 3. **Читать FP:**
