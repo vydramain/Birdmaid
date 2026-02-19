@@ -28,6 +28,7 @@
 
 ## 2. Checklist для автора (перед отправкой)
 
+- [ ] `pnpm check:styles` проходит (или входит в `pnpm lint`)
 - [ ] `pnpm lint` проходит
 - [ ] `pnpm format:check` проходит
 - [ ] `pnpm test` проходит (unit)

@@ -10,22 +10,7 @@ interface TaskbarViewProps {
 
 export function TaskbarView({ items, theme, scale, onItemClick }: TaskbarViewProps) {
   return (
-    <div
-      data-testid="taskbar"
-      className="wm-taskbar"
-      style={{
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: "var(--wm-taskbar-height, 32px)",
-        background: "var(--wm-accent, #0078d4)",
-        display: "flex",
-        alignItems: "center",
-        gap: "var(--wm-gap-1, 4px)",
-        padding: "0 var(--wm-padding-2, 8px)",
-      }}
-    >
+    <div data-testid="taskbar" className="wm-taskbar">
       {items.map((item) => (
         <TaskbarItemView
           key={item.windowId}

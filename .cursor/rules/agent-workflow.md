@@ -49,6 +49,7 @@ Workflow-роли находятся в `ai/roles/` и определяют эт
 Все workflow-роли работают с:
 - **Feature Pack файлы:** `docs/fps/FP<N>.md` — единый файл со всей информацией о FP
 - **Общие документы:** `docs/core/` — REQUIREMENTS.md, API.yaml, MODEL.sql, UX_MAP.md, TESTS.md, QNA_DECISIONS.md, WORKPLAN.yaml
+- **Процесс и правила:** `docs/dev/` — GUARDRAILS.md, COMMITS.md, CODE_REVIEW.md, ARCHITECTURE.md, SECURITY.md, TWELVE_FACTOR.md
 
 ## Аудит-роли
 

@@ -9,6 +9,7 @@
 - Секреты (ключи S3, токены) — **не в коде**
 - `.env` в `.gitignore`
 - Конфиг через переменные окружения (см. [TWELVE_FACTOR.md](TWELVE_FACTOR.md))
+- `.env.example` — шаблон без реальных ключей; копировать в `.env` и заполнить (см. [infra/README.md](../../infra/README.md))
 
 ---
 
