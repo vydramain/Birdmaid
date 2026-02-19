@@ -1,6 +1,6 @@
 # FP2: Backend Gateway + FS Contract + Dev S3 (MinIO)
 
-**Status:** design  
+**Status:** released (internal)  
 **Created:** 2025-02-19  
 **Updated:** 2025-02-19
 
@@ -122,7 +122,7 @@
 
 **Root isolation:**
 - path обязан начинаться с `/@root/{ROOT_ID}/`
-- ROOT_ID только из roots (иначе 400)
+- ROOT_ID только из roots (иначе 403 ROOT_NOT_FOUND)
 
 **CORS:**
 - allowlist origins: `http://shell.local`, `http://api.shell.local` (и опц. https варианты)
@@ -153,40 +153,30 @@
 
 ### Документация
 
-- [ ] docs/core/API.yaml актуален и описывает: roots, list, stat, open-url, error schema
-- [ ] docs/dev/DEV_DOMAIN.md обновлён: домены api.shell.local, s3.shell.local (и опц. console), команды запуска
+- [x] docs/core/API.yaml актуален: roots, list, stat, open-url, error schema
+- [x] docs/dev/DEV_DOMAIN.md: домены api.shell.local, s3.shell.local, команды
 
 ### Инфра
 
-- [ ] `infra/docker-compose.dev.yml` (canonical compose) поднимает:
-  - MinIO (S3 endpoint)
-  - Gateway
-  - Traefik routes на домены
-- [ ] Нет ключей S3 в фронте. Только в env gateway.
+- [x] `infra/docker-compose.dev.yml` поднимает MinIO, Gateway, Traefik
+- [x] Нет ключей S3 в фронте
 
 ### Тесты
 
-- [ ] Интеграционные тесты API:
-  - list root, list subdir
-  - stat existing/non-existing
-  - open-url returns working URL (HEAD/GET 200) на известный объект
-  - CORS/origin rejection
-- [ ] CI/локальная команда: `pnpm test:api` (или pytest/node test runner — фиксируем один)
+- [x] Интеграционные тесты: list, stat, open-url, CORS, validation
+- [x] `pnpm test:api` — 16 tests
+- [x] `pnpm test` — unit
+- [x] `pnpm lint`
 
-### Dev-domain check (обязательно через домены)
+### Dev-domain check
 
-- [ ] `curl http://api.shell.local/health` → 200
-- [ ] `curl http://api.shell.local/api/fs/roots` → 200
-- [ ] `curl -I <signed_url>` где signed_url получен от gateway → 200 (URL к http://s3.shell.local/...)
-
-Исключает ситуацию "всё работает на localhost портах, а через Traefik — нет".
+- [x] `curl http://api.shell.local/health` → 200
+- [x] `curl http://api.shell.local/api/fs/roots` → 200
+- [x] `curl -I <signed_url>` → 200 (s3.shell.local)
 
 ### Evidence
 
-- [ ] В docs/fps/FP2.md есть:
-  - команды запуска + тесты
-  - ссылка на sample S3 layout (fixtures)
-  - статус "ready for FP3"
+- [x] docs/fps/FP2.md: команды, evidence, status ready for FP3
 
 ## Requirements
 
@@ -279,13 +269,13 @@ sequenceDiagram
 
 | M | Milestone | Tasks | Status |
 |---|-----------|-------|--------|
-| M1 | Dev domains (api, s3) | /etc/hosts, Traefik routes, docker-compose | todo |
-| M2 | MinIO + fixture | MinIO container, bucket, sample layout | todo |
-| M3 | Gateway skeleton | /health, CORS, error model | todo |
-| M4 | TESTS-RED | Integration tests scaffold, падают | todo |
-| M5 | FS endpoints implement | roots, list, stat, open-url | todo |
-| M6 | TESTS-GREEN + docs | Fix tests, API.yaml, DEV_DOMAIN | todo |
-| M7 | Release gate | DoD checklist, evidence | todo |
+| M1 | Gateway skeleton + dev-domain | /health, CORS, error model, api.shell.local → 200 | done |
+| M2 | TESTS-RED | Integration tests scaffold, падают | done |
+| M3 | roots/list/stat | Path validation, S3 client, roots, list, stat | done |
+| M4 | open-url + CORS | Presigned URLs, TTL, CORS verification | done |
+| M5 | TESTS-GREEN + analytics | Tests pass, structured logs | done |
+| M6 | MinIO + fixture | (уже в compose) | done |
+| M7 | Release gate | DoD checklist, evidence | done |
 
 ## Risks
 
@@ -330,11 +320,102 @@ sequenceDiagram
 5. **Реализовать gateway endpoints** — roots, list, stat, open-url
 6. **TESTS-GREEN** — только после зелёных тестов переходить в FP3 (Explorer)
 
-## Evidence (placeholder)
+## Evidence
 
-_Заполнить после build:_
+### M1 (Gateway skeleton + dev-domain) — DONE
 
-- [ ] Команды запуска
-- [ ] Sample S3 layout (fixtures)
-- [ ] pnpm test:api (или аналог) — PASS
-- [ ] Status: ready for FP3
+- **Команды запуска:** `docker compose -f infra/docker-compose.dev.yml up -d`
+- **Health check:** `curl http://api.shell.local/health` → 200, `{ "status": "ok" }`
+- **CORS allowlist:** `http://shell.local`, `http://api.shell.local`, `http://localhost:5173`; bad origin → 403
+- **Gateway:** `back/` (Node + Fastify), volume mount в compose, без Dockerfile.gateway
+- **Локальный запуск (опц.):** `cd back && pnpm dev` → http://localhost:3000/health
+
+### M2 (TESTS-RED) — DONE
+
+- **Команда тестов:** `pnpm test:api`
+- **Prerequisite:** `docker compose -f infra/docker-compose.dev.yml up -d` (api.shell.local, s3.shell.local)
+- **Fixtures:** MinIO init загружает DISK_C, APPS (minio-init в compose)
+- **Тесты:** `back/__tests__/fp2/api-fs.integration.test.ts` — health (pass), roots/list/stat/open-url/errors/CORS (fail до M5)
+- **Runner:** vitest, config `vitest.api.config.ts`
+- **Домены:** тесты используют api.shell.local, s3.shell.local (не localhost порты)
+
+### M3 (roots/list/stat) — DONE
+
+- **roots:** GET /api/fs/roots → 200, `{ roots: [{ id, label }] }` (DISK_C, APPS)
+- **list:** GET /api/fs/list?path=/@root/DISK_C/ → 200, `{ items: [...] }` (dirs first, lexicographic, isApp HEAD)
+- **stat:** GET /api/fs/stat?path=... → 200 или 404
+- **Validation:** bad path → 400 BAD_PATH, bad root → 403 ROOT_NOT_FOUND, missing → 404 NOT_FOUND
+- **Path module:** `back/src/path.ts` (canonicalize, reject .. \ //, root isolation)
+- **FS module:** `back/src/fs.ts` (S3 ListObjectsV2, HeadObject, mime inference)
+- **S3 client:** @aws-sdk/client-s3, credentials из env (FS_S3_*)
+
+### M4 (open-url + CORS) — DONE
+
+- **open-url:** POST /api/fs/open-url `{ path, ttlSec? }` → `{ url, expiresIn }`
+- **TTL:** default 120, min 60, max 300; env `FS_SIGNED_URL_TTL_SEC`; ttlSec clamped
+- **Signed URL:** points to s3.shell.local (FS_S3_PUBLIC_URL in compose)
+- **CORS:** MinIO cors.json applied via minio-init (`mc cors set`); allowlist: shell.local, api.shell.local, localhost:5173
+- **Verification (curl):**
+  ```bash
+  SIGNED_URL=$(curl -s -X POST http://api.shell.local/api/fs/open-url -H "Content-Type: application/json" -d '{"path":"/@root/DISK_C/readme.txt"}' | jq -r .url)
+  curl -I "$SIGNED_URL" -H "Origin: http://shell.local"
+  # Expect: 200, Access-Control-Allow-Origin: http://shell.local
+  ```
+- **Browser check:** Open shell.local, load asset via signed URL; DevTools Network → 200 from s3.shell.local with CORS headers
+
+### M5 (TESTS-GREEN + analytics) — DONE
+
+- **Tests:** `pnpm test` (unit), `pnpm test:api` (integration, prerequisite: compose up)
+- **Lint:** `pnpm lint`
+- **Analytics events:** fs_roots, fs_list, fs_stat, fs_open_url (path, count/durationMs, status); request_rejected (reason: bad_origin|bad_path|bad_root); s3_error (op, code, durationMs)
+- **Commands:**
+  ```bash
+  docker compose -f infra/docker-compose.dev.yml up -d
+  pnpm test:api   # 16 tests
+  pnpm test       # unit
+  pnpm lint
+  ```
+
+### M6 (Release gate) — DONE
+
+- **Gate decision:** PASS
+- **Security sanity:** CORS allowlist (gateway + MinIO), path validation + root isolation (tests), secrets only in gateway env
+- **No git tags** created (internal release)
+
+### Status
+
+- [x] pnpm test:api — PASS (при запущенном compose)
+- [x] pnpm test — PASS
+- [x] pnpm lint — PASS
+- **Ready for FP3**
+
+---
+
+## Release Gate
+
+| Check | Result |
+|-------|--------|
+| Security: CORS allowlist | PASS — gateway + MinIO cors.json соответствуют CORS_SIGNED_URLS.md |
+| Security: path validation | PASS — тесты bad path 400, bad root 403 |
+| Security: secrets | PASS — MinIO credentials только в compose/gateway env, не в front |
+| DoD checklist | PASS — все пункты выполнены |
+| Evidence | PASS — команды, fixtures, status |
+
+**Gate decision: PASS**
+
+---
+
+## FP3 Handoff
+
+**FP3 (Explorer) will consume:**
+
+| Contract | Source | Usage |
+|----------|--------|-------|
+| **roots** | GET /api/fs/roots | Список виртуальных корней (DISK_C, APPS) |
+| **path scheme** | /@root/{ROOT_ID}/path | Canonical paths; dirs end with `/` |
+| **FsItem** | list/stat response | `{ path, name, kind, size?, modified?, mime?, isApp? }` |
+| **isApp** | dir.isApp | true если `{dir}/index.html` существует; для запуска App |
+| **open-url** | POST /api/fs/open-url | `{ path, ttlSec? }` → `{ url, expiresIn }`; использовать url для `<img>`, `<video>`, fetch |
+| **Error schema** | 400/403/404/500 | `{ error: { code, message, details? } }` |
+
+**Base URL:** `http://api.shell.local` (dev-domain)

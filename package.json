@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "lint": "eslint front e2e vite.config.ts playwright.config.ts --max-warnings 0",
     "test": "vitest run",
+    "smoke": "bash infra/smoke.sh",
+    "test:api": "vitest run --config vitest.api.config.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {

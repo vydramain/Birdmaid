@@ -57,7 +57,8 @@ ETag
 
 - **Config:** `infra/minio/cors.json`
 - **Apply:** `mc cors set /path/to/cors.json myminio/birdmaid-dev`
-- **In docker-compose:** minio-init runs `mc cors set /minio/cors.json myminio/birdmaid-dev` after bucket creation
+- **In docker-compose:** minio-init runs `mc cors set /minio/cors.json myminio/birdmaid-dev` after bucket creation (see `infra/docker-compose.dev.yml` minio-init service)
+- **Init script:** `infra/minio/init.sh` applies CORS via `mc cors set "$CORS_JSON" "myminio/$BUCKET"`
 - **Manual re-apply:** `cd infra/minio && mc cors set cors.json myminio/birdmaid-dev` (with mc alias configured)
 
 ---
@@ -103,12 +104,14 @@ curl -I "$SIGNED_URL" \
 # Expect: 200, Access-Control-Allow-Origin in response
 ```
 
-### 5.2 Browser
+### 5.2 Browser (demo-notes)
 
 1. Open `http://shell.local` (Shell)
 2. Trigger an App that loads an asset via `<img src="...">` or `fetch(signedUrl)`
 3. DevTools Network: request to `s3.shell.local` must return 200 with CORS headers
 4. Disallowed origin: use `http://evil.example` → expect CORS error or 403
+
+**Verify in browser:** After M4, open Shell, load an asset via signed URL; Network tab shows 200 from s3.shell.local with `Access-Control-Allow-Origin: http://shell.local`.
 
 ### 5.3 Integration Test
 
