@@ -1,22 +1,29 @@
-# Dev Domain — shell.local
+# Dev Domain — shell.local (FP1) + api.shell.local, s3.shell.local (FP2)
 
-**Purpose:** Single path for FP1 dev: shell.local via Traefik.  
+**Purpose:** Dev domains via Traefik. FP1: shell.local. FP2: api.shell.local (gateway), s3.shell.local (MinIO).  
 **ADR:** Dev domain: Traefik + docker-compose (QNA_DECISIONS ADR#8, ADR#11).
 
 ---
 
-## 1. /etc/hosts (required for shell.local)
+## 1. /etc/hosts (required)
 
-Add `shell.local` → `127.0.0.1` so the browser resolves the domain:
+Add entries so the browser resolves domains:
 
 ```
 127.0.0.1 shell.local
+127.0.0.1 api.shell.local
+127.0.0.1 s3.shell.local
+```
+
+**Optional (MinIO console, not DoD):**
+```
+127.0.0.1 minio.shell.local
 ```
 
 **Linux/macOS:** `sudo nano /etc/hosts`  
 **Windows:** `C:\Windows\System32\drivers\etc\hosts`
 
-Without this, `http://shell.local` will not resolve.
+Without this, `http://shell.local`, `http://api.shell.local`, `http://s3.shell.local` will not resolve.
 
 ---
 
@@ -27,20 +34,20 @@ Without this, `http://shell.local` will not resolve.
 | Traefik | 80 | HTTP entrypoint |
 | Traefik dashboard | 8080 | Optional: http://localhost:8080 |
 | dev-server (Vite) | 5173 | Frontend dev server |
+| MinIO (S3 API) | 9000 | Internal (via Traefik on s3.shell.local) |
+| Gateway | 3000 | Internal (via Traefik on api.shell.local) |
 
 ---
 
-## 3. Routing
+## 3. Routing (FP2)
 
 ```
-shell.local (Host header)
-    → Traefik :80
-    → dev-server :5173 (loadbalancer)
+shell.local       → Traefik :80 → dev-server :5173
+api.shell.local   → Traefik :80 → gateway :3000
+s3.shell.local    → Traefik :80 → minio :9000
 ```
 
-Traefik uses dynamic config via Docker labels:
-- `traefik.http.routers.shell.rule=Host(\`shell.local\`)`
-- `traefik.http.services.shell.loadbalancer.server.port=5173`
+Traefik uses dynamic config via Docker labels in `infra/docker-compose.dev.yml`.
 
 ---
 
@@ -48,33 +55,42 @@ Traefik uses dynamic config via Docker labels:
 
 | Command | Description |
 |---------|-------------|
-| `docker compose -f docker-compose.dev.yml up -d` | Start Traefik + dev-server (from repo root) |
-| `docker compose -f infra/docker-compose.dev.yml up -d` | Same, alternative path |
-| `docker compose -f docker-compose.dev.yml down` | Stop |
-| `pnpm dev` | Run dev-server only (no Traefik; use http://localhost:5173) |
+| `docker compose -f infra/docker-compose.dev.yml up -d` | Full stack: Traefik + MinIO + Gateway + dev-server (все в контейнерах) |
+| `docker compose -f infra/docker-compose.dev.yml down` | Stop |
+| `pnpm dev` | Только фронт на хосте (без Docker; http://localhost:5173) |
 
-**Full stack (shell.local):**
+**Full stack** (единственный canonical compose — `infra/docker-compose.dev.yml`):
+
+Compose поднимает **все сервисы в контейнерах**, включая dev-server (Vite). Никакого `pnpm dev` на хосте не требуется.
+
 ```bash
-docker compose -f docker-compose.dev.yml up -d
+docker compose -f infra/docker-compose.dev.yml up -d
 # Open http://shell.local
+# API: http://api.shell.local
+# S3: http://s3.shell.local (MinIO)
 ```
 
-**Standalone (no Docker):**
+**Standalone (no Docker):** для разработки только фронта без MinIO/Gateway:
 ```bash
 pnpm dev
 # Open http://localhost:5173
 ```
 
-**Traefik only (proxy to host dev-server):**  
-Run `pnpm dev` on host, then start Traefik with `host.docker.internal` or `network_mode: host`. Optional: create `infra/docker-compose.traefik-only.yml` for this variant.
-
 ---
 
-## 5. /health
+## 5. /health Checks (FP2 DoD)
 
-- **URL:** `http://shell.local/health` (or `http://localhost:5173/health` standalone)
-- **Expected:** `200` with JSON `{ "status": "ok" }` (or similar per API.yaml)
-- **AC A2:** `/health = 200`
+**После mode=build M3** (gateway skeleton реализован):
+
+| Check | Command | Expected |
+|-------|---------|----------|
+| Gateway health | `curl http://api.shell.local/health` | 200, `{ "status": "ok" }` |
+| Roots | `curl http://api.shell.local/api/fs/roots` | 200, `{ "roots": [...] }` |
+| Signed URL | `curl -I <signed_url>` (URL from open-url, points to s3.shell.local) | 200 |
+
+All checks must pass **via domains** (api.shell.local, s3.shell.local), not localhost ports.
+
+**В design:** gateway — placeholder (`sleep infinity`), api.shell.local → 502 до build.
 
 ---
 
@@ -85,8 +101,24 @@ Shell SPA uses client-side routing. Traefik must serve `index.html` for all rout
 
 ---
 
+## 7. Gateway env vars (secrets)
+
+Gateway reads S3 credentials from env. **Never expose to frontend.**
+
+| Var | Purpose |
+|-----|---------|
+| FS_S3_ENDPOINT | MinIO endpoint (e.g. http://minio:9000) |
+| FS_S3_BUCKET | Bucket name (birdmaid-dev) |
+| FS_S3_ACCESS_KEY | MinIO access key |
+| FS_S3_SECRET_KEY | MinIO secret key |
+| FS_SIGNED_URL_TTL_SEC | TTL for presigned URLs (60–300, default 120) |
+
+---
+
 ## References
 
 - FP1: [docs/fps/FP1.md](../fps/FP1.md)
+- FP2: [docs/fps/FP2.md](../fps/FP2.md)
 - API.yaml: [docs/core/API.yaml](../core/API.yaml)
+- MinIO: [infra/minio/README.md](../../infra/minio/README.md)
 - QNA_DECISIONS: [docs/core/QNA_DECISIONS.md](../core/QNA_DECISIONS.md)

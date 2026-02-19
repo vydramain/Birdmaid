@@ -1,43 +1,311 @@
-# OpenAPI 3 skeleton — Core API contract
-
-# Purpose: Canonical API contract for the project. Referenced by agents (design,
-# build), ux-map-sync, and FP docs. Add your endpoints here.
+# OpenAPI 3 — Core API contract (FP2)
+# Purpose: Canonical API contract for Gateway + FS endpoints.
+# Referenced by: agents (design, build), ux-map-sync, FP docs.
 
 openapi: 3.0.3
 info:
-  title: Project API
-  version: 0.1.0
-  description: Replace with your API description.
+  title: Birdmaid Gateway API
+  version: 0.2.0
+  description: Gateway API for FS contract (list, stat, open-url, roots). FP2 scope.
 
 servers:
+  - url: http://api.shell.local
+    description: Dev domain (FP2)
   - url: http://localhost:3000
-    description: Local
+    description: Local fallback
 
 paths:
   /health:
     get:
       summary: Health check
       operationId: getHealth
+      tags: [system]
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  # Add more as needed
+                $ref: "#/components/schemas/HealthResponse"
 
-  # Add your paths below, e.g.:
-  # /api/resources:
-  #   get:
-  #     summary: List resources
-  #     responses:
-  #       "200":
-  #         description: OK
+  /api/fs/roots:
+    get:
+      summary: List virtual roots (dev: DISK_C, APPS per infra/minio/fixtures)
+      operationId: getFsRoots
+      tags: [fs]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RootsResponse"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/fs/list:
+    get:
+      summary: List directory contents
+      operationId: getFsList
+      tags: [fs]
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "/@root/DISK_C/"
+          description: Canonical path (dir with trailing slash)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FsListResponse"
+        "400":
+          description: Bad path (invalid format, traversal, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Root not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/fs/stat:
+    get:
+      summary: Get item metadata
+      operationId: getFsStat
+      tags: [fs]
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "/@root/DISK_C/docs/readme.txt"
+          description: Canonical path (file or dir)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FsStatResponse"
+        "400":
+          description: Bad path
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Root not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/fs/open-url:
+    post:
+      summary: Get signed URL for reading object
+      operationId: postFsOpenUrl
+      tags: [fs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenUrlRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenUrlResponse"
+        "400":
+          description: Bad path or invalid ttlSec
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Root not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Object not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
-  schemas: {}
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        version:
+          type: string
+        build:
+          type: string
+
+    FsItem:
+      type: object
+      required: [path, name, kind]
+      properties:
+        path:
+          type: string
+          description: Canonical path (dir ends with /)
+        name:
+          type: string
+          description: Item name without /
+        kind:
+          type: string
+          enum: [dir, file]
+        size:
+          type: integer
+          nullable: true
+          description: Bytes (files only)
+        modified:
+          type: string
+          format: date-time
+          nullable: true
+        mime:
+          type: string
+          nullable: true
+          description: MIME type (files only)
+        isApp:
+          type: boolean
+          default: false
+          description: true if dir contains index.html (HEAD check)
+
+    FsListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FsItem"
+
+    FsStatResponse:
+      allOf:
+        - $ref: "#/components/schemas/FsItem"
+
+    RootsResponse:
+      type: object
+      required: [roots]
+      properties:
+        roots:
+          type: array
+          items:
+            $ref: "#/components/schemas/RootItem"
+
+    RootItem:
+      type: object
+      required: [id, label]
+      properties:
+        id:
+          type: string
+          example: DISK_C
+        label:
+          type: string
+          example: "Disk C"
+
+    OpenUrlRequest:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          example: "/@root/DISK_C/docs/readme.txt"
+        ttlSec:
+          type: integer
+          minimum: 60
+          maximum: 300
+          default: 120
+          description: TTL in seconds. Clamped to TTL_MIN=60, TTL_MAX=300.
+
+    OpenUrlResponse:
+      type: object
+      required: [url, expiresIn]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Presigned GET URL (S3/MinIO)
+        expiresIn:
+          type: integer
+          description: TTL in seconds
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Machine-readable code (e.g. BAD_PATH, NOT_FOUND)
+            message:
+              type: string
+              description: Human-readable message
+            details:
+              type: object
+              additionalProperties: true
+              description: Optional extra context
+
   securitySchemes: {}
+
+# Path canonicalization rules (FP2)
+# - Leading slash required
+# - Dir path ends with /
+# - name never contains /
+# - max length 1024
+# - no .., \, double slashes
+# - root isolation: path must start with /@root/{ROOT_ID}/
+#
+# Sort rule: dirs first, then files; within group lexicographic
+#
+# Status codes: 200 OK, 400 Bad Request, 403 Forbidden, 404 Not Found, 500 Internal Server Error

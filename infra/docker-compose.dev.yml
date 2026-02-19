@@ -1,7 +1,7 @@
-# FP1 Dev Domain — Traefik + dev-server
+# FP1+FP2 Dev Domain — Traefik + dev-server + MinIO + Gateway
 # ADR#8: Dev domain via Traefik + docker-compose
-# Usage: from repo root: docker compose -f infra/docker-compose.dev.yml up -d
-# Note: volumes use ../ to mount repo root (compose file is in infra/)
+# Usage: docker compose -f infra/docker-compose.dev.yml up -d
+# Prerequisite: 127.0.0.1 shell.local api.shell.local s3.shell.local in /etc/hosts
 
 services:
   traefik:
@@ -13,9 +13,60 @@ services:
       - "--entrypoints.web.address=:80"
     ports:
       - "80:80"
-      - "8080:8080"  # Traefik dashboard (optional)
+      - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  minio:
+    image: minio/minio:latest
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.rule=Host(`s3.shell.local`)"
+      - "traefik.http.routers.minio.entrypoints=web"
+      - "traefik.http.services.minio.loadbalancer.server.port=9000"
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_started
+    volumes:
+      - ./minio:/minio
+    working_dir: /minio
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until mc alias set myminio http://minio:9000 minioadmin minioadmin 2>/dev/null; do echo "Waiting for MinIO..."; sleep 2; done
+        mc mb myminio/birdmaid-dev --ignore-existing
+        mc cors set /minio/cors.json myminio/birdmaid-dev
+        mc cp --recursive /minio/fixtures/DISK_C/ myminio/birdmaid-dev/roots/DISK_C/ 2>/dev/null || true
+        mc cp --recursive /minio/fixtures/APPS/ myminio/birdmaid-dev/roots/APPS/ 2>/dev/null || true
+        echo "MinIO init done."
+
+  gateway:
+    # Placeholder: реализация — mode=build (M3). До build: sleep infinity.
+    image: alpine:latest
+    command: ["sleep", "infinity"]
+    environment:
+      FS_S3_ENDPOINT: http://minio:9000
+      FS_S3_BUCKET: birdmaid-dev
+      FS_S3_ACCESS_KEY: minioadmin
+      FS_S3_SECRET_KEY: minioadmin
+      FS_SIGNED_URL_TTL_SEC: "120"
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=Host(`api.shell.local`)"
+      - "traefik.http.routers.gateway.entrypoints=web"
+      - "traefik.http.services.gateway.loadbalancer.server.port=3000"
 
   dev-server:
     build:
@@ -30,6 +81,9 @@ services:
       - "5173:5173"
     volumes:
       - ../:/app
-      - /app/node_modules  # prevent host node_modules override
+      - /app/node_modules
     environment:
       - NODE_ENV=development
+
+volumes:
+  minio_data: {}
