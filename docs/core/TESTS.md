@@ -10,10 +10,10 @@
 
 ## UAT / BDD (examples)
 
-| Scenario                    | Given           | When        | Then              |
-|----------------------------|-----------------|-------------|-------------------|
-| User opens app             | App is running  | User visits / | Home page loads |
-| (add your scenarios)       | …               | …           | …                 |
+| Scenario             | Given          | When          | Then            |
+| -------------------- | -------------- | ------------- | --------------- |
+| User opens app       | App is running | User visits / | Home page loads |
+| (add your scenarios) | …              | …             | …               |
 
 ## Acceptance criteria (loading / empty / error)
 

@@ -4,11 +4,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import {
-  isAllowedOrigin,
-  createShellCaps,
-  type ShellMessage,
-} from "./protocol";
+import { isAllowedOrigin, createShellCaps, type ShellMessage } from "./protocol";
 import { analytics } from "./analytics";
 
 const HANDSHAKE_TIMEOUT_MS = 2000;
@@ -66,7 +62,6 @@ export function AppHost({
       const origin = event.origin ?? "null";
       if (!isAllowedOrigin(origin)) {
         analytics.message_rejected("origin_not_allowed", origin);
-        console.warn("[AppHost] message_rejected", { origin, reason: "origin_not_allowed" });
         return;
       }
       const source = event.source;
@@ -78,7 +73,6 @@ export function AppHost({
       }
       if (!knownWindowId) {
         analytics.message_rejected("unknown_source");
-        console.warn("[AppHost] message_rejected", { reason: "unknown_source" });
         return;
       }
       const data = event.data as ShellMessage;
@@ -126,50 +120,32 @@ export function AppHost({
       handshakeTimerRef.current = null;
       analytics.handshake_timeout(windowId);
       setPlaceholder("App not responding");
-      console.warn("[AppHost] handshake_timeout", { windowId });
     }, HANDSHAKE_TIMEOUT_MS);
+    const iframe = iframeRef.current;
+    const sourceMap = sourceToWindowIdRef.current;
     return () => {
       readyRef.current = null;
       if (handshakeTimerRef.current) {
         clearTimeout(handshakeTimerRef.current);
       }
-      const iframe = iframeRef.current;
       if (iframe?.contentWindow) {
-        sourceToWindowIdRef.current.delete(iframe.contentWindow);
+        sourceMap.delete(iframe.contentWindow);
       }
       contentWindowRef?.(null);
     };
   }, [windowId, src, contentWindowRef]);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div className="app-host-root">
       <iframe
-      ref={iframeRef}
-      src={src}
-      title={windowId}
-      sandbox="allow-scripts"
-      onLoad={onIframeLoad}
-      style={{
-        width: "100%",
-        height: "100%",
-        border: "none",
-        display: "block",
-      }}
-    />
-      {placeholder && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "var(--wm-bg, #fff)",
-            padding: "var(--wm-padding-2, 8px)",
-            color: "var(--wm-fg, #333)",
-            fontSize: "var(--wm-font-size, 12px)",
-          }}
-        >
-          {placeholder}
-        </div>
-      )}
+        ref={iframeRef}
+        src={src}
+        title={windowId}
+        sandbox="allow-scripts"
+        onLoad={onIframeLoad}
+        className="app-host-iframe"
+      />
+      {placeholder && <div className="app-host-placeholder">{placeholder}</div>}
     </div>
   );
 }

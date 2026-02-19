@@ -30,7 +30,7 @@ paths:
 
   /api/fs/roots:
     get:
-      summary: List virtual roots (dev: DISK_C, APPS per infra/minio/fixtures)
+      summary: "List virtual roots (dev: DISK_C, APPS per infra/minio/fixtures)"
       operationId: getFsRoots
       tags: [fs]
       responses:

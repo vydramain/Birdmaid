@@ -9,13 +9,13 @@
 
 ## Gate v4 Summary (Gate Rescue)
 
-| Gate | Result | Notes |
-|------|--------|-------|
-| Clean-state | **PASS** | `git add back/ vitest.api.config.ts docs/audit/` — impl staged |
-| Stack start | **PASS** | Traefik v3.6.8, minio, gateway (CI=true, passHostHeader for MinIO) |
-| test:api | **16/16** | All passed (GET + Range instead of HEAD; SigV4 method mismatch fixed) |
-| Presigned URL | **PASS** | GET validated; HEAD requires presign HEAD — we use GET (browser viewers use GET) |
-| **Final** | **PASS** | P0 resolved |
+| Gate          | Result    | Notes                                                                            |
+| ------------- | --------- | -------------------------------------------------------------------------------- |
+| Clean-state   | **PASS**  | `git add back/ vitest.api.config.ts docs/audit/` — impl staged                   |
+| Stack start   | **PASS**  | Traefik v3.6.8, minio, gateway (CI=true, passHostHeader for MinIO)               |
+| test:api      | **16/16** | All passed (GET + Range instead of HEAD; SigV4 method mismatch fixed)            |
+| Presigned URL | **PASS**  | GET validated; HEAD requires presign HEAD — we use GET (browser viewers use GET) |
+| **Final**     | **PASS**  | P0 resolved                                                                      |
 
 **Evidence:** See STEP 0–5 outputs below.
 
@@ -35,19 +35,20 @@ MISSING_HOSTS
 ```
 
 **Traefik section (infra/docker-compose.dev.yml):**
+
 - image: traefik:v3.6.8 (upgraded from v3.2 for Docker API 1.44)
 - volumes: /var/run/docker.sock:/var/run/docker.sock:ro
 - command: --providers.docker.endpoint=unix:///var/run/docker.sock
 
 ### STEP 1–2 — Fixes applied
 
-| Fix | File | Change |
-|-----|------|--------|
-| Traefik Docker API | infra/docker-compose.dev.yml | traefik:v3.2 → v3.6.8; add endpoint |
-| open-url handler | back/src/index.ts | req.json() → req.body |
-| Presign with public host | back/src/fs.ts, index.ts | S3Client(FS_S3_PUBLIC_URL) for getSignedUrl |
-| passHostHeader | infra/docker-compose.dev.yml | minio: loadbalancer.passHostHeader=true |
-| CI for pnpm | infra/docker-compose.dev.yml | gateway: CI=true |
+| Fix                      | File                         | Change                                      |
+| ------------------------ | ---------------------------- | ------------------------------------------- |
+| Traefik Docker API       | infra/docker-compose.dev.yml | traefik:v3.2 → v3.6.8; add endpoint         |
+| open-url handler         | back/src/index.ts            | req.json() → req.body                       |
+| Presign with public host | back/src/fs.ts, index.ts     | S3Client(FS_S3_PUBLIC_URL) for getSignedUrl |
+| passHostHeader           | infra/docker-compose.dev.yml | minio: loadbalancer.passHostHeader=true     |
+| CI for pnpm              | infra/docker-compose.dev.yml | gateway: CI=true                            |
 
 ### STEP 3 — Health, roots, open-url
 
@@ -103,21 +104,22 @@ A  docs/audit/FP2_AUDIT_REPORT.md
 - infra/docker-compose.dev.yml (Traefik v3.6.8, endpoint, passHostHeader, CI)
 - back/src/index.ts (req.body, s3Presign client)
 - back/src/fs.ts (presignS3 param, sign with public host)
-- back/__tests__/fp2/api-fs.integration.test.ts (HEAD → GET with Range; SigV4 method fix)
+- back/**tests**/fp2/api-fs.integration.test.ts (HEAD → GET with Range; SigV4 method fix)
 
 ---
 
 ## Gate v2 Summary
 
-| Gate | Result | Blocker |
-|------|--------|---------|
-| Clean-state | ⚠️ Partial | `back/`, `vitest.api.config.ts`, `docs/audit/` untracked — part of FP2 impl, need `git add` |
-| Stack start | **BLOCKED** | Docker daemon not running |
-| test:api | **BLOCKED** | Requires stack |
-| Presigned URL | **BLOCKED** | Requires stack |
-| **Final** | **REJECT** | P0: Cannot run stack (Docker daemon down) |
+| Gate          | Result      | Blocker                                                                                     |
+| ------------- | ----------- | ------------------------------------------------------------------------------------------- |
+| Clean-state   | ⚠️ Partial  | `back/`, `vitest.api.config.ts`, `docs/audit/` untracked — part of FP2 impl, need `git add` |
+| Stack start   | **BLOCKED** | Docker daemon not running                                                                   |
+| test:api      | **BLOCKED** | Requires stack                                                                              |
+| Presigned URL | **BLOCKED** | Requires stack                                                                              |
+| **Final**     | **REJECT**  | P0: Cannot run stack (Docker daemon down)                                                   |
 
 **P0 Blockers:**
+
 1. Docker daemon not running — `docker info` fails with "failed to connect to the docker API"
 2. Stack not started — `docker compose up` cannot run
 3. test:api and presigned URL verification cannot execute without stack
@@ -128,37 +130,37 @@ A  docs/audit/FP2_AUDIT_REPORT.md
 
 ## Gate v3 Summary
 
-| Gate | Result | Notes |
-|------|--------|-------|
-| Clean-state | ⚠️ Partial | impl untracked must be added before merge (`back/`, `vitest.api.config.ts`, `docs/audit/`) |
-| Stack start | **PASS** | traefik, minio, gateway up (dev-server skipped: Dockerfile path; gateway needs CI=true) |
-| test:api | **FAIL** | api.shell.local unreachable (Traefik Docker provider broken: API version mismatch) |
-| Presigned URL | **FAIL** | POST /api/fs/open-url → 500 `req.json is not a function` (P0: Fastify v5 API) |
-| **Final** | **REJECT** | P0: test:api + Presigned URL blocked |
+| Gate          | Result     | Notes                                                                                      |
+| ------------- | ---------- | ------------------------------------------------------------------------------------------ |
+| Clean-state   | ⚠️ Partial | impl untracked must be added before merge (`back/`, `vitest.api.config.ts`, `docs/audit/`) |
+| Stack start   | **PASS**   | traefik, minio, gateway up (dev-server skipped: Dockerfile path; gateway needs CI=true)    |
+| test:api      | **FAIL**   | api.shell.local unreachable (Traefik Docker provider broken: API version mismatch)         |
+| Presigned URL | **FAIL**   | POST /api/fs/open-url → 500 `req.json is not a function` (P0: Fastify v5 API)              |
+| **Final**     | **REJECT** | P0: test:api + Presigned URL blocked                                                       |
 
 ---
 
 ## 1. Inventory (file paths)
 
-| Item | Path |
-|------|------|
-| FP2 spec | docs/fps/FP2.md |
-| API contract | docs/core/API.yaml |
-| FS contract | docs/core/FS_CONTRACT_v0.md |
-| CORS spec | docs/core/CORS_SIGNED_URLS.md |
-| Tests plan | docs/tests/FP2_TESTS.md |
-| Dev domain | docs/dev/DEV_DOMAIN.md |
-| Compose | infra/docker-compose.dev.yml |
-| MinIO init | infra/minio/init.sh |
-| MinIO CORS | infra/minio/cors.json |
-| MinIO fixtures | infra/minio/fixtures/DISK_C/readme.txt, docs/sample.txt; APPS/demo-app/index.html, asset.png |
-| MinIO README | infra/minio/README.md |
-| Gateway entry | back/src/index.ts |
-| FS service | back/src/fs.ts |
-| Path validation | back/src/path.ts |
-| API integration tests | back/__tests__/fp2/api-fs.integration.test.ts |
-| Vitest API config | vitest.api.config.ts |
-| Root package.json | package.json (test:api: vitest run --config vitest.api.config.ts) |
+| Item                  | Path                                                                                         |
+| --------------------- | -------------------------------------------------------------------------------------------- |
+| FP2 spec              | docs/fps/FP2.md                                                                              |
+| API contract          | docs/core/API.yaml                                                                           |
+| FS contract           | docs/core/FS_CONTRACT_v0.md                                                                  |
+| CORS spec             | docs/core/CORS_SIGNED_URLS.md                                                                |
+| Tests plan            | docs/tests/FP2_TESTS.md                                                                      |
+| Dev domain            | docs/dev/DEV_DOMAIN.md                                                                       |
+| Compose               | infra/docker-compose.dev.yml                                                                 |
+| MinIO init            | infra/minio/init.sh                                                                          |
+| MinIO CORS            | infra/minio/cors.json                                                                        |
+| MinIO fixtures        | infra/minio/fixtures/DISK_C/readme.txt, docs/sample.txt; APPS/demo-app/index.html, asset.png |
+| MinIO README          | infra/minio/README.md                                                                        |
+| Gateway entry         | back/src/index.ts                                                                            |
+| FS service            | back/src/fs.ts                                                                               |
+| Path validation       | back/src/path.ts                                                                             |
+| API integration tests | back/**tests**/fp2/api-fs.integration.test.ts                                                |
+| Vitest API config     | vitest.api.config.ts                                                                         |
+| Root package.json     | package.json (test:api: vitest run --config vitest.api.config.ts)                            |
 
 ---
 
@@ -183,12 +185,12 @@ $ git status --short
 
 **Что должно быть tracked (часть FP2 реализации):**
 
-| Path | Status | Action |
-|------|--------|--------|
-| `back/` | ?? untracked | `git add back/` — gateway (index.ts, fs.ts, path.ts, package.json, tests) |
-| `vitest.api.config.ts` | ?? untracked | `git add vitest.api.config.ts` — config для test:api |
-| `docs/audit/` | ?? untracked | `git add docs/audit/` — этот отчёт |
-| Modified files (README, FP2, compose, etc.) | M | `git add` + commit — изменения по FP2 |
+| Path                                        | Status       | Action                                                                    |
+| ------------------------------------------- | ------------ | ------------------------------------------------------------------------- |
+| `back/`                                     | ?? untracked | `git add back/` — gateway (index.ts, fs.ts, path.ts, package.json, tests) |
+| `vitest.api.config.ts`                      | ?? untracked | `git add vitest.api.config.ts` — config для test:api                      |
+| `docs/audit/`                               | ?? untracked | `git add docs/audit/` — этот отчёт                                        |
+| Modified files (README, FP2, compose, etc.) | M            | `git add` + commit — изменения по FP2                                     |
 
 **Почему `?? back/`:** Код gateway добавлен в M1–M5, но не закоммичен. Для Gate v2 требуется явно добавить в репо: `git add back/ vitest.api.config.ts` (без выполнения коммита — только указание).
 
@@ -366,6 +368,7 @@ $ docker run --rm --network infra_default curlimages/curl:latest curl -s -X POST
 **JSON response:** 500 — `req.json is not a function`. Fastify v5 uses `req.body`, not `req.json`. P0 blocker.
 
 **Gateway log:**
+
 ```
 {"level":50,"err":{"type":"TypeError","message":"req.json is not a function","stack":"TypeError: req.json is not a function\n    at Object.<anonymous> (/app/back/src/index.ts:126:27)...
 ```
@@ -400,14 +403,14 @@ if (publicUrl) {
 
 ### 4.5 Gateway env vars (from compose)
 
-| Var | Value |
-|-----|-------|
-| FS_S3_ENDPOINT | http://minio:9000 |
-| FS_S3_PUBLIC_URL | http://s3.shell.local |
-| FS_S3_BUCKET | birdmaid-dev |
-| FS_S3_ACCESS_KEY | minioadmin |
-| FS_S3_SECRET_KEY | minioadmin |
-| FS_SIGNED_URL_TTL_SEC | 120 |
+| Var                   | Value                 |
+| --------------------- | --------------------- |
+| FS_S3_ENDPOINT        | http://minio:9000     |
+| FS_S3_PUBLIC_URL      | http://s3.shell.local |
+| FS_S3_BUCKET          | birdmaid-dev          |
+| FS_S3_ACCESS_KEY      | minioadmin            |
+| FS_S3_SECRET_KEY      | minioadmin            |
+| FS_SIGNED_URL_TTL_SEC | 120                   |
 
 **S3 client config** (`back/src/index.ts` lines 15–23):
 
@@ -421,12 +424,12 @@ if (publicUrl) {
 
 ### 5.1 Endpoint → handler mapping
 
-| Endpoint | API.yaml | Handler |
-|----------|----------|---------|
-| GET /health | HealthResponse | back/src/index.ts:64–66 |
-| GET /api/fs/roots | RootsResponse | back/src/index.ts:72–77 |
-| GET /api/fs/list | FsListResponse, 400/403/500 | back/src/index.ts:79–101 |
-| GET /api/fs/stat | FsStatResponse, 400/403/404/500 | back/src/index.ts:103–122 |
+| Endpoint              | API.yaml                         | Handler                   |
+| --------------------- | -------------------------------- | ------------------------- |
+| GET /health           | HealthResponse                   | back/src/index.ts:64–66   |
+| GET /api/fs/roots     | RootsResponse                    | back/src/index.ts:72–77   |
+| GET /api/fs/list      | FsListResponse, 400/403/500      | back/src/index.ts:79–101  |
+| GET /api/fs/stat      | FsStatResponse, 400/403/404/500  | back/src/index.ts:103–122 |
 | POST /api/fs/open-url | OpenUrlResponse, 400/403/404/500 | back/src/index.ts:124–152 |
 
 ### 5.2 ErrorResponse format
@@ -434,26 +437,26 @@ if (publicUrl) {
 **Example (bad root):**
 
 ```json
-{"error":{"code":"ROOT_NOT_FOUND","message":"Root not found"}}
+{ "error": { "code": "ROOT_NOT_FOUND", "message": "Root not found" } }
 ```
 
 HTTP 403. Matches API.yaml: `{ error: { code, message, details? } }`.
 
 ### 5.3 Path rules — bad path → 400
 
-| Example path | Reason |
-|--------------|--------|
-| `/@root/DISK_C/../etc/` | `..` forbidden (path.ts:29) |
-| `/@root/DISK_C/` with `\` | `\` forbidden |
-| `/@root/DISK_C//docs/` | `//` forbidden |
-| Invalid encoding | decodeURIComponent throws |
-| Path length > 1024 | BAD_PATH |
-| Missing `/@root/{ROOT_ID}/` | BAD_PATH |
+| Example path                | Reason                      |
+| --------------------------- | --------------------------- |
+| `/@root/DISK_C/../etc/`     | `..` forbidden (path.ts:29) |
+| `/@root/DISK_C/` with `\`   | `\` forbidden               |
+| `/@root/DISK_C//docs/`      | `//` forbidden              |
+| Invalid encoding            | decodeURIComponent throws   |
+| Path length > 1024          | BAD_PATH                    |
+| Missing `/@root/{ROOT_ID}/` | BAD_PATH                    |
 
 ### 5.4 Root isolation — bad root → 403
 
-| Example | Expected |
-|---------|----------|
+| Example                                      | Expected                                                              |
+| -------------------------------------------- | --------------------------------------------------------------------- |
 | `GET /api/fs/list?path=/@root/UNKNOWN_ROOT/` | 403, `{"error":{"code":"ROOT_NOT_FOUND","message":"Root not found"}}` |
 
 Implemented in `back/src/path.ts` lines 52–54: `knownRoots.includes(rootId)`.

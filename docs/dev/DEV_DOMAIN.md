@@ -5,6 +5,18 @@
 
 ---
 
+## Entrypoints
+
+| Entrypoint       | Domain / Port                                   | Command / Location                              |
+| ---------------- | ----------------------------------------------- | ----------------------------------------------- |
+| Front dev server | shell.local :80 (via Traefik) or localhost:5173 | `pnpm dev` (standalone) or compose `dev-server` |
+| Gateway          | api.shell.local :80                             | compose `gateway` (back/ volume mount)          |
+| MinIO (S3)       | s3.shell.local :80                              | compose `minio`                                 |
+| Traefik          | :80, :8080 (dashboard)                          | compose `traefik`                               |
+| Fixtures         | —                                               | `infra/minio/fixtures/` (DISK_C, APPS)          |
+
+---
+
 ## 1. /etc/hosts (required)
 
 Add entries so the browser resolves domains:
@@ -16,6 +28,7 @@ Add entries so the browser resolves domains:
 ```
 
 **Optional (MinIO console, not DoD):**
+
 ```
 127.0.0.1 minio.shell.local
 ```
@@ -54,13 +67,13 @@ curl -H "Host: api.shell.local" http://127.0.0.1/api/fs/roots
 
 ## 3. Ports
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| Traefik | 80 | HTTP entrypoint |
-| Traefik dashboard | 8080 | Optional: http://localhost:8080 |
-| dev-server (Vite) | 5173 | Frontend dev server |
-| MinIO (S3 API) | 9000 | Internal (via Traefik on s3.shell.local) |
-| Gateway | 3000 | Internal (via Traefik on api.shell.local) |
+| Service           | Port | Purpose                                   |
+| ----------------- | ---- | ----------------------------------------- |
+| Traefik           | 80   | HTTP entrypoint                           |
+| Traefik dashboard | 8080 | Optional: http://localhost:8080           |
+| dev-server (Vite) | 5173 | Frontend dev server                       |
+| MinIO (S3 API)    | 9000 | Internal (via Traefik on s3.shell.local)  |
+| Gateway           | 3000 | Internal (via Traefik on api.shell.local) |
 
 ---
 
@@ -78,11 +91,11 @@ Traefik uses dynamic config via Docker labels in `infra/docker-compose.dev.yml`.
 
 ## 4. Commands
 
-| Command | Description |
-|---------|-------------|
+| Command                                                | Description                                                            |
+| ------------------------------------------------------ | ---------------------------------------------------------------------- |
 | `docker compose -f infra/docker-compose.dev.yml up -d` | Full stack: Traefik + MinIO + Gateway + dev-server (все в контейнерах) |
-| `docker compose -f infra/docker-compose.dev.yml down` | Stop |
-| `pnpm dev` | Только фронт на хосте (без Docker; http://localhost:5173) |
+| `docker compose -f infra/docker-compose.dev.yml down`  | Stop                                                                   |
+| `pnpm dev`                                             | Только фронт на хосте (без Docker; http://localhost:5173)              |
 
 **Full stack** (единственный canonical compose — `infra/docker-compose.dev.yml`):
 
@@ -96,6 +109,7 @@ docker compose -f infra/docker-compose.dev.yml up -d
 ```
 
 **Standalone (no Docker):** для разработки только фронта без MinIO/Gateway:
+
 ```bash
 pnpm dev
 # Open http://localhost:5173
@@ -107,11 +121,11 @@ pnpm dev
 
 **После M1** (gateway skeleton): health check проходит. **После M5** (FS endpoints): roots + signed URL.
 
-| Check | Command | Expected | M |
-|-------|---------|----------|---|
-| Gateway health | `curl http://api.shell.local/health` | 200, `{ "status": "ok" }` | M1 |
-| Roots | `curl http://api.shell.local/api/fs/roots` | 200, `{ "roots": [...] }` | M5 |
-| Signed URL | `curl -I <signed_url>` (URL from open-url, points to s3.shell.local) | 200 | M5 |
+| Check          | Command                                                              | Expected                  | M   |
+| -------------- | -------------------------------------------------------------------- | ------------------------- | --- |
+| Gateway health | `curl http://api.shell.local/health`                                 | 200, `{ "status": "ok" }` | M1  |
+| Roots          | `curl http://api.shell.local/api/fs/roots`                           | 200, `{ "roots": [...] }` | M5  |
+| Signed URL     | `curl -I <signed_url>` (URL from open-url, points to s3.shell.local) | 200                       | M5  |
 
 All checks must pass **via domains** (api.shell.local, s3.shell.local), not localhost ports.
 
@@ -128,12 +142,12 @@ Shell SPA uses client-side routing. Traefik must serve `index.html` for all rout
 
 Gateway reads S3 credentials from env. **Never expose to frontend.**
 
-| Var | Purpose |
-|-----|---------|
-| FS_S3_ENDPOINT | MinIO endpoint (e.g. http://minio:9000) |
-| FS_S3_BUCKET | Bucket name (birdmaid-dev) |
-| FS_S3_ACCESS_KEY | MinIO access key |
-| FS_S3_SECRET_KEY | MinIO secret key |
+| Var                   | Purpose                                      |
+| --------------------- | -------------------------------------------- |
+| FS_S3_ENDPOINT        | MinIO endpoint (e.g. http://minio:9000)      |
+| FS_S3_BUCKET          | Bucket name (birdmaid-dev)                   |
+| FS_S3_ACCESS_KEY      | MinIO access key                             |
+| FS_S3_SECRET_KEY      | MinIO secret key                             |
 | FS_SIGNED_URL_TTL_SEC | TTL for presigned URLs (60–300, default 120) |
 
 ---

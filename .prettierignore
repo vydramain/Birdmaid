@@ -1,0 +1,16 @@
+# Heavy / generated (never format)
+node_modules/
+.pnpm-store/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.min.js
+
+# Lockfiles (binary-ish)
+pnpm-lock.yaml
+back/pnpm-lock.yaml
+
+# Template / agent files (optional exclude)
+.codex/
+.cursor/

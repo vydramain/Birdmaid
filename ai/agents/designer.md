@@ -7,6 +7,7 @@
 ## Required Skills
 
 Before starting work, run the following skill:
+
 - `.codex/skills/agents/designer` — UX design and business analysis skills: user journey mapping, requirements gathering, UX principles, business rules
 
 This skill provides frameworks, best practices, and quality checklists for UX design and business analysis work.
@@ -24,7 +25,7 @@ This skill provides frameworks, best practices, and quality checklists for UX de
 1. **Journey Map** (таблица):
    | Stage | User Goal | Actions | Touchpoints | Pain Points | Opportunities |
    |-------|-----------|---------|-------------|-------------|---------------|
-   | ...   | ...       | ...     | ...         | ...         | ...           |
+   | ... | ... | ... | ... | ... | ... |
 
 2. **Requirements** (список):
    - Use cases (main flow + alternate flows)

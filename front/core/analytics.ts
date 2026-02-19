@@ -1,5 +1,5 @@
 /**
- * FP1 analytics — events (console + buffer).
+ * FP1 analytics — events (buffer).
  * Events: window_*, drag_end, resize_end, taskbar_click, app_ready, handshake_timeout, message_rejected.
  */
 
@@ -18,17 +18,12 @@ export type ShellEvent =
   | { type: "handshake_timeout"; windowId: string }
   | { type: "message_rejected"; reason: string; origin?: string };
 
-const PREFIX = "[Shell]";
-
 const buffer: ShellEvent[] = [];
 const MAX_BUFFER = 200;
 
 function emit(event: ShellEvent): void {
   buffer.push(event);
   if (buffer.length > MAX_BUFFER) buffer.shift();
-  if (typeof console !== "undefined" && console.debug) {
-    console.debug(`${PREFIX} ${event.type}`, event);
-  }
 }
 
 export const analytics = {

@@ -7,6 +7,7 @@
 ## Required Skills
 
 Before starting work, run the following skill:
+
 - `.codex/skills/agents/delivery` — Project delivery skills: planning, risk management, dependency tracking, communication
 
 This skill provides frameworks, best practices, and quality checklists for project delivery work.
@@ -23,7 +24,7 @@ This skill provides frameworks, best practices, and quality checklists for proje
 1. **Release Plan** (таблица):
    | Milestone | Date | Tasks | Owner | Status |
    |-----------|------|-------|-------|--------|
-   | ...       | ...  | ...   | ...   | ...    |
+   | ... | ... | ... | ... | ... |
 
 2. **Dependency Map**:
    - Teams
@@ -33,7 +34,7 @@ This skill provides frameworks, best practices, and quality checklists for proje
 3. **Risk Register** (таблица):
    | Risk | Probability | Impact | Mitigation | Owner |
    |------|-------------|--------|------------|-------|
-   | ...  | ...         | ...    | ...        | ...   |
+   | ... | ... | ... | ... | ... |
 
 4. **Communication Plan**:
    - Cadence (еженедельно/ежедневно)

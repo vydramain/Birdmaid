@@ -20,6 +20,7 @@ fixtures/
 ```
 
 Maps to S3:
+
 - `roots/DISK_C/readme.txt`
 - `roots/DISK_C/docs/sample.txt`
 - `roots/DISK_C/apps/`
@@ -41,6 +42,7 @@ Maps to S3:
 **Prerequisite:** MinIO running, `mc` (MinIO Client) available.
 
 **From host (with mc installed):**
+
 ```bash
 cd infra/minio
 export MINIO_ENDPOINT=http://localhost:9000  # or s3.shell.local if via Traefik
@@ -50,6 +52,7 @@ export MINIO_SECRET_KEY=minioadmin
 ```
 
 **Via Docker (mc image):**
+
 ```bash
 docker run --rm --network birdmaid_default \
   -v "$(pwd)/infra/minio:/minio" \
@@ -59,7 +62,7 @@ docker run --rm --network birdmaid_default \
   minio/mc sh /minio/init.sh
 ```
 
-*(Adjust network name to match docker-compose.)*
+_(Adjust network name to match docker-compose.)_
 
 **From docker-compose:** Init runs automatically via `minio-init` service in `infra/docker-compose.dev.yml`.
 

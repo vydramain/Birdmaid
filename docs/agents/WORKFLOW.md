@@ -30,20 +30,20 @@ Each stage reads and updates `docs/fps/FP<N>.md`.
 
 Every engineering response must include:
 
-| Field | Description |
-|-------|-------------|
-| **Evidence** | Files/paths changed |
-| **Minimal patch plan** | What was added/changed/removed |
-| **Tests** | Commands to run (`npm run lint`, `npm run test`) |
-| **DoD checklist** | [ ] Lint passes, [ ] Tests pass, [ ] No new violations |
+| Field                  | Description                                            |
+| ---------------------- | ------------------------------------------------------ |
+| **Evidence**           | Files/paths changed                                    |
+| **Minimal patch plan** | What was added/changed/removed                         |
+| **Tests**              | Commands to run (`npm run lint`, `npm run test`)       |
+| **DoD checklist**      | [ ] Lint passes, [ ] Tests pass, [ ] No new violations |
 
 ## Where Guardrails Live
 
-| Document | Purpose |
-|----------|---------|
-| [docs/dev/GUARDRAILS.md](../dev/GUARDRAILS.md) | Canonical rules (output contract, style/units when applicable) |
-| [docs/style/STYLE_GUIDE.md](../style/STYLE_GUIDE.md) | Style guide + guardrails policy |
-| `docs/fps/FP<N>.md` | Product contract for the current FP (see [FP_EXAMPLE.md](../fps/FP_EXAMPLE.md)) |
+| Document                                             | Purpose                                                                         |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------- |
+| [docs/dev/GUARDRAILS.md](../dev/GUARDRAILS.md)       | Canonical rules (output contract, style/units when applicable)                  |
+| [docs/style/STYLE_GUIDE.md](../style/STYLE_GUIDE.md) | Style guide + guardrails policy                                                 |
+| `docs/fps/FP<N>.md`                                  | Product contract for the current FP (see [FP_EXAMPLE.md](../fps/FP_EXAMPLE.md)) |
 
 **Engineer hard rules (no exceptions):**
 

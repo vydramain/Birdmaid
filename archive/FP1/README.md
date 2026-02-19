@@ -5,12 +5,12 @@
 
 ## Contents
 
-| Folder | Contents |
-|--------|----------|
-| `evidence/` | demo-notes.md, demo checklist, commands |
-| `transcripts/` | (Optional) Cursor/agent transcripts — copy manually if needed |
-| `reports/` | (Optional) Test/lint reports — copy manually if needed |
-| `design_snapshot/` | (Optional) Design docs snapshot — not used in FP1 |
+| Folder             | Contents                                                      |
+| ------------------ | ------------------------------------------------------------- |
+| `evidence/`        | demo-notes.md, demo checklist, commands                       |
+| `transcripts/`     | (Optional) Cursor/agent transcripts — copy manually if needed |
+| `reports/`         | (Optional) Test/lint reports — copy manually if needed        |
+| `design_snapshot/` | (Optional) Design docs snapshot — not used in FP1             |
 
 ## Links
 

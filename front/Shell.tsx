@@ -232,86 +232,76 @@ export function Shell() {
 
   return (
     <ThemeScaleProvider theme={themeId} scale={scale}>
-      <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
+      <div className="shell-root">
         <DesktopView theme={theme} scale={scale} onClick={handleDesktopClick}>
-          <div
-            style={{
-              position: "absolute",
-              top: 10,
-              left: 10,
-              zIndex: 50,
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
+          <div className="shell-toolbar">
             <button
               type="button"
+              className="shell-btn"
               onClick={(e) => {
                 e.stopPropagation();
                 createWindow();
               }}
-              style={{ padding: "8px 16px", fontSize: 14, cursor: "pointer" }}
             >
               New window
             </button>
             <button
               type="button"
+              className="shell-btn"
               onClick={(e) => {
                 e.stopPropagation();
                 cycleTheme();
               }}
-              style={{ padding: "8px 16px", fontSize: 14, cursor: "pointer" }}
             >
               Switch theme
             </button>
             <button
               type="button"
+              className="shell-btn"
               onClick={(e) => {
                 e.stopPropagation();
                 cycleScale();
               }}
-              style={{ padding: "8px 16px", fontSize: 14, cursor: "pointer" }}
             >
               Switch scale
             </button>
           </div>
         </DesktopView>
 
-      {visibleOrder.map((id, idx) => {
-        const w = wm.getWindow(id);
-        if (!w || w.state === "minimized") return null;
-        const winState = toWindowState(w);
-        return (
-          <WindowChromeView
-            key={id}
-            window={winState}
-            zIndex={100 + idx}
-            isActive={activeId === id}
-            actions={getActions(id)}
-            theme={theme}
-            scale={scale}
-          >
-            {w.src ? (
-              <AppHost
-                windowId={id}
-                src={w.src}
-                scale={scale}
-                theme={themeId}
-                onTitleUpdate={handleTitleUpdate}
-              />
-            ) : null}
-          </WindowChromeView>
-        );
-      })}
+        {visibleOrder.map((id, idx) => {
+          const w = wm.getWindow(id);
+          if (!w || w.state === "minimized") return null;
+          const winState = toWindowState(w);
+          return (
+            <WindowChromeView
+              key={id}
+              window={winState}
+              zIndex={100 + idx}
+              isActive={activeId === id}
+              actions={getActions(id)}
+              theme={theme}
+              scale={scale}
+            >
+              {w.src ? (
+                <AppHost
+                  windowId={id}
+                  src={w.src}
+                  scale={scale}
+                  theme={themeId}
+                  onTitleUpdate={handleTitleUpdate}
+                />
+              ) : null}
+            </WindowChromeView>
+          );
+        })}
 
-      <TaskbarView
-        items={taskbarItems}
-        theme={theme}
-        scale={scale}
-        onItemClick={handleTaskbarClick}
-      />
-    </div>
+        <TaskbarView
+          items={taskbarItems}
+          theme={theme}
+          scale={scale}
+          onItemClick={handleTaskbarClick}
+        />
+      </div>
     </ThemeScaleProvider>
   );
 }

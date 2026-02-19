@@ -7,6 +7,7 @@
 ## Required Skills
 
 Before starting work, run the following skill:
+
 - `.codex/skills/agents/analyst` — Product analytics skills: metrics design, data analysis, experimentation, funnel analysis
 
 This skill provides frameworks, best practices, and quality checklists for product analytics work.
@@ -22,6 +23,7 @@ This skill provides frameworks, best practices, and quality checklists for produ
 ## Выходные артефакты
 
 1. **Metric Tree**:
+
    ```
    North Star Metric
    ├── Driver 1
@@ -34,7 +36,7 @@ This skill provides frameworks, best practices, and quality checklists for produ
 2. **Funnel Definition** (таблица):
    | Step | Event | Properties |
    |------|-------|------------|
-   | ...  | ...   | ...        |
+   | ... | ... | ... |
 
 3. **Event Taxonomy** (список):
    - Event name

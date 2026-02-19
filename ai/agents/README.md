@@ -4,14 +4,14 @@
 
 ## Команда (6 агентов)
 
-| Агент | Файл | Скилл | Что делает |
-|-------|------|-------|-----------|
+| Агент            | Файл                                 | Скилл                                                            | Что делает                                                                            |
+| ---------------- | ------------------------------------ | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | **Product Lead** | [product-lead.md](./product-lead.md) | [product-lead](../../.codex/skills/agents/product-lead/SKILL.md) | Управляет продуктом: проблема, outcome, приоритеты, стейкхолдеры, координация команды |
-| **Designer** | [designer.md](./designer.md) | [designer](../../.codex/skills/agents/designer/SKILL.md) | UX + BA: journey map, требования, бизнес-правила, прототипы, состояния |
-| **Analyst** | [analyst.md](./analyst.md) | [analyst](../../.codex/skills/agents/analyst/SKILL.md) | Метрики, воронки, аналитика, эксперименты, дашборды |
-| **Engineer** | [engineer.md](./engineer.md) | [engineer](../../.codex/skills/agents/engineer/SKILL.md) | Техническая реализация: feasibility, архитектура, риски, NFR, код |
-| **Delivery** | [delivery.md](./delivery.md) | [delivery](../../.codex/skills/agents/delivery/SKILL.md) | План релиза, координация, зависимости, коммуникации, риски |
-| **Compliance** | [compliance.md](./compliance.md) | [compliance](../../.codex/skills/agents/compliance/SKILL.md) | Комплаенс, безопасность, приватность, политики, аудит |
+| **Designer**     | [designer.md](./designer.md)         | [designer](../../.codex/skills/agents/designer/SKILL.md)         | UX + BA: journey map, требования, бизнес-правила, прототипы, состояния                |
+| **Analyst**      | [analyst.md](./analyst.md)           | [analyst](../../.codex/skills/agents/analyst/SKILL.md)           | Метрики, воронки, аналитика, эксперименты, дашборды                                   |
+| **Engineer**     | [engineer.md](./engineer.md)         | [engineer](../../.codex/skills/agents/engineer/SKILL.md)         | Техническая реализация: feasibility, архитектура, риски, NFR, код                     |
+| **Delivery**     | [delivery.md](./delivery.md)         | [delivery](../../.codex/skills/agents/delivery/SKILL.md)         | План релиза, координация, зависимости, коммуникации, риски                            |
+| **Compliance**   | [compliance.md](./compliance.md)     | [compliance](../../.codex/skills/agents/compliance/SKILL.md)     | Комплаенс, безопасность, приватность, политики, аудит                                 |
 
 **Примечание:** Каждый агент имеет свой скилл, который содержит frameworks, best practices, и quality checklists. Агенты автоматически используют свои скиллы при работе.
 
@@ -20,11 +20,13 @@
 ### Быстрый старт
 
 Просто напиши в чате:
+
 ```
 @Product Lead: нужно определить scope для новой фичи
 ```
 
 Или:
+
 ```
 @Designer: построить journey map для регистрации пользователей
 ```
@@ -68,6 +70,7 @@ OUTPUT: <формат артефакта>
 ## Чек-лист качества
 
 Каждый агент должен вернуть:
+
 - ✅ Явные допущения (ASSUMPTIONS)
 - ✅ Границы (IN/OUT scope)
 - ✅ Артефактный результат (таблица/список/спека)

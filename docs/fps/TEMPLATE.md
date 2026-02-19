@@ -7,10 +7,12 @@
 ## Scope
 
 Что входит в этот FP:
+
 - ...
 - ...
 
 Что НЕ входит:
+
 - ...
 - ...
 
@@ -18,32 +20,35 @@
 
 Открытые вопросы (закрывать по мере ответов):
 
-| # | Question | Answer | Status |
-|---|----------|--------|--------|
-| 1 | ... | ... | open/closed |
-| 2 | ... | ... | open/closed |
+| #   | Question | Answer | Status      |
+| --- | -------- | ------ | ----------- |
+| 1   | ...      | ...    | open/closed |
+| 2   | ...      | ...    | open/closed |
 
 ## Decisions (ADRs)
 
 Архитектурные решения:
 
-| # | Decision | Rationale | Status |
-|---|----------|-----------|--------|
-| 1 | ... | ... | proposed/accepted/rejected |
+| #   | Decision | Rationale | Status                     |
+| --- | -------- | --------- | -------------------------- |
+| 1   | ...      | ...       | proposed/accepted/rejected |
 
 ## Requirements
 
 ### Use Cases
 
 **Main Flow:**
+
 1. ...
 2. ...
 3. ...
 
 **Alternate Flows:**
+
 - ...
 
 **Error Flows:**
+
 - ...
 
 ### Business Rules
@@ -58,9 +63,9 @@
 
 ## UX Map
 
-| CTA | Endpoint | State | Page | Mock | Status |
-|-----|----------|-------|------|------|--------|
-| ... | ... | ... | ... | yes/no | todo/done |
+| CTA | Endpoint | State | Page | Mock   | Status    |
+| --- | -------- | ----- | ---- | ------ | --------- |
+| ... | ...      | ...   | ...  | yes/no | todo/done |
 
 ## Architecture
 
@@ -73,12 +78,14 @@
 ### Diagrams
 
 **System Design (per CTA):**
+
 ```mermaid
 sequenceDiagram
   ...
 ```
 
 **System Interaction Overview:**
+
 ```mermaid
 flowchart LR
   ...
@@ -115,15 +122,15 @@ flowchart LR
 
 ## Plan
 
-| Milestone | Date | Tasks | Owner | Status |
-|-----------|------|--------|-------|--------|
-| 1 | ... | ... | ... | todo/in_progress/done |
+| Milestone | Date | Tasks | Owner | Status                |
+| --------- | ---- | ----- | ----- | --------------------- |
+| 1         | ...  | ...   | ...   | todo/in_progress/done |
 
 ## Risks
 
-| Risk | Probability | Impact | Mitigation | Status |
-|------|-------------|--------|------------|--------|
-| ... | ... | ... | ... | open/mitigated |
+| Risk | Probability | Impact | Mitigation | Status         |
+| ---- | ----------- | ------ | ---------- | -------------- |
+| ...  | ...         | ...    | ...        | open/mitigated |
 
 ## Dependencies
 
@@ -139,12 +146,15 @@ flowchart LR
 ## Reflection
 
 **What went well:**
+
 - ...
 
 **Risks:**
+
 - ...
 
 **Next focus:**
+
 - ...
 
 ## Evidence
