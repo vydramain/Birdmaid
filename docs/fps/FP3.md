@@ -467,6 +467,21 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 
 ---
 
+## Gate Commands
+
+| Command                      | Required | Suites                                        |
+| ---------------------------- | -------- | --------------------------------------------- |
+| `git status --porcelain`     | yes      | —                                             |
+| `./infra/smoke.sh`           | yes      | —                                             |
+| `./infra/test-lint.sh`       | yes      | —                                             |
+| `./infra/test-unit.sh`       | no       | FP3 unit optional in DoD                      |
+| `./infra/test-api-fp.sh FP3` | yes      | `back/__tests__/fp2/` + `back/__tests__/fp3/` |
+| `./infra/test-e2e.sh`        | yes      | `e2e/fp3-explorer.spec.ts` (Playwright image) |
+
+**Run gate:** `./infra/gate.sh FP3`
+
+---
+
 ## Tests
 
 ### UAT/BDD

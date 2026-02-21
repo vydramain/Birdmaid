@@ -159,8 +159,8 @@
 | Rename flow        | Rename item, Enter commit, assert new name; Rename, Escape, assert old                                      |
 | Create folder flow | New Folder, assert "Новая Папка", rename inline                                                             |
 | Delete flow        | Delete item, assert spinner then gone; T-M6-D1/D2 mock delete API; `addInitScript` stubs `confirm` (iframe) |
-| Upload flow        | T-M7: allowlist 415, 2xx integration; E2E T-M7-U1/U2 use setInputFiles on hidden inputs                   |
-| Upload zip flow    | T-M8-Z1: no index.html → 400, no partial; E2E T-M8-Z1 uses setInputFiles on upload-zip-input               |
+| Upload flow        | T-M7: allowlist 415, 2xx integration; E2E T-M7-U1/U2 use setInputFiles on hidden inputs                     |
+| Upload zip flow    | T-M8-Z1: no index.html → 400, no partial; E2E T-M8-Z1 uses setInputFiles on upload-zip-input                |
 | State persistence  | T-D1.1: minimize → restore → same path                                                                      |
 | Upload file        | Upload png, assert tile; upload disallowed ext → 415                                                        |
 | State persistence  | Navigate to path, minimize, restore, assert same path                                                       |

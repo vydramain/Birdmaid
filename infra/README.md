@@ -41,7 +41,21 @@ docker compose -f infra/docker-compose.dev.yml logs -f minio
 
 ---
 
-## Smoke
+## Canonical Gate Commands (4)
+
+Run from repo root. All scripts are idempotent. **PASS = all green; any non-zero exit → REJECT.**
+
+| Command                        | Meaning                                     | Prerequisite |
+| ------------------------------ | ------------------------------------------- | ------------ |
+| `./infra/smoke.sh`             | Platform health (Traefik, MinIO, gateway)   | compose up   |
+| `./infra/test-lint.sh`         | Lint + format:check (container canonical)   | none         |
+| `./infra/test-api.sh`          | Full API integration tests (all FP)         | smoke first  |
+| `./infra/test-api-fp.sh FP<N>` | API tests scoped to FP2 or FP3              | smoke first  |
+| `./infra/test-e2e.sh`          | E2E (Playwright image; shell.local routing) | smoke first  |
+| `./infra/test-unit.sh`         | Unit tests (Vitest)                         | none         |
+| `./infra/gate.sh [FP]`         | Full gate sequence per FP                   | smoke first  |
+
+### smoke
 
 ```bash
 ./infra/smoke.sh
@@ -50,26 +64,47 @@ docker compose -f infra/docker-compose.dev.yml logs -f minio
 
 Brings up traefik, minio, minio-init, gateway; waits for /health; checks /api/fs/roots. Expected: `PLATFORM OK`.
 
----
-
-## test:api (canonical)
+### lint
 
 ```bash
-./infra/test-api.sh
+./infra/test-lint.sh
 ```
 
-Runs `pnpm test:api` in a clean container. Avoids rollup optional deps / host store issues. **Prerequisite:** stack running (`./infra/smoke.sh` first).
+Runs `pnpm lint` and `pnpm format:check` in a clean node:22-alpine container. No host deps.
+
+### api
+
+```bash
+./infra/test-api.sh           # Full suite (FP2 + FP3)
+./infra/test-api-fp.sh FP2    # FP2 only (scoped; FP2 gate)
+./infra/test-api-fp.sh FP3     # FP2 + FP3 (FP3 gate)
+```
+
+Runs API integration tests in container. **Scoped:** FP2 gate uses `test-api-fp.sh FP2` so FP2 can PASS independently of FP3.
+
+### e2e
+
+```bash
+./infra/test-e2e.sh
+```
+
+Runs Playwright E2E in `mcr.microsoft.com/playwright` image (avoids libnspr4.so in node:22). Uses `--add-host` for shell.local, api.shell.local, s3.shell.local.
 
 ---
 
 ## Files
 
-| File                     | Purpose                        |
-| ------------------------ | ------------------------------ |
-| `docker-compose.dev.yml` | Canonical compose              |
-| `Dockerfile.dev`         | dev-server (Vite) image        |
-| `minio/`                 | Init script, fixtures, CORS    |
-| `smoke.sh`               | Platform health check          |
-| `test-api.sh`            | Canonical test:api (container) |
+| File                     | Purpose                         |
+| ------------------------ | ------------------------------- |
+| `docker-compose.dev.yml` | Canonical compose               |
+| `Dockerfile.dev`         | dev-server (Vite) image         |
+| `minio/`                 | Init script, fixtures, CORS     |
+| `smoke.sh`               | Platform health check           |
+| `test-lint.sh`           | Lint + format:check (container) |
+| `test-api.sh`            | Full API tests (container)      |
+| `test-api-fp.sh`         | API tests scoped to FP2/FP3     |
+| `test-e2e.sh`            | E2E (Playwright image)          |
+| `test-unit.sh`           | Unit tests (container)          |
+| `gate.sh`                | Full gate sequence per FP       |
 
 **Prerequisite:** `/etc/hosts` with shell.local, api.shell.local, s3.shell.local. See [docs/dev/DEV_DOMAIN.md](../docs/dev/DEV_DOMAIN.md).

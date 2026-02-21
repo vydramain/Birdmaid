@@ -220,6 +220,19 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md):
 
 - Frontend: целевой минимум по WindowManager
 
+## Gate Commands
+
+| Command                  | Required | Suites                  |
+| ------------------------ | -------- | ----------------------- |
+| `git status --porcelain` | yes      | —                       |
+| `./infra/smoke.sh`       | yes      | —                       |
+| `./infra/test-lint.sh`   | yes      | —                       |
+| `./infra/test-unit.sh`   | yes      | `front/__tests__/fp1/`  |
+| `./infra/test-api-fp.sh` | no       | FP1 has no API in DoD   |
+| `./infra/test-e2e.sh`    | yes      | `e2e/fp1-shell.spec.ts` |
+
+**Run gate:** `./infra/gate.sh FP1`
+
 ## Definition of Done
 
 **Код:**

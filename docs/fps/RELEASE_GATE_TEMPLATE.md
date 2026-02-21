@@ -22,16 +22,20 @@ Verify that the FP meets critical criteria before marking as released. **PASS on
 
 Each FP **MUST** fill this table. **Canonical execution:** container scripts (`./infra/*.sh`). **Host-only:** `git status`, `./infra/smoke.sh`. Host `pnpm lint/test/etc` prohibited for gate. Evidence = link to log/output.
 
-| Command                  | Expected exit             | Actual exit | Evidence |
-| ------------------------ | ------------------------- | ----------- | -------- |
-| `git status --porcelain` | 0 (empty)                 |             |          |
-| `./infra/smoke.sh`       | 0 (PLATFORM OK)           |             |          |
-| `./infra/test-lint.sh`   | 0                         |             |          |
-| `./infra/test-unit.sh`   | 0 (if FP has unit in DoD) |             |          |
-| `./infra/test-api.sh`    | 0 (if FP has API in DoD)  |             |          |
-| `./infra/test-e2e.sh`    | 0 (if FP has E2E in DoD)  |             |          |
+| Command                        | Expected exit             | Actual exit | Evidence |
+| ------------------------------ | ------------------------- | ----------- | -------- |
+| `git status --porcelain`       | 0 (empty)                 |             |          |
+| `./infra/smoke.sh`             | 0 (PLATFORM OK)           |             |          |
+| `./infra/test-lint.sh`         | 0                         |             |          |
+| `./infra/test-unit.sh`         | 0 (if FP has unit in DoD) |             |          |
+| `./infra/test-api-fp.sh FP<N>` | 0 (if FP has API in DoD)  |             |          |
+| `./infra/test-e2e.sh`          | 0 (if FP has E2E in DoD)  |             |          |
 
-**Prohibited:** "PASS with known failures", "Partial PASS", "skipped allowed" for FP tests. Host-only lint/format/test runs for gate verification.
+**Exit codes:** All commands MUST exit 0 for PASS. Non-zero exit → REJECT. No exceptions.
+
+**Prohibited:** "PASS (but…)", "PASS with known failures", "Partial PASS", "skipped allowed" for FP tests. Host-only lint/format/test runs for gate verification.
+
+**API scoping:** FP2 gate uses `./infra/test-api-fp.sh FP2` (FP2 tests only). FP3 gate uses `./infra/test-api-fp.sh FP3` (FP2+FP3). Full suite: `./infra/test-api.sh`.
 
 ---
 
