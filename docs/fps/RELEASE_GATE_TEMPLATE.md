@@ -14,7 +14,9 @@ Verify that the FP meets critical criteria before marking as released. **PASS on
 - **PASS** — all critical checks passed; FP is ready for release.
 - **REJECT** — any check failed; fix before re-running gate.
 
-**Rule:** If `Actual exit != 0` for any required command → **REJECT**.
+**Rule:** If `Actual exit != 0` for any required command → **REJECT**. No exceptions.
+
+**Prohibited:** PASS with known failures, "PASS (but…)", "Partial PASS", "skipped allowed" for FP tests.
 
 ---
 
@@ -22,18 +24,23 @@ Verify that the FP meets critical criteria before marking as released. **PASS on
 
 Each FP **MUST** fill this table. **Canonical execution:** container scripts (`./infra/*.sh`). **Host-only:** `git status`, `./infra/smoke.sh`. Host `pnpm lint/test/etc` prohibited for gate. Evidence = link to log/output.
 
-| Command                        | Expected exit             | Actual exit | Evidence |
-| ------------------------------ | ------------------------- | ----------- | -------- |
-| `git status --porcelain`       | 0 (empty)                 |             |          |
-| `./infra/smoke.sh`             | 0 (PLATFORM OK)           |             |          |
-| `./infra/test-lint.sh`         | 0                         |             |          |
-| `./infra/test-unit.sh`         | 0 (if FP has unit in DoD) |             |          |
-| `./infra/test-api-fp.sh FP<N>` | 0 (if FP has API in DoD)  |             |          |
-| `./infra/test-e2e.sh`          | 0 (if FP has E2E in DoD)  |             |          |
+### Per-FP command matrix
 
-**Exit codes:** All commands MUST exit 0 for PASS. Non-zero exit → REJECT. No exceptions.
+| Command                      | FP1 | FP2 | FP3 | Expected exit                  |
+| ---------------------------- | --- | --- | --- | ------------------------------ |
+| `git status --porcelain`     | yes | yes | yes | 0 (empty)                      |
+| `./infra/smoke.sh`           | yes | yes | yes | 0 (PLATFORM OK)                |
+| `./infra/test-lint.sh`       | yes | yes | yes | 0 (lint + format:check)        |
+| `./infra/test-unit.sh`       | yes | no  | no  | 0 (if in DoD)                  |
+| `./infra/test-api-fp.sh FP2` | no  | yes | no  | 0 (if in DoD)                  |
+| `./infra/test-api-fp.sh FP3` | no  | no  | yes | 0 (if in DoD)                  |
+| `./infra/test-e2e-fp.sh FP1` | yes | no  | no  | 0 (if in DoD)                  |
+| `./infra/test-e2e-fp.sh FP2` | no  | yes | no  | 0 (FP2: E2E not in DoD → skip) |
+| `./infra/test-e2e-fp.sh FP3` | no  | no  | yes | 0 (if in DoD)                  |
 
-**Prohibited:** "PASS (but…)", "PASS with known failures", "Partial PASS", "skipped allowed" for FP tests. Host-only lint/format/test runs for gate verification.
+**E2E scoping:** Use `./infra/test-e2e-fp.sh <FP>` — runs only that FP's spec. FP2 has no E2E in DoD → script exits 0 with "E2E not required for FP2". FP1 → `e2e/fp1-shell.spec.ts`. FP3 → `e2e/fp3-explorer.spec.ts`.
+
+**Exit codes:** All commands MUST exit 0 for PASS. Non-zero exit → REJECT. No exceptions. **format:check** exit 0 required (via `./infra/test-lint.sh`).
 
 **API scoping:** FP2 gate uses `./infra/test-api-fp.sh FP2` (FP2 tests only). FP3 gate uses `./infra/test-api-fp.sh FP3` (FP2+FP3). Full suite: `./infra/test-api.sh`.
 

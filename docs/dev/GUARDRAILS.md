@@ -88,7 +88,8 @@ See [GUIDE_STYLE.md](../../GUIDE_STYLE.md) for inline-style policy, unit policy,
 | `./infra/test-unit.sh`         | Unit tests (container canonical)          |
 | `./infra/test-api.sh`          | API integration tests (full, container)   |
 | `./infra/test-api-fp.sh FP<N>` | API tests scoped to FP (FP2/FP3)          |
-| `./infra/test-e2e.sh`          | E2E tests (container canonical)           |
+| `./infra/test-e2e.sh`          | E2E full suite (container canonical)      |
+| `./infra/test-e2e-fp.sh <FP>`  | E2E scoped to FP (FP1/FP2/FP3)            |
 | `./infra/gate.sh [FP]`         | Full gate sequence per FP                 |
 | `.husky/commit-msg`            | commitlint (Conventional Commits)         |
 
@@ -107,7 +108,7 @@ CI: `.github/workflows/ci.yml` — lint, format:check, test, audit.
 1. **Clean-state:** `git status --porcelain` empty. Exceptions: only if explicitly whitelisted in this section (rare, by default forbidden).
 2. **Stack:** `./infra/smoke.sh` outputs "PLATFORM OK".
 3. **Lint/format:** `./infra/test-lint.sh` exit=0 (container canonical). Host `pnpm lint` / `pnpm format:check` prohibited for gate.
-4. **All FP tests:** Use FP-scoped scripts. `./infra/test-api-fp.sh FP<N>` exit=0 if FP has API in DoD (FP2, FP3); `./infra/test-unit.sh` exit=0 if FP has unit in DoD; `./infra/test-e2e.sh` exit=0 if FP has E2E in DoD. NO skipped tests that belong to the FP; NO "known failing". Host `pnpm test` / `pnpm test:api` / `pnpm test:e2e` prohibited for gate. **Scoped API:** FP2 gate runs only FP2 tests; FP3 gate runs FP2+FP3 (or full). Full `./infra/test-api.sh` runs all API tests; use `./infra/test-api-fp.sh FP2` / `./infra/test-api-fp.sh FP3` for per-FP gate.
+4. **All FP tests:** Use FP-scoped scripts. `./infra/test-api-fp.sh FP<N>` exit=0 if FP has API in DoD (FP2, FP3); `./infra/test-unit.sh` exit=0 if FP has unit in DoD; `./infra/test-e2e-fp.sh <FP>` exit=0 if FP has E2E in DoD. NO skipped tests that belong to the FP; NO "known failing". Host `pnpm test` / `pnpm test:api` / `pnpm test:e2e` prohibited for gate. **Scoped API:** FP2 gate runs only FP2 tests; FP3 gate runs FP2+FP3 (or full). **Scoped E2E:** Use `./infra/test-e2e-fp.sh FP1` / `./infra/test-e2e-fp.sh FP3` for per-FP gate; FP2 has no E2E in DoD.
 5. **AC/DoD:** All AC/DoD from `docs/fps/FP<N>.md` marked as done. Each item has evidence: file paths + verification commands.
 
 ### Prohibited
@@ -161,7 +162,7 @@ If `pnpm install` fails on host with EACCES (permission denied on node_modules o
 
    Or: `rm -rf node_modules .pnpm-store && pnpm install`.
 
-3. **Container fallback (canonical):** Pre-commit on host will fail until EACCES is fixed. Use container scripts for verification before commit. **FP gates:** Use `./infra/test-lint.sh`, `./infra/test-api.sh`, `./infra/test-unit.sh`, `./infra/test-e2e.sh` (or `./infra/gate.sh FP<N>`).
+3. **Container fallback (canonical):** Pre-commit on host will fail until EACCES is fixed. Use container scripts for verification before commit. **FP gates:** Use `./infra/gate.sh FP<N>` (canonical); or `./infra/test-lint.sh`, `./infra/test-api-fp.sh FP<N>`, `./infra/test-unit.sh`, `./infra/test-e2e-fp.sh FP<N>` per FP.
 
 ### Pre-commit policy
 
@@ -169,7 +170,9 @@ Pre-commit requires deps installed on host (`pnpm lint:staged`). If host `pnpm i
 
 ### Format policy
 
-W2.1 did a **one-time** Prettier sweep. Going forward: format only via `pnpm format` on files changed in PR, or use lint-staged (Prettier runs on staged files). Avoid mass format sweeps.
+- **One-time sweep:** W2.1 done. No further mass sweeps.
+- **Going forward:** Format only via `pnpm format` on staged files (lint-staged) or on specific paths by command. Avoid mass format sweeps.
+- **Gate:** `format:check` exit 0 required. Non-zero → REJECT.
 
 ### Enforced now vs TODO
 

@@ -108,6 +108,8 @@ docker compose -f infra/docker-compose.dev.yml up -d
 # S3: http://s3.shell.local (MinIO)
 ```
 
+**E2E (canonical):** `./infra/test-e2e.sh` — поднимает smoke + dev-server, ждёт shell.local, запускает Playwright в контейнере (mcr.microsoft.com/playwright:v1.58.2-noble).
+
 **Standalone (no Docker):** для разработки только фронта без MinIO/Gateway:
 
 ```bash

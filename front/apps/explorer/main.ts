@@ -45,6 +45,12 @@ const historyStack: string[] = [];
 /** FP3.1 A3: Current list items for context menu delegation. */
 let currentListItems: FsItem[] = [];
 
+/** Stable testid from API path (for item-<id>). Uses basename; unique per path. */
+function pathToStableId(path: string): string {
+  const basename = path.replace(/\/$/, "").split("/").pop() ?? "item";
+  return basename.replace(/\s+/g, "-");
+}
+
 function labelToDisplay(id: string, label: string): string {
   if (id === "DISK_A") return "Floppy (A:)";
   if (id === "DISK_C") return "(C:)";
@@ -220,6 +226,8 @@ function createContentWrapper(): HTMLDivElement {
   content.style.flex = "1";
   content.style.minHeight = "0";
   content.style.overflow = "auto";
+  content.style.display = "flex";
+  content.style.flexDirection = "column";
   content.addEventListener("contextmenu", onContentContextMenu);
   return content;
 }
@@ -336,6 +344,7 @@ function showContextMenu(x: number, y: number, target: "blank" | "item", item?: 
   if (target === "blank" && writable) {
     const newFolder = document.createElement("div");
     newFolder.setAttribute("role", "menuitem");
+    newFolder.setAttribute("data-testid", "menu-new-folder");
     newFolder.textContent = "New Folder";
     newFolder.style.padding = "4px 12px";
     newFolder.style.cursor = "pointer";
@@ -346,6 +355,7 @@ function showContextMenu(x: number, y: number, target: "blank" | "item", item?: 
     menu.appendChild(newFolder);
     const uploadFile = document.createElement("div");
     uploadFile.setAttribute("role", "menuitem");
+    uploadFile.setAttribute("data-testid", "menu-upload-file");
     uploadFile.textContent = "Upload File";
     uploadFile.style.padding = "4px 12px";
     uploadFile.style.cursor = "pointer";
@@ -356,6 +366,7 @@ function showContextMenu(x: number, y: number, target: "blank" | "item", item?: 
     menu.appendChild(uploadFile);
     const uploadZip = document.createElement("div");
     uploadZip.setAttribute("role", "menuitem");
+    uploadZip.setAttribute("data-testid", "menu-upload-zip");
     uploadZip.textContent = "Upload Zip App";
     uploadZip.style.padding = "4px 12px";
     uploadZip.style.cursor = "pointer";
@@ -369,6 +380,7 @@ function showContextMenu(x: number, y: number, target: "blank" | "item", item?: 
   if (target === "item" && item && writable) {
     const del = document.createElement("div");
     del.setAttribute("role", "menuitem");
+    del.setAttribute("data-testid", "menu-delete");
     del.textContent = "Delete";
     del.style.padding = "4px 12px";
     del.style.cursor = "pointer";
@@ -379,6 +391,7 @@ function showContextMenu(x: number, y: number, target: "blank" | "item", item?: 
     menu.appendChild(del);
     const ren = document.createElement("div");
     ren.setAttribute("role", "menuitem");
+    ren.setAttribute("data-testid", "menu-rename");
     ren.textContent = "Rename";
     ren.style.padding = "4px 12px";
     ren.style.cursor = "pointer";
@@ -467,8 +480,8 @@ async function onNewFolder(): Promise<void> {
     return;
   }
   const idx = currentListItems.length - 1;
-  const testId = `item-${name.replace(/\s/g, "-")}`;
-  const div = createFsTile("fs-icon-folder", name, testId, () => {}, undefined, idx);
+  const tempTestId = `item-newfolder-${idx}`;
+  const div = createFsTile("fs-icon-folder", name, tempTestId, () => {}, undefined, idx);
   div.setAttribute("data-placeholder", "1");
   const spinner = document.createElement("div");
   spinner.className = "fs-tile-spinner";
@@ -481,7 +494,7 @@ async function onNewFolder(): Promise<void> {
     placeholder.path = apiPath + nextName.replace(/[/\\]/g, "") + "/";
     const labelEl = div.querySelector(".fs-tile-label");
     if (labelEl) labelEl.textContent = nextName;
-    div.setAttribute("data-testid", `item-${nextName.replace(/\s/g, "-")}`);
+    div.setAttribute("data-testid", `item-newfolder-${idx}`);
   });
   if (!result.ok) {
     div.remove();
@@ -490,6 +503,12 @@ async function onNewFolder(): Promise<void> {
     console.error("[Explorer] create-folder failed");
     return;
   }
+  placeholder.path = result.path;
+  placeholder.name = result.name;
+  const stableId = pathToStableId(result.path);
+  div.setAttribute("data-testid", `item-${stableId}`);
+  const labelEl = div.querySelector(".fs-tile-label");
+  if (labelEl) labelEl.textContent = result.name;
   spinner.remove();
   startRename(placeholder);
 }
@@ -877,7 +896,13 @@ async function loadAndRenderList(): Promise<void> {
     "repeat(auto-fill, minmax(var(--fs-tile-width), var(--fs-tile-width)))";
   listEl.style.gap = "1rem";
   listEl.style.padding = "1rem";
+  listEl.style.flexShrink = "0";
   content.appendChild(listEl);
+  const blankArea = document.createElement("div");
+  blankArea.setAttribute("data-testid", "explorer-blank-area");
+  blankArea.style.flex = "1";
+  blankArea.style.minHeight = "100px";
+  content.appendChild(blankArea);
   root.appendChild(content);
   try {
     const items = await fetchList(state.apiPath);
@@ -885,7 +910,7 @@ async function loadAndRenderList(): Promise<void> {
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const iconClass = item.kind === "dir" ? "fs-icon-folder" : "fs-icon-file";
-      const testId = `item-${item.name.replace(/\s/g, "-")}`;
+      const testId = `item-${pathToStableId(item.path)}`;
       const div = createFsTile(
         iconClass,
         item.name,

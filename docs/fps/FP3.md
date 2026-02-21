@@ -476,7 +476,7 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 | `./infra/test-lint.sh`       | yes      | —                                             |
 | `./infra/test-unit.sh`       | no       | FP3 unit optional in DoD                      |
 | `./infra/test-api-fp.sh FP3` | yes      | `back/__tests__/fp2/` + `back/__tests__/fp3/` |
-| `./infra/test-e2e.sh`        | yes      | `e2e/fp3-explorer.spec.ts` (Playwright image) |
+| `./infra/test-e2e-fp.sh FP3` | yes      | `e2e/fp3-explorer.spec.ts` (Playwright image) |
 
 **Run gate:** `./infra/gate.sh FP3`
 
@@ -566,15 +566,15 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 
 ### Gate Commands
 
-| Command                  | Expected exit   | E2E in DoD |
-| ------------------------ | --------------- | ---------- |
-| `git status --porcelain` | 0 (empty)       | —          |
-| `./infra/smoke.sh`       | 0 (PLATFORM OK) | —          |
-| `./infra/test-lint.sh`   | 0               | —          |
-| `./infra/test-api.sh`    | 0               | —          |
-| `./infra/test-e2e.sh`    | 0               | **yes**    |
+| Command                      | Expected exit   | E2E in DoD |
+| ---------------------------- | --------------- | ---------- |
+| `git status --porcelain`     | 0 (empty)       | —          |
+| `./infra/smoke.sh`           | 0 (PLATFORM OK) | —          |
+| `./infra/test-lint.sh`       | 0               | —          |
+| `./infra/test-api-fp.sh FP3` | 0               | —          |
+| `./infra/test-e2e-fp.sh FP3` | 0               | **yes**    |
 
-**Canonical (container):** `./infra/gate.sh FP3`. Host-only: `git status`, `./infra/smoke.sh`. Host `pnpm lint/test/etc` prohibited for gate. Prerequisite: `docker compose -f infra/docker-compose.dev.yml up -d`.
+**Canonical (container):** `./infra/gate.sh FP3`. Host-only: `git status`, `./infra/smoke.sh`. Host `pnpm lint/test/etc` prohibited for gate. Prerequisite: `docker compose -f infra/docker-compose.dev.yml up -d`. Any non-zero exit → REJECT. No partial PASS.
 
 ### Hygiene / Gates
 

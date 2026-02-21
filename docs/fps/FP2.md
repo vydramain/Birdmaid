@@ -261,7 +261,7 @@ sequenceDiagram
 | `./infra/test-lint.sh`       | yes      | —                                            |
 | `./infra/test-unit.sh`       | no       | FP2 has no unit in DoD                       |
 | `./infra/test-api-fp.sh FP2` | yes      | `back/__tests__/fp2/` (scoped; excludes FP3) |
-| `./infra/test-e2e.sh`        | no       | FP2 has no E2E in DoD                        |
+| `./infra/test-e2e-fp.sh FP2` | no       | FP2 has no E2E in DoD → exit 0, skip         |
 
 **Run gate:** `./infra/gate.sh FP2`. **Scoped API:** FP2 gate runs only FP2 tests so FP2 can PASS independently of FP3.
 

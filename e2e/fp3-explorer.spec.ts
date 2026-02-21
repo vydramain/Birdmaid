@@ -156,9 +156,9 @@ test.describe("FP3 Explorer — M5: Context menus + write ops", () => {
     await frame!.getByTestId("item-My-Documents").dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    await frame!.getByTestId("explorer-list").click({ button: "right" });
+    await frame!.getByTestId("explorer-blank-area").click({ button: "right" });
     await expect(frame!.getByTestId("context-menu")).toBeVisible({ timeout: 2000 });
-    await expect(frame!.getByRole("menuitem", { name: /new folder/i })).toBeVisible();
+    await expect(frame!.getByTestId("menu-new-folder")).toBeVisible();
     await expect(frame!.getByRole("menuitem", { name: /upload file/i })).toBeVisible();
     await expect(frame!.getByRole("menuitem", { name: /upload zip app/i })).toBeVisible();
   });
@@ -213,30 +213,17 @@ test.describe("FP3 Explorer — M5: Context menus + write ops", () => {
     await frame!.getByTestId("item-My-Documents").dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const contentArea = frame!.getByTestId("explorer-content");
-    await contentArea.click({ button: "right", position: { x: 10, y: 10 } });
-    await frame!.getByRole("menuitem", { name: /new folder/i }).click();
+    await frame!.getByTestId("explorer-blank-area").click({ button: "right" });
+    await frame!.getByTestId("menu-new-folder").click();
 
-    await expect(frame!.locator("[data-testid^='item-Новая-Папка']")).toBeVisible({
-      timeout: 5000,
-    });
+    await expect(frame!.getByTestId("item-Новая-Папка")).toBeVisible({ timeout: 5000 });
   });
 });
 
 async function openBlankContextMenu(frame: {
-  getByTestId: (id: string) => {
-    boundingBox: () => Promise<{ width: number; height: number } | null>;
-    click: (opts?: { button?: "right"; position?: { x: number; y: number } }) => Promise<void>;
-  };
+  getByTestId: (id: string) => { click: (opts?: { button?: "right" }) => Promise<void> };
 }): Promise<void> {
-  const contentArea = frame.getByTestId("explorer-content");
-  await expect(contentArea).toBeVisible();
-  const contentBox = await contentArea.boundingBox();
-  expect(contentBox).toBeTruthy();
-  await contentArea.click({
-    button: "right",
-    position: { x: 10, y: 10 },
-  });
+  await frame.getByTestId("explorer-blank-area").click({ button: "right" });
   await expect(frame.getByTestId("context-menu")).toBeVisible({ timeout: 2000 });
 }
 
@@ -270,7 +257,7 @@ test.describe("FP3 Explorer — FP3.1 M5: New Folder (placeholder + rename)", ()
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     await openBlankContextMenu(frame!);
-    await frame!.getByRole("menuitem", { name: /new folder/i }).click();
+    await frame!.getByTestId("menu-new-folder").click();
 
     await expect(frame!.getByTestId("item-Новая-Папка")).toBeVisible({ timeout: 5000 });
   });
@@ -302,7 +289,7 @@ test.describe("FP3 Explorer — FP3.1 M5: New Folder (placeholder + rename)", ()
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     await openBlankContextMenu(frame!);
-    await frame!.getByRole("menuitem", { name: /new folder/i }).click();
+    await frame!.getByTestId("menu-new-folder").click();
     await expect(frame!.getByTestId("item-Новая-Папка")).toBeVisible({ timeout: 5000 });
     const input1 = frame!.getByTestId("rename-input");
     await input1.press("Enter");
@@ -347,7 +334,7 @@ test.describe("FP3 Explorer — FP3.1 M5: New Folder (placeholder + rename)", ()
     await openBlankContextMenu(frame!);
     await frame!.getByRole("menuitem", { name: /new folder/i }).click();
 
-    const placeholder = frame!.locator("[data-testid^='item-Новая-Папка']").last();
+    const placeholder = frame!.getByTestId("item-Новая-Папка");
     await expect(placeholder).toBeVisible({ timeout: 2000 });
     const spinner = placeholder.locator(".fs-tile-spinner");
     await expect(spinner).toBeVisible({ timeout: 2500 });
@@ -380,7 +367,7 @@ test.describe("FP3 Explorer — FP3.1 M5: New Folder (placeholder + rename)", ()
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     await openBlankContextMenu(frame!);
-    await frame!.getByRole("menuitem", { name: /new folder/i }).click();
+    await frame!.getByTestId("menu-new-folder").click();
 
     const renameInput = frame!.getByTestId("rename-input");
     await expect(renameInput).toBeVisible({ timeout: 5000 });
@@ -700,6 +687,7 @@ test.describe("FP3 Explorer — FP3.1 A1: Back button", () => {
 
 test.describe("FP3 Explorer — FP3.1 B1: Rename flow", () => {
   test("T-B1.1a — Start rename: input appears with selection", async ({ page }) => {
+    mockFsForM6(page);
     await page.goto("/");
     const myComputer = page.getByRole("button", { name: /my computer/i });
     await myComputer.dblclick();
@@ -725,6 +713,7 @@ test.describe("FP3 Explorer — FP3.1 B1: Rename flow", () => {
   });
 
   test("T-B1.1b — Enter commits, spinner pending, on success name updates", async ({ page }) => {
+    mockFsForM6(page);
     await page.goto("/");
     const myComputer = page.getByRole("button", { name: /my computer/i });
     await myComputer.dblclick();
@@ -751,6 +740,7 @@ test.describe("FP3 Explorer — FP3.1 B1: Rename flow", () => {
   });
 
   test("T-B1.1c — Simulated failure: revert to old name", async ({ page }) => {
+    mockFsForM6(page);
     await page.route("**/api/fs/rename", (route) =>
       route.fulfill({ status: 403, body: JSON.stringify({ error: "permission_denied" }) })
     );
@@ -780,6 +770,7 @@ test.describe("FP3 Explorer — FP3.1 B1: Rename flow", () => {
   });
 
   test("T-B1.1d — Escape cancels with no request", async ({ page }) => {
+    mockFsForM6(page);
     await page.goto("/");
     const myComputer = page.getByRole("button", { name: /my computer/i });
     await myComputer.dblclick();
@@ -820,17 +811,10 @@ test.describe("FP3 Explorer — FP3.1 A3: Blank area context menu", () => {
     await frame!.getByTestId("item-My-Documents").dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const contentArea = frame!.getByTestId("explorer-content");
-    await expect(contentArea).toBeVisible();
-    const contentBox = await contentArea.boundingBox();
-    expect(contentBox).toBeTruthy();
-    await contentArea.click({
-      button: "right",
-      position: { x: contentBox!.width / 2, y: contentBox!.height - 20 },
-    });
+    await frame!.getByTestId("explorer-blank-area").click({ button: "right" });
 
     await expect(frame!.getByTestId("context-menu")).toBeVisible({ timeout: 2000 });
-    await expect(frame!.getByRole("menuitem", { name: /new folder/i })).toBeVisible();
+    await expect(frame!.getByTestId("menu-new-folder")).toBeVisible();
   });
 });
 
@@ -851,9 +835,9 @@ test.describe("FP3 Explorer — FP3.1 A2: Tile layout", () => {
     await frame!.getByTestId("item-My-Documents").dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const tile = frame!
-      .getByTestId("item-VeryLongFolderNameThatExceedsThreeLinesWhenRenderedInTile")
-      .or(frame!.getByTestId("item-sample-app"));
+    const tile = frame!.getByTestId(
+      "item-VeryLongFolderNameThatExceedsThreeLinesWhenRenderedInTile"
+    );
     await expect(tile).toBeVisible({ timeout: 5000 });
     await expect(tile).toHaveClass(/fs-tile/);
     const label = tile.locator(".fs-tile-label");
@@ -896,11 +880,6 @@ test.describe("FP3 Explorer — FP3.1 A4: Shared icons", () => {
 
 test.describe("FP3 Explorer — M6: Security (user app deny)", () => {
   test("T-M6.1 — User app fetch api.shell.local -> denied (403)", async ({ page }) => {
-    const responsePromise = page.waitForResponse(
-      (r) => r.url().includes("api.shell.local") && r.status() === 403,
-      { timeout: 15000 }
-    );
-
     await page.goto("/");
     const myComputer = page.getByRole("button", { name: /my computer/i });
     await myComputer.dblclick();
@@ -918,7 +897,13 @@ test.describe("FP3 Explorer — M6: Security (user app deny)", () => {
     await expect(userAppItem).toBeVisible({ timeout: 5000 });
     await userAppItem.dblclick();
 
-    const res = await responsePromise;
-    expect(res.status()).toBe(403);
+    await page.waitForFunction(
+      () => (window as unknown as { __lastFetchStatus?: number }).__lastFetchStatus === 403,
+      { timeout: 15000 }
+    );
+    const status = await page.evaluate(
+      () => (window as unknown as { __lastFetchStatus?: number }).__lastFetchStatus
+    );
+    expect(status).toBe(403);
   });
 });

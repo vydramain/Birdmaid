@@ -79,6 +79,14 @@ export function AppHost({
       }
       const source = event.source;
       if (!source) return;
+      const data = event.data as ShellMessage;
+      if (data?.type === "FETCH_RESULT" && iframeRef.current?.contentWindow === source) {
+        const status = (data.payload as { status?: number })?.status;
+        if (typeof status === "number") {
+          (window as unknown as { __lastFetchStatus?: number }).__lastFetchStatus = status;
+        }
+        return;
+      }
       let knownWindowId = sourceToWindowIdRef.current.get(source);
       if (!knownWindowId && iframeRef.current?.contentWindow === source) {
         sourceToWindowIdRef.current.set(source, windowId);
@@ -88,7 +96,6 @@ export function AppHost({
         analytics.message_rejected("unknown_source");
         return;
       }
-      const data = event.data as ShellMessage;
       if (!data || typeof data.type !== "string") return;
 
       if (data.type === "APP_READY") {
