@@ -52,6 +52,7 @@ function pathToUniqueId(path: string): string {
 }
 
 let pendingCreateId = 0;
+let pendingUploadId = 0;
 
 function labelToDisplay(id: string, label: string): string {
   if (id === "DISK_A") return "Floppy (A:)";
@@ -268,6 +269,7 @@ function renderRoots(): void {
   }
   content.appendChild(grid);
   root.appendChild(content);
+  root.setAttribute("data-testid", "explorer-ready");
 }
 
 function onRootDblClick(rootId: string): void {
@@ -344,6 +346,9 @@ function showContextMenu(x: number, y: number, target: "blank" | "item", item?: 
   const writable = state.mode === "folder" && isWritablePath(state.apiPath);
 
   if (target === "blank" && writable) {
+    // M4: Ensure upload inputs exist for E2E setInputFiles (no native picker needed)
+    getOrCreateUploadFileInput();
+    getOrCreateUploadZipInput();
     const newFolder = document.createElement("div");
     newFolder.setAttribute("role", "menuitem");
     newFolder.setAttribute("data-testid", "menu-new-folder");
@@ -508,10 +513,18 @@ async function onNewFolder(): Promise<void> {
   }
   placeholder.path = result.path;
   placeholder.name = result.name;
-  div.setAttribute("data-testid", `item-${pathToUniqueId(result.path)}`);
-  const labelEl = div.querySelector(".fs-tile-label");
-  if (labelEl) labelEl.textContent = result.name;
-  spinner.remove();
+  div.remove();
+  const testId = `item-${pathToUniqueId(result.path)}`;
+  const newTile = createFsTile(
+    "fs-icon-folder",
+    result.name,
+    testId,
+    () => void onItemDblClick(placeholder),
+    undefined,
+    idx
+  );
+  listEl.appendChild(newTile);
+  reindexListTiles();
   startRename(placeholder);
 }
 
@@ -574,7 +587,8 @@ async function onUploadFileChange(): Promise<void> {
     const placeholder: FsItem = { path, name: file.name, kind: "file" };
     currentListItems.push(placeholder);
     const idx = currentListItems.length - 1;
-    const testId = `item-${file.name.replace(/\s/g, "-")}`;
+    const tempId = pendingUploadId++;
+    const testId = `item-pending-upload-${tempId}`;
     const div = createFsTile(
       "fs-icon-file",
       file.name,
@@ -654,7 +668,8 @@ async function onUploadZipChange(): Promise<void> {
     return;
   }
   const idx = currentListItems.length - 1;
-  const testId = `item-${dirName.replace(/\s/g, "-")}`;
+  const tempId = pendingUploadId++;
+  const testId = `item-pending-upload-${tempId}`;
   const div = createFsTile(
     "fs-icon-folder",
     dirName,
@@ -903,7 +918,8 @@ async function loadAndRenderList(): Promise<void> {
   const blankArea = document.createElement("div");
   blankArea.setAttribute("data-testid", "explorer-blank-area");
   blankArea.style.flex = "1";
-  blankArea.style.minHeight = "100px";
+  blankArea.style.minHeight = "50vh";
+  blankArea.style.cursor = "default";
   content.appendChild(blankArea);
   root.appendChild(content);
   try {
@@ -930,6 +946,7 @@ async function loadAndRenderList(): Promise<void> {
       }
       listEl.appendChild(div);
     }
+    root.setAttribute("data-testid", "explorer-ready");
   } catch (e) {
     listEl.innerHTML = `<p style="color:red">Failed: ${(e as Error).message}</p>`;
   }

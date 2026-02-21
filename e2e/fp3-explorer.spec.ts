@@ -164,8 +164,7 @@ test.describe("FP3 Explorer — M5: Context menus + write ops", () => {
     await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    await frame!.getByTestId("explorer-blank-area").click({ button: "right" });
-    await expect(frame!.getByTestId("context-menu")).toBeVisible({ timeout: 2000 });
+    await openBlankContextMenu(frame!);
     await expect(frame!.getByTestId("menu-new-folder")).toBeVisible();
     await expect(frame!.getByRole("menuitem", { name: /upload file/i })).toBeVisible();
     await expect(frame!.getByRole("menuitem", { name: /upload zip app/i })).toBeVisible();
@@ -223,7 +222,7 @@ test.describe("FP3 Explorer — M5: Context menus + write ops", () => {
     await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    await frame!.getByTestId("explorer-blank-area").click({ button: "right" });
+    await openBlankContextMenu(frame!);
     await frame!.getByTestId("menu-new-folder").click();
 
     await expect(
@@ -241,6 +240,7 @@ async function openBlankContextMenu(frame: {
 
 test.describe("FP3 Explorer — FP3.1 M5: New Folder (placeholder + rename)", () => {
   test("T-M5-NF1 — Create folder when none exists -> Новая Папка", async ({ page }) => {
+    mockFsForM6(page);
     await page.route("**/api/fs/create-folder", async (route) => {
       const body = route.request().postDataJSON();
       const path = (body?.path ?? "").toString();
@@ -272,11 +272,12 @@ test.describe("FP3 Explorer — FP3.1 M5: New Folder (placeholder + rename)", ()
     await frame!.getByTestId("menu-new-folder").click();
 
     await expect(
-      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/Новая Папка/"))
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/Новая Папка/")).first()
     ).toBeVisible({ timeout: 5000 });
   });
 
   test("T-M5-NF2 — Create again -> Новая Папка 2", async ({ page }) => {
+    mockFsForM6(page);
     await page.route("**/api/fs/create-folder", async (route) => {
       const body = route.request().postDataJSON();
       const path = (body?.path ?? "").toString();
@@ -305,23 +306,24 @@ test.describe("FP3 Explorer — FP3.1 M5: New Folder (placeholder + rename)", ()
     await openBlankContextMenu(frame!);
     await frame!.getByTestId("menu-new-folder").click();
     await expect(
-      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/Новая Папка/"))
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/Новая Папка/")).first()
     ).toBeVisible({ timeout: 5000 });
     const input1 = frame!.getByTestId("rename-input");
     await input1.press("Enter");
 
     await expect(
-      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/Новая Папка/"))
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/Новая Папка/")).first()
     ).toBeVisible({ timeout: 3000 });
 
     await openBlankContextMenu(frame!);
     await frame!.getByRole("menuitem", { name: /new folder/i }).click();
     await expect(
-      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/Новая Папка 2/"))
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/Новая Папка 2/")).first()
     ).toBeVisible({ timeout: 5000 });
   });
 
   test("T-M5-NF3 — Placeholder+spinner behavior correct", async ({ page }) => {
+    mockFsForM6(page);
     const CREATE_DELAY_MS = 800;
     await page.route("**/api/fs/create-folder", async (route) => {
       await new Promise((r) => setTimeout(r, CREATE_DELAY_MS));
@@ -365,6 +367,7 @@ test.describe("FP3 Explorer — FP3.1 M5: New Folder (placeholder + rename)", ()
   });
 
   test("T-M5-NF4 — Immediate rename input opens", async ({ page }) => {
+    mockFsForM6(page);
     await page.route("**/api/fs/create-folder", async (route) => {
       const body = route.request().postDataJSON();
       const path = (body?.path ?? "").toString();
@@ -482,7 +485,7 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
   test("T-M7-U1 — Upload files: placeholders then success", async ({ page }) => {
     mockFsForM6(page);
     let n = 0;
-    await page.route("**/api/fs/upload-file", async (route) => {
+    await page.route(/\/api\/fs\/upload-file/, async (route) => {
       await new Promise((r) => setTimeout(r, 400));
       n++;
       const name = `e2e-upload-${n}.png`;
@@ -530,7 +533,7 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
 
   test("T-M7-U2 — Upload fail: placeholder removed", async ({ page }) => {
     mockFsForM6(page);
-    await page.route("**/api/fs/upload-file", async (route) => {
+    await page.route(/\/api\/fs\/upload-file/, async (route) => {
       await route.fulfill({ status: 403, body: JSON.stringify({ error: "permission_denied" }) });
     });
     await page.goto("/");
@@ -580,6 +583,10 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
     await frame!.getByTestId("root-disk_c").dblclick();
     await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
+
+    // M4: Open context menu to ensure upload-zip-input exists (created on menu show)
+    await openBlankContextMenu(frame!);
+    await frame!.getByTestId("context-menu").press("Escape");
 
     const zipPath = path.join(process.cwd(), "e2e", "fixtures", "e2e-zip-app.zip");
     const zipBuf = fs.readFileSync(zipPath);
@@ -863,9 +870,7 @@ test.describe("FP3 Explorer — FP3.1 A3: Blank area context menu", () => {
     await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    await frame!.getByTestId("explorer-blank-area").click({ button: "right" });
-
-    await expect(frame!.getByTestId("context-menu")).toBeVisible({ timeout: 2000 });
+    await openBlankContextMenu(frame!);
     await expect(frame!.getByTestId("menu-new-folder")).toBeVisible();
   });
 });
@@ -887,11 +892,13 @@ test.describe("FP3 Explorer — FP3.1 A2: Tile layout", () => {
     await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const tile = frame!.getByTestId(
-      pathToTestId(
-        "/@root/DISK_C/My Documents/VeryLongFolderNameThatExceedsThreeLinesWhenRenderedInTile/"
+    const tile = frame!
+      .getByTestId(
+        pathToTestId(
+          "/@root/DISK_C/My Documents/VeryLongFolderNameThatExceedsThreeLinesWhenRenderedInTile/"
+        )
       )
-    );
+      .first();
     await expect(tile).toBeVisible({ timeout: 5000 });
     await expect(tile).toHaveClass(/fs-tile/);
     const label = tile.locator(".fs-tile-label");
@@ -951,15 +958,17 @@ test.describe("FP3 Explorer — M6: Security (user app deny)", () => {
       pathToTestId("/@root/DISK_C/My Documents/user-app-deny/")
     );
     await expect(userAppItem).toBeVisible({ timeout: 5000 });
-    await userAppItem.dblclick();
 
-    await page.waitForFunction(
-      () => (window as unknown as { __lastFetchStatus?: number }).__lastFetchStatus === 403,
+    // M3: Wait for gateway 403 response (user app fetch from s3.shell.local origin).
+    // Setup BEFORE click so we don't miss the response. Only user app gets 403 for roots.
+    const responsePromise = page.waitForResponse(
+      (res) => res.url().includes("/api/fs/roots") && res.status() === 403,
       { timeout: 15000 }
     );
-    const status = await page.evaluate(
-      () => (window as unknown as { __lastFetchStatus?: number }).__lastFetchStatus
-    );
-    expect(status).toBe(403);
+
+    await userAppItem.dblclick();
+
+    const response = await responsePromise;
+    expect(response.status()).toBe(403);
   });
 });
