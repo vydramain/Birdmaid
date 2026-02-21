@@ -9,39 +9,39 @@
 
 ## 1. Gate Summary
 
-| Check             | Result   | Notes                                            |
-| ----------------- | -------- | ------------------------------------------------ |
-| Clean-state       | **FAIL** | `git status --porcelain` not empty               |
-| Stack (smoke.sh)  | **PASS** | PLATFORM OK                                      |
-| pnpm lint         | **PASS** | exit 0                                           |
-| pnpm format:check | **FAIL** | exit 1; 9 files need Prettier                    |
-| pnpm test (unit)  | **FAIL** | Host: rollup MODULE_NOT_FOUND; container not run |
-| pnpm test:e2e     | **PASS** | 10 passed (fp1-shell.spec.ts)                    |
-| AC/DoD evidence   | **PASS** | FP1 released; evidence in FP1.md                 |
+| Check             | Result   | Notes                                      |
+| ----------------- | -------- | ------------------------------------------ |
+| Clean-state       | **FAIL** | `git status --porcelain` not empty         |
+| Stack (smoke.sh)  | **PASS** | PLATFORM OK                                |
+| pnpm lint         | **PASS** | exit 0 (container)                         |
+| pnpm format:check | **FAIL** | exit 1; 4 files need Prettier              |
+| pnpm test (unit)  | **PASS** | exit 0 (container); 14 passed              |
+| pnpm test:e2e     | **FAIL** | exit 1; Chromium libnspr4.so in container   |
+| AC/DoD evidence   | **PASS** | FP1 released; evidence in FP1.md           |
 
 ---
 
 ## 2. Commands Table
 
-| Command                  | Expected exit | Actual exit   | Evidence                                             |
-| ------------------------ | ------------- | ------------- | ---------------------------------------------------- |
-| `git status --porcelain` | 0 (empty)     | 0 (not empty) | 28 modified, 6 untracked                             |
-| `./infra/smoke.sh`       | 0             | 0             | PLATFORM OK                                          |
-| `pnpm lint`              | 0             | 0             | Style guardrails OK, ESLint OK                       |
-| `pnpm format:check`      | 0             | 1             | 9 files: docs/\*, infra/README.md                    |
-| `pnpm test`              | 0             | 1             | rollup @rollup/rollup-linux-x64-gnu MODULE_NOT_FOUND |
-| `pnpm test:e2e`          | 0             | 0             | 10 passed (fp1-shell.spec.ts)                        |
+| Command                  | Expected exit | Actual exit   | Evidence                                      |
+| ------------------------ | ------------- | ------------- | --------------------------------------------- |
+| `git status --porcelain` | 0 (empty)     | 0 (not empty) | 5 modified, 1 untracked                       |
+| `./infra/smoke.sh`       | 0             | 0             | PLATFORM OK                                   |
+| `pnpm lint` (container)  | 0             | 0             | Style guardrails OK, ESLint OK                |
+| `pnpm format:check`      | 0             | 1             | 4 files: FP3_TESTS, fp3-explorer, explorer, package.json |
+| `pnpm test` (container)  | 0             | 0             | 14 passed (WindowManager)                      |
+| `pnpm test:e2e` (container) | 0          | 1             | 39 failed: libnspr4.so missing in node:22    |
 
 ---
 
 ## 3. Test Accounting
 
-| Suite            | Passed | Failed | Skipped | In FP scope                |
-| ---------------- | ------ | ------ | ------- | -------------------------- |
-| pnpm test (unit) | —      | —      | —       | Host fails to run (rollup) |
-| pnpm test:e2e    | 10     | 0      | 0       | FP1: 10/10 pass            |
+| Suite            | Passed | Failed | Skipped | In FP scope     |
+| ---------------- | ------ | ------ | ------- | --------------- |
+| pnpm test (unit) | 14     | 0      | 0       | FP1: 14/14 pass  |
+| pnpm test:e2e    | —      | 39     | 0       | Container env   |
 
-**Skipped interpretation:** None. FP1 E2E has no skipped tests.
+**Skipped interpretation:** None. E2E did not run (Chromium launch failed in container).
 
 ---
 
@@ -67,14 +67,6 @@
 
 **P0 blockers:**
 
-1. **Clean-state:** `git status --porcelain` not empty. Fix: commit or stash changes.
-2. **format:check:** 9 files need `pnpm format`. Fix: `pnpm format`.
-3. **pnpm test (unit):** Host fails with rollup MODULE_NOT_FOUND. Fix: run in container or `rm -rf node_modules && pnpm install`.
-
-**How to reproduce:**
-
-```bash
-git status --porcelain   # expect empty
-pnpm format:check        # expect exit 0
-pnpm test                # expect exit 0 (or use container)
-```
+1. **Clean-state:** `git status --porcelain` not empty.
+2. **format:check:** 4 files need `pnpm format`.
+3. **test:e2e:** Container Chromium fails (libnspr4.so). Use Playwright image or host.

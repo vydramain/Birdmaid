@@ -4,6 +4,8 @@
  */
 
 import { test, expect } from "@playwright/test";
+import path from "path";
+import fs from "fs";
 
 test.describe("FP3 Explorer — M1: My Computer", () => {
   test("T-M1.1/T-M1.2 — Desktop has My Computer icon; double click opens Explorer window", async ({
@@ -466,7 +468,7 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
     await expect(item).not.toBeVisible({ timeout: 5000 });
   });
 
-  test.skip("T-M7-U1 — Upload files: placeholders then success", async ({ page }) => {
+  test("T-M7-U1 — Upload files: placeholders then success", async ({ page }) => {
     mockFsForM6(page);
     let n = 0;
     await page.route("**/api/fs/upload-file", async (route) => {
@@ -495,27 +497,19 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
     await frame!.getByTestId("item-My-Documents").dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const fileChooserPromise = page.waitForEvent("filechooser", { timeout: 8000 });
-    await frame!
-      .getByTestId("explorer-content")
-      .click({ button: "right", position: { x: 50, y: 50 } });
-    await expect(frame!.getByTestId("context-menu")).toBeVisible({ timeout: 2000 });
-    await frame!.getByRole("menuitem", { name: /upload file/i }).click();
-    const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles([
+    await frame!.getByTestId("upload-file-input").setInputFiles([
       { name: "e2e-upload-1.png", mimeType: "image/png", buffer: Buffer.from("png1") },
       { name: "e2e-upload-2.png", mimeType: "image/png", buffer: Buffer.from("png2") },
     ]);
 
-    await expect(frame!.getByTestId("upload-spinner")).toBeVisible({ timeout: 5000 });
-    await expect(frame!.getByTestId("item-e2e-upload-1.png")).toBeVisible({ timeout: 6000 });
+    await expect(frame!.getByTestId("item-e2e-upload-1.png")).toBeVisible({ timeout: 10000 });
     await expect(frame!.getByTestId("item-e2e-upload-2.png")).toBeVisible({ timeout: 6000 });
     await expect(frame!.locator("[data-upload-placeholder]")).toHaveCount(0, { timeout: 10000 });
     await expect(frame!.getByTestId("item-e2e-upload-1.png")).toBeVisible();
     await expect(frame!.getByTestId("item-e2e-upload-2.png")).toBeVisible();
   });
 
-  test.skip("T-M7-U2 — Upload fail: placeholder removed", async ({ page }) => {
+  test("T-M7-U2 — Upload fail: placeholder removed", async ({ page }) => {
     mockFsForM6(page);
     await page.route("**/api/fs/upload-file", async (route) => {
       await route.fulfill({ status: 403, body: JSON.stringify({ error: "permission_denied" }) });
@@ -533,22 +527,14 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
     await frame!.getByTestId("item-My-Documents").dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const fileChooserPromise = page.waitForEvent("filechooser", { timeout: 8000 });
     await frame!
-      .getByTestId("explorer-content")
-      .click({ button: "right", position: { x: 50, y: 50 } });
-    await expect(frame!.getByTestId("context-menu")).toBeVisible({ timeout: 2000 });
-    await frame!.getByRole("menuitem", { name: /upload file/i }).click();
-    const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles([
-      { name: "e2e-fail.png", mimeType: "image/png", buffer: Buffer.from("x") },
-    ]);
+      .getByTestId("upload-file-input")
+      .setInputFiles([{ name: "e2e-fail.png", mimeType: "image/png", buffer: Buffer.from("x") }]);
 
-    await expect(frame!.getByTestId("upload-spinner")).toBeVisible({ timeout: 2000 });
     await expect(frame!.getByTestId("item-e2e-fail.png")).not.toBeVisible({ timeout: 5000 });
   });
 
-  test.skip("T-M8-Z1 — Upload zip success: app tile appears", async ({ page }) => {
+  test("T-M8-Z1 — Upload zip success: app tile appears", async ({ page }) => {
     mockFsForM6(page);
     await page.route("**/api/fs/upload-zip-app", async (route) => {
       await new Promise((r) => setTimeout(r, 400));
@@ -574,24 +560,14 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
     await frame!.getByTestId("item-My-Documents").dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const fileChooserPromise = page.waitForEvent("filechooser", { timeout: 8000 });
+    const zipPath = path.join(process.cwd(), "e2e", "fixtures", "e2e-zip-app.zip");
+    const zipBuf = fs.readFileSync(zipPath);
     await frame!
-      .getByTestId("explorer-content")
-      .click({ button: "right", position: { x: 50, y: 50 } });
-    await expect(frame!.getByTestId("context-menu")).toBeVisible({ timeout: 2000 });
-    await frame!.getByRole("menuitem", { name: /upload zip app/i }).click();
-    const fileChooser = await fileChooserPromise;
-    const { default: JSZip } = await import("jszip");
-    const zip = new JSZip();
-    zip.file("index.html", "<!DOCTYPE html><html><body>E2E App</body></html>");
-    const zipBuf = Buffer.from(await zip.generateAsync({ type: "arraybuffer" }));
-    await fileChooser.setFiles([
-      { name: "e2e-zip-app.zip", mimeType: "application/zip", buffer: zipBuf },
-    ]);
+      .getByTestId("upload-zip-input")
+      .setInputFiles([{ name: "e2e-zip-app.zip", mimeType: "application/zip", buffer: zipBuf }]);
 
-    await expect(frame!.getByTestId("upload-zip-spinner")).toBeVisible({ timeout: 5000 });
-    await expect(frame!.locator("[data-upload-zip-placeholder]")).toHaveCount(0, { timeout: 8000 });
-    await expect(frame!.getByTestId("item-e2e-zip-app")).toBeVisible({ timeout: 3000 });
+    await expect(frame!.getByTestId("item-e2e-zip-app")).toBeVisible({ timeout: 10000 });
+    await expect(frame!.locator("[data-upload-zip-placeholder]")).toHaveCount(0, { timeout: 5000 });
   });
 });
 

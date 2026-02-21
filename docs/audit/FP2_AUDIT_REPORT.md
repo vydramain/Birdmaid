@@ -14,10 +14,10 @@
 | ------------------- | -------- | ---------------------------------- |
 | Clean-state         | **FAIL** | `git status --porcelain` not empty |
 | Stack (smoke.sh)    | **PASS** | PLATFORM OK                        |
-| pnpm lint           | **PASS** | exit 0                             |
-| pnpm format:check   | **FAIL** | exit 1; 9 files need Prettier      |
-| ./infra/test-api.sh | **FAIL** | exit 1; 8 tests failed (FP3 scope) |
-| AC/DoD evidence     | **PASS** | FP2 released; evidence in FP2.md   |
+| pnpm lint           | **PASS** | exit 0 (container)                 |
+| pnpm format:check   | **FAIL** | exit 1; 4 files need Prettier     |
+| ./infra/test-api.sh | **PASS** | exit 0; 46 passed                  |
+| AC/DoD evidence     | **PASS** | FP2 released; evidence in FP2.md  |
 
 ---
 
@@ -25,24 +25,22 @@
 
 | Command                  | Expected exit | Actual exit   | Evidence                 |
 | ------------------------ | ------------- | ------------- | ------------------------ |
-| `git status --porcelain` | 0 (empty)     | 0 (not empty) | 28 modified, 6 untracked |
+| `git status --porcelain` | 0 (empty)     | 0 (not empty) | 5 modified, 1 untracked  |
 | `./infra/smoke.sh`       | 0             | 0             | PLATFORM OK              |
-| `pnpm lint`              | 0             | 0             | Style guardrails OK      |
-| `pnpm format:check`      | 0             | 1             | 9 files need Prettier    |
-| `./infra/test-api.sh`    | 0             | 1             | 8 failed, 38 passed      |
+| `pnpm lint` (container)  | 0             | 0             | Style guardrails OK      |
+| `pnpm format:check`      | 0             | 1             | 4 files need Prettier    |
+| `./infra/test-api.sh`    | 0             | 0             | 46 passed (FP2+FP3)      |
 
 ---
 
 ## 3. Test Accounting
 
-| Suite          | Passed | Failed | Skipped | In FP scope                                       |
-| -------------- | ------ | ------ | ------- | ------------------------------------------------- |
-| test:api (FP2) | 16     | 0      | 0       | FP2 api-fs.integration: 16/16 pass                |
-| test:api (FP3) | 22     | 8      | 0       | FP3 failures: api-fs-upload (5), api-fs-write (3) |
+| Suite          | Passed | Failed | Skipped | In FP scope                |
+| -------------- | ------ | ------ | ------- | -------------------------- |
+| test:api (FP2) | 16     | 0      | 0       | api-fs: 16/16 pass         |
+| test:api (FP3) | 30     | 0      | 0       | FP3 integration: 30/30 pass |
 
-**Skipped interpretation:** None. FP2 tests (16) all pass. Full suite fails due to FP3 tests.
-
-**Note:** Gate requires `pnpm test:api` exit=0. Full suite exits 1 → REJECT.
+**Skipped interpretation:** None. FP2 gate (test:api) passes.
 
 ---
 
@@ -55,7 +53,7 @@
 | C1–C3 open-url    | open-url-viewer.integration.test.ts | ✓      |
 | D1–D2 roots       | roots.integration.test.ts           | ✓      |
 | E1–E2 CORS        | CORS_SIGNED_URLS.md, fixtures       | ✓      |
-| F1–F2 Error model | api-fs.integration.test.ts          | ✓      |
+| F1–F2 Error model | api-fs.integration.test.ts           | ✓      |
 
 ---
 
@@ -66,13 +64,4 @@
 **P0 blockers:**
 
 1. **Clean-state:** `git status --porcelain` not empty.
-2. **format:check:** 9 files need `pnpm format`.
-3. **test:api:** Full suite exit 1 (8 FP3 tests failed). Fix: resolve FP3 upload/rename failures in gateway or MinIO setup.
-
-**How to reproduce:**
-
-```bash
-git status --porcelain   # expect empty
-pnpm format:check        # expect exit 0
-./infra/test-api.sh      # expect exit 0
-```
+2. **format:check:** 4 files need `pnpm format`.

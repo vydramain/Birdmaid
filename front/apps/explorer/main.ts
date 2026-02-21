@@ -497,74 +497,114 @@ async function onNewFolder(): Promise<void> {
 const UPLOAD_ACCEPT = ".png,.jpg,.jpeg,.webp,.mp3,.mp4,.webm";
 const UPLOAD_MAX_FILES = 10;
 
-function onUploadFile(): void {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.multiple = true;
-  input.accept = UPLOAD_ACCEPT;
-  input.onchange = async () => {
-    const files = Array.from(input.files ?? []).slice(0, UPLOAD_MAX_FILES);
-    if (!files.length || state.mode !== "folder") return;
-    const apiPath = state.apiPath;
-    const url = API_BASE ? `${API_BASE}/api/fs/upload-file` : "/api/fs/upload-file";
-    const listEl = document.querySelector("[data-testid='explorer-list']") as HTMLDivElement | null;
-    if (!listEl) return;
+let uploadFileInput: HTMLInputElement | null = null;
+let uploadZipInput: HTMLInputElement | null = null;
 
-    for (const file of files) {
-      const path = apiPath + file.name;
-      const placeholder: FsItem = { path, name: file.name, kind: "file" };
-      currentListItems.push(placeholder);
-      const idx = currentListItems.length - 1;
-      const testId = `item-${file.name.replace(/\s/g, "-")}`;
-      const div = createFsTile(
-        "fs-icon-file",
-        file.name,
-        testId,
-        () => onItemDblClick(placeholder),
-        undefined,
-        idx
-      );
-      div.setAttribute("data-placeholder", "1");
-      div.setAttribute("data-upload-placeholder", "1");
-      const labelEl = div.querySelector(".fs-tile-label") as HTMLElement;
-      const spinner = document.createElement("div");
-      spinner.className = "fs-tile-spinner";
-      spinner.setAttribute("data-testid", "upload-spinner");
-      if (labelEl) labelEl.replaceWith(spinner);
-      listEl.appendChild(div);
+function getOrCreateUploadFileInput(): HTMLInputElement {
+  if (!uploadFileInput) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.multiple = true;
+    input.accept = UPLOAD_ACCEPT;
+    input.setAttribute("data-testid", "upload-file-input");
+    input.style.position = "absolute";
+    input.style.opacity = "0";
+    input.style.pointerEvents = "none";
+    input.style.width = "0";
+    input.style.height = "0";
+    input.onchange = onUploadFileChange;
+    document.body.appendChild(input);
+    uploadFileInput = input;
+  }
+  return uploadFileInput;
+}
 
-      try {
-        const form = new FormData();
-        form.append("path", path);
-        form.append("file", file);
-        const res = await fetchWithToken(url, { method: "POST", body: form });
-        if (res.status === 201) {
-          const data = (await res.json()) as { path?: string; name?: string };
-          placeholder.path = data.path ?? path;
-          placeholder.name = data.name ?? file.name;
-          div.setAttribute("data-testid", `item-${placeholder.name.replace(/\s/g, "-")}`);
-          const restored = document.createElement("span");
-          restored.className = "fs-tile-label";
-          restored.textContent = placeholder.name;
-          spinner.replaceWith(restored);
-          div.removeAttribute("data-placeholder");
-          div.removeAttribute("data-upload-placeholder");
-        } else {
-          div.remove();
-          currentListItems.splice(currentListItems.indexOf(placeholder), 1);
-          // eslint-disable-next-line no-console -- FP3.1 M7: log only
-          console.error("[Explorer] upload failed:", res.status, await res.text());
-        }
-      } catch (e) {
+function getOrCreateUploadZipInput(): HTMLInputElement {
+  if (!uploadZipInput) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".zip";
+    input.setAttribute("data-testid", "upload-zip-input");
+    input.style.position = "absolute";
+    input.style.opacity = "0";
+    input.style.pointerEvents = "none";
+    input.style.width = "0";
+    input.style.height = "0";
+    input.onchange = onUploadZipChange;
+    document.body.appendChild(input);
+    uploadZipInput = input;
+  }
+  return uploadZipInput;
+}
+
+async function onUploadFileChange(): Promise<void> {
+  const input = uploadFileInput;
+  if (!input) return;
+  const files = Array.from(input.files ?? []).slice(0, UPLOAD_MAX_FILES);
+  input.value = "";
+  if (!files.length || state.mode !== "folder") return;
+  const apiPath = state.apiPath;
+  const url = API_BASE ? `${API_BASE}/api/fs/upload-file` : "/api/fs/upload-file";
+  const listEl = document.querySelector("[data-testid='explorer-list']") as HTMLDivElement | null;
+  if (!listEl) return;
+
+  for (const file of files) {
+    const path = apiPath + file.name;
+    const placeholder: FsItem = { path, name: file.name, kind: "file" };
+    currentListItems.push(placeholder);
+    const idx = currentListItems.length - 1;
+    const testId = `item-${file.name.replace(/\s/g, "-")}`;
+    const div = createFsTile(
+      "fs-icon-file",
+      file.name,
+      testId,
+      () => onItemDblClick(placeholder),
+      undefined,
+      idx
+    );
+    div.setAttribute("data-placeholder", "1");
+    div.setAttribute("data-upload-placeholder", "1");
+    const labelEl = div.querySelector(".fs-tile-label") as HTMLElement;
+    const spinner = document.createElement("div");
+    spinner.className = "fs-tile-spinner";
+    spinner.setAttribute("data-testid", "upload-spinner");
+    if (labelEl) labelEl.replaceWith(spinner);
+    listEl.appendChild(div);
+
+    try {
+      const form = new FormData();
+      form.append("path", path);
+      form.append("file", file);
+      const res = await fetchWithToken(url, { method: "POST", body: form });
+      if (res.status === 201) {
+        const data = (await res.json()) as { path?: string; name?: string };
+        placeholder.path = data.path ?? path;
+        placeholder.name = data.name ?? file.name;
+        div.setAttribute("data-testid", `item-${placeholder.name.replace(/\s/g, "-")}`);
+        const restored = document.createElement("span");
+        restored.className = "fs-tile-label";
+        restored.textContent = placeholder.name;
+        spinner.replaceWith(restored);
+        div.removeAttribute("data-placeholder");
+        div.removeAttribute("data-upload-placeholder");
+      } else {
         div.remove();
         currentListItems.splice(currentListItems.indexOf(placeholder), 1);
         // eslint-disable-next-line no-console -- FP3.1 M7: log only
-        console.error("[Explorer] upload error:", e);
+        console.error("[Explorer] upload failed:", res.status, await res.text());
       }
-      reindexListTiles();
+    } catch (e) {
+      div.remove();
+      currentListItems.splice(currentListItems.indexOf(placeholder), 1);
+      // eslint-disable-next-line no-console -- FP3.1 M7: log only
+      console.error("[Explorer] upload error:", e);
     }
-  };
-  input.click();
+    reindexListTiles();
+  }
+}
+
+function onUploadFile(): void {
+  getOrCreateUploadFileInput().click();
 }
 
 function reindexListTiles(): void {
@@ -575,76 +615,77 @@ function reindexListTiles(): void {
   }
 }
 
-function onUploadZipApp(): void {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = ".zip";
-  input.onchange = async () => {
-    const file = input.files?.[0];
-    if (!file || state.mode !== "folder") return;
-    const apiPath = state.apiPath;
-    const dirName = file.name.replace(/\.zip$/i, "") || "app";
-    const path = apiPath + dirName + "/";
-    const placeholder: FsItem = { path, name: dirName, kind: "dir", isApp: true };
-    currentListItems.push(placeholder);
+async function onUploadZipChange(): Promise<void> {
+  const input = uploadZipInput;
+  if (!input) return;
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file || state.mode !== "folder") return;
+  const apiPath = state.apiPath;
+  const dirName = file.name.replace(/\.zip$/i, "") || "app";
+  const path = apiPath + dirName + "/";
+  const placeholder: FsItem = { path, name: dirName, kind: "dir", isApp: true };
+  currentListItems.push(placeholder);
 
-    const listEl = document.querySelector("[data-testid='explorer-list']") as HTMLDivElement | null;
-    if (!listEl) {
-      currentListItems.pop();
-      return;
-    }
-    const idx = currentListItems.length - 1;
-    const testId = `item-${dirName.replace(/\s/g, "-")}`;
-    const div = createFsTile(
-      "fs-icon-folder",
-      dirName,
-      testId,
-      () => onItemDblClick(placeholder),
-      undefined,
-      idx
-    );
-    div.setAttribute("data-placeholder", "1");
-    div.setAttribute("data-upload-zip-placeholder", "1");
-    const labelEl = div.querySelector(".fs-tile-label") as HTMLElement;
-    const spinner = document.createElement("div");
-    spinner.className = "fs-tile-spinner";
-    spinner.setAttribute("data-testid", "upload-zip-spinner");
-    if (labelEl) labelEl.replaceWith(spinner);
-    listEl.appendChild(div);
+  const listEl = document.querySelector("[data-testid='explorer-list']") as HTMLDivElement | null;
+  if (!listEl) {
+    currentListItems.pop();
+    return;
+  }
+  const idx = currentListItems.length - 1;
+  const testId = `item-${dirName.replace(/\s/g, "-")}`;
+  const div = createFsTile(
+    "fs-icon-folder",
+    dirName,
+    testId,
+    () => onItemDblClick(placeholder),
+    undefined,
+    idx
+  );
+  div.setAttribute("data-placeholder", "1");
+  div.setAttribute("data-upload-zip-placeholder", "1");
+  const labelEl = div.querySelector(".fs-tile-label") as HTMLElement;
+  const spinner = document.createElement("div");
+  spinner.className = "fs-tile-spinner";
+  spinner.setAttribute("data-testid", "upload-zip-spinner");
+  if (labelEl) labelEl.replaceWith(spinner);
+  listEl.appendChild(div);
 
-    const url = API_BASE ? `${API_BASE}/api/fs/upload-zip-app` : "/api/fs/upload-zip-app";
-    try {
-      const form = new FormData();
-      form.append("path", path);
-      form.append("file", file);
-      const res = await fetchWithToken(url, { method: "POST", body: form });
-      if (res.status === 201) {
-        const data = (await res.json()) as { path?: string; name?: string };
-        placeholder.path = (data.path ?? path).replace(/\/?$/, "/");
-        placeholder.name = data.name ?? dirName;
-        placeholder.isApp = true;
-        div.setAttribute("data-testid", `item-${placeholder.name.replace(/\s/g, "-")}`);
-        const restored = document.createElement("span");
-        restored.className = "fs-tile-label";
-        restored.textContent = placeholder.name;
-        spinner.replaceWith(restored);
-        div.removeAttribute("data-placeholder");
-        div.removeAttribute("data-upload-zip-placeholder");
-      } else {
-        div.remove();
-        currentListItems.splice(currentListItems.indexOf(placeholder), 1);
-        // eslint-disable-next-line no-console -- FP3.1 M8: log only
-        console.error("[Explorer] upload-zip-app failed:", res.status, await res.text());
-      }
-    } catch (e) {
+  const url = API_BASE ? `${API_BASE}/api/fs/upload-zip-app` : "/api/fs/upload-zip-app";
+  try {
+    const form = new FormData();
+    form.append("path", path);
+    form.append("file", file);
+    const res = await fetchWithToken(url, { method: "POST", body: form });
+    if (res.status === 201) {
+      const data = (await res.json()) as { path?: string; name?: string };
+      placeholder.path = (data.path ?? path).replace(/\/?$/, "/");
+      placeholder.name = data.name ?? dirName;
+      placeholder.isApp = true;
+      div.setAttribute("data-testid", `item-${placeholder.name.replace(/\s/g, "-")}`);
+      const restored = document.createElement("span");
+      restored.className = "fs-tile-label";
+      restored.textContent = placeholder.name;
+      spinner.replaceWith(restored);
+      div.removeAttribute("data-placeholder");
+      div.removeAttribute("data-upload-zip-placeholder");
+    } else {
       div.remove();
       currentListItems.splice(currentListItems.indexOf(placeholder), 1);
       // eslint-disable-next-line no-console -- FP3.1 M8: log only
-      console.error("[Explorer] upload-zip-app error:", e);
+      console.error("[Explorer] upload-zip-app failed:", res.status, await res.text());
     }
-    reindexListTiles();
-  };
-  input.click();
+  } catch (e) {
+    div.remove();
+    currentListItems.splice(currentListItems.indexOf(placeholder), 1);
+    // eslint-disable-next-line no-console -- FP3.1 M8: log only
+    console.error("[Explorer] upload-zip-app error:", e);
+  }
+  reindexListTiles();
+}
+
+function onUploadZipApp(): void {
+  getOrCreateUploadZipInput().click();
 }
 
 async function onDelete(item: FsItem): Promise<void> {
@@ -879,6 +920,8 @@ async function init(): Promise<void> {
   send("APP_READY", { appId: "explorer", version: "0.1.0" });
   send("WINDOW_TITLE", { title: "My Computer" });
   setupExplorerRootLayout();
+  getOrCreateUploadFileInput();
+  getOrCreateUploadZipInput();
   try {
     roots = await fetchRoots();
     renderRoots();
