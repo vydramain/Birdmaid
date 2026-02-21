@@ -4,36 +4,36 @@
 **Scope:** FP3 Explorer + Shell per docs/fps/FP3.md (M6 + patchset M5–M9).
 **Date:** 2025-02-22
 **Mode:** audit (ALL_FPS_GATES).
-**M2_FIX_FP3_E2E:** Applied scoped selectors, stable-id, FETCH_RESULT signal.
+**Milestone:** M4_REISSUE_AUDITS_STRICT.
 
 ---
 
 ## 1. Gate Summary
 
-| Check                      | Result   | Notes                              |
-| -------------------------- | -------- | ---------------------------------- |
-| Clean-state                | **FAIL** | `git status --porcelain` not empty |
-| Stack (smoke.sh)           | **PASS** | PLATFORM OK                        |
-| ./infra/test-lint.sh       | **PASS** | exit 0 (lint + format:check)       |
-| ./infra/test-api-fp.sh FP3 | **PASS** | exit 0; 46 passed (fp2+fp3)        |
-| ./infra/test-e2e-fp.sh FP3 | TBD      | Run after M2 fixes; see §7         |
-| AC/DoD evidence            | **PASS** | Evidence in FP3.md                 |
+| Check                        | Result   | Notes                                      |
+| ---------------------------- | -------- | ------------------------------------------ |
+| Clean-state                  | **PASS** | `git status --porcelain` empty (post-M3)   |
+| Stack (smoke.sh)             | **PASS** | PLATFORM OK                                |
+| ./infra/test-lint.sh         | **PASS** | exit 0 (lint + format:check)               |
+| ./infra/test-api-fp.sh FP3   | **PASS** | exit 0; 46 passed (fp2+fp3)                |
+| ./infra/test-e2e-fp.sh FP3   | **FAIL** | exit 1; 27 passed, 3 failed                 |
+| AC/DoD evidence              | **PASS** | Evidence in FP3.md                         |
 
 ---
 
 ## 2. Commands Table
 
-| Command                      | Expected exit | Actual exit | Evidence                       |
-| ---------------------------- | ------------- | ----------- | ------------------------------ |
-| `git status --porcelain`     | 0 (empty)     | —           | —                              |
-| `./infra/smoke.sh`           | 0             | 0           | PLATFORM OK                    |
-| `./infra/test-lint.sh`       | 0             | 0           | Style guardrails OK, format OK |
-| `./infra/test-api-fp.sh FP3` | 0             | 0           | 46 passed (10 files)           |
-| `./infra/test-e2e-fp.sh FP3` | 0             | TBD         | See §7                         |
+| Command                        | Expected exit | Actual exit | Evidence                       |
+| ------------------------------ | ------------- | ----------- | ------------------------------ |
+| `git status --porcelain`       | 0 (empty)     | 0           | empty (post-M3 commit)         |
+| `./infra/smoke.sh`             | 0             | 0           | PLATFORM OK                    |
+| `./infra/test-lint.sh`         | 0             | 0           | Style guardrails OK, format OK |
+| `./infra/test-api-fp.sh FP3`   | 0             | 0           | 46 passed (10 files)            |
+| `./infra/test-e2e-fp.sh FP3`   | 0             | 1           | 27 passed, 3 failed             |
 
 ---
 
-## 3. Test Accounting (pre-M2)
+## 3. Test Accounting
 
 ### test:api (FP3 scoped)
 
@@ -43,63 +43,56 @@
 | fp3       | 30     | 0      | FP3         |
 | **Total** | 46     | 0      | —           |
 
-### test:e2e (pre-M2, 8 failed)
+### test:e2e (FP3 scoped)
 
-| Status    | Passed | Failed | Cause                                                               |
-| --------- | ------ | ------ | ------------------------------------------------------------------- |
-| FP3 scope | 32     | 8      | Strict mode (locators match multiple elements), timeout, T-M6.1 403 |
+| Status    | Passed | Failed | Cause                                                                 |
+| --------- | ------ | ------ | --------------------------------------------------------------------- |
+| FP3 scope | 27     | 3      | T-M5-NF3 (spinner timeout), T-B1.1c (rename-spinner), T-M6.1 (__lastFetchStatus) |
 
----
+**Failed tests (3):**
 
-## 4. M2 Root Causes and Fixes
-
-| #   | Test      | Root cause (before)                          | Fix (after)                                                                                   |
-| --- | --------- | -------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| 1   | T-M5.1    | Right click at (10,10) hit tile, not blank   | `explorer-blank-area` + `menu-new-folder` testid; click on blank area                         |
-| 2   | T-M5.3    | `[data-testid^='item-Новая-Папка']` → 4 elts | Stable id from API path: `item-${pathToStableId(result.path)}`                                |
-| 3–6 | T-B1.1a–d | `item-sample-image.png` timeout              | mockFsForM6 for deterministic fixtures; pathToStableId for tiles                              |
-| 7   | T-A2.1    | `.or()` matched 2 elements (strict mode)     | Single selector: `item-VeryLongFolderNameThatExceedsThreeLinesWhenRenderedInTile`             |
-| 8   | T-M6.1    | waitForResponse 403 never observed           | user-app-deny postMessage FETCH_RESULT; AppHost sets \_\_lastFetchStatus; e2e waitForFunction |
+1. **T-M5-NF3** — Placeholder+spinner: `.fs-tile-spinner` not visible within 2500ms (mock delay 2s; spinner may be removed before assert)
+2. **T-B1.1c** — Simulated failure: `rename-spinner` not visible within 2000ms (403 response may be faster than spinner render)
+3. **T-M6.1** — User app fetch 403: `waitForFunction(__lastFetchStatus === 403)` timeout 15s (user-app iframe may not receive 403 or postMessage not reaching Shell)
 
 ---
 
-## 5. Exact Reproduction Commands
+## 4. Exact Reproduction Commands
 
 ```bash
 cd /path/to/Birdmaid_v2
 
-# Prerequisite
+# Prerequisite: clean-state, stack up
+git status --porcelain   # must be empty
 docker compose -f infra/docker-compose.dev.yml up -d
 
-# FP3 gate (scoped e2e)
+# FP3 gate
 ./infra/gate.sh FP3
-
-# Or e2e only
-./infra/test-e2e-fp.sh FP3
+# Actual: exit 1 at test-e2e-fp.sh FP3 (3 e2e failures)
 ```
 
 ---
 
-## 6. P0 Blockers (pre-M2)
+## 5. P0 Blockers (REJECT)
 
-| #   | Blocker     | Cause                | Fix path (M2)                                              |
-| --- | ----------- | -------------------- | ---------------------------------------------------------- |
-| 1   | Clean-state | Modified files       | `git add` + commit, or restore                             |
-| 2   | test-e2e    | 8 FP3 e2e tests fail | M2 fixes applied; verify with `./infra/test-e2e-fp.sh FP3` |
-
----
-
-## 7. M2 Evidence (files changed)
-
-| File                                                | Changes                                                                                                              |
-| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `front/apps/explorer/main.ts`                       | explorer-blank-area, menu-new-folder/upload-file/upload-zip/delete/rename, pathToStableId, stable item-<id> from API |
-| `e2e/fp3-explorer.spec.ts`                          | explorer-blank-area, menu-new-folder, mockFsForM6 for B1, single tile selector, waitForFunction \_\_lastFetchStatus  |
-| `infra/minio/fixtures/.../user-app-deny/index.html` | postMessage FETCH_RESULT to parent on fetch complete                                                                 |
-| `front/core/AppHost.tsx`                            | Handle FETCH_RESULT, set window.\_\_lastFetchStatus                                                                  |
+| #   | Blocker   | Cause                                                       | Fix path                                                                 |
+| --- | --------- | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
+| 1   | test-e2e  | 3 FP3 e2e tests fail: T-M5-NF3, T-B1.1c, T-M6.1            | Adjust timeouts/spinner asserts; fix user-app 403 + postMessage routing  |
 
 ---
 
-## 8. Final Verdict
+## 6. Final Verdict
 
-**TBD** — Run `./infra/test-e2e-fp.sh FP3` after M2 fixes. PASS when exit 0.
+**REJECT**
+
+P0 blocker: `./infra/test-e2e-fp.sh FP3` exit 1. All required commands must exit 0 for PASS.
+
+---
+
+## 7. Summary: FP → PASS/REJECT (M4)
+
+| FP  | Verdict | Причина                                                       |
+| --- | ------- | ------------------------------------------------------------- |
+| FP1 | **PASS** | clean-state empty, smoke, lint, unit 14, e2e-fp FP1 10 — all exit 0 |
+| FP2 | **PASS** | clean-state empty, smoke, lint, api-fp FP2 16, e2e-fp FP2 skip — all exit 0 |
+| FP3 | **REJECT** | test-e2e-fp FP3 exit 1; 3 failed: T-M5-NF3, T-B1.1c, T-M6.1 |

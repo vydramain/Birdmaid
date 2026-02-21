@@ -4,7 +4,8 @@
 **Scope:** FP2 Gateway + FS per docs/fps/FP2.md.
 **Date:** 2025-02-22
 **Mode:** audit (ALL_FPS_GATES).
-**Note:** FP2 E2E not in DoD; gate uses scoped `./infra/test-api-fp.sh FP2`.
+**Milestone:** M4_REISSUE_AUDITS_STRICT.
+**Note:** FP2 E2E not in DoD; gate uses scoped `./infra/test-api-fp.sh FP2`, `./infra/test-e2e-fp.sh FP2` (exits 0, skip).
 
 ---
 
@@ -12,32 +13,35 @@
 
 | Check                      | Result   | Notes                                      |
 | -------------------------- | -------- | ------------------------------------------ |
-| Clean-state                | **FAIL** | `git status --porcelain` not empty (6 mod) |
-| Stack (smoke.sh)           | **PASS** | PLATFORM OK                                |
+| Clean-state                | **PASS** | `git status --porcelain` empty (post-M3)    |
+| Stack (smoke.sh)            | **PASS** | PLATFORM OK                                |
 | ./infra/test-lint.sh       | **PASS** | exit 0 (lint + format:check)               |
-| ./infra/test-api-fp.sh FP2 | **PASS** | exit 0; 16 passed (back/**tests**/fp2/)    |
+| ./infra/test-api-fp.sh FP2 | **PASS** | exit 0; 16 passed (back/__tests__/fp2/)    |
+| ./infra/test-e2e-fp.sh FP2 | **PASS** | exit 0; E2E not in DoD → skip              |
 | AC/DoD evidence            | **PASS** | FP2 released; evidence in FP2.md           |
 
 ---
 
 ## 2. Commands Table
 
-| Command                      | Expected exit | Actual exit   | Evidence                       |
-| ---------------------------- | ------------- | ------------- | ------------------------------ |
-| `git status --porcelain`     | 0 (empty)     | 0 (not empty) | 6 modified files               |
-| `./infra/smoke.sh`           | 0             | 0             | PLATFORM OK                    |
-| `./infra/test-lint.sh`       | 0             | 0             | Style guardrails OK, format OK |
-| `./infra/test-api-fp.sh FP2` | 0             | 0             | 16 passed (FP2 scoped)         |
+| Command                      | Expected exit | Actual exit | Evidence                       |
+| ---------------------------- | ------------- | ----------- | ------------------------------ |
+| `git status --porcelain`     | 0 (empty)     | 0           | empty (post-M3 commit)         |
+| `./infra/smoke.sh`           | 0             | 0           | PLATFORM OK                    |
+| `./infra/test-lint.sh`       | 0             | 0           | Style guardrails OK, format OK |
+| `./infra/test-api-fp.sh FP2` | 0             | 0           | 16 passed (FP2 scoped)         |
+| `./infra/test-e2e-fp.sh FP2` | 0             | 0           | E2E not in DoD → skip          |
 
 ---
 
 ## 3. Test Accounting
 
-| Suite           | Passed | Failed | Skipped | In FP scope   |
-| --------------- | ------ | ------ | ------- | ------------- |
-| test-api-fp FP2 | 16     | 0      | 0       | api-fs: 16/16 |
+| Suite            | Passed | Failed | Skipped | In FP scope   |
+| ---------------- | ------ | ------ | ------- | ------------- |
+| test-api-fp FP2  | 16     | 0      | 0       | api-fs: 16/16 |
+| test-e2e-fp FP2  | —      | —      | —       | E2E not in DoD |
 
-**Scoped API:** FP2 gate uses `test-api-fp.sh FP2` only. FP3 tests excluded. FP2 can PASS independently of FP3.
+**Scoped API:** FP2 gate runs only FP2 tests. FP3 excluded. FP2 can PASS independently.
 
 ---
 
@@ -46,28 +50,19 @@
 ```bash
 cd /path/to/Birdmaid_v2
 
-# 1. Clean-state
-git status --porcelain
-# Expected: empty. Actual: 6 modified.
+# Prerequisite: clean-state, stack up
+git status --porcelain   # must be empty
+docker compose -f infra/docker-compose.dev.yml up -d
 
-# 2. Full gate
+# FP2 gate
 ./infra/gate.sh FP2
-# Gate completes with GATE OK (smoke, lint, test-api-fp FP2 pass).
-# Clean-state is the only blocker for PASS.
+# Expected: GATE OK
 ```
 
 ---
 
-## 5. P0 Blockers (REJECT)
+## 5. Final Verdict
 
-| #   | Blocker     | Cause                          | Fix path                       |
-| --- | ----------- | ------------------------------ | ------------------------------ |
-| 1   | Clean-state | 6 modified files (docs, infra) | `git add` + commit, or restore |
+**PASS**
 
----
-
-## 6. Final Verdict
-
-**REJECT**
-
-P0 blocker: clean-state. All other gate commands pass. No "PASS but…".
+All gate commands exit 0. No blockers.
