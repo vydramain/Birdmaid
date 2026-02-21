@@ -24,10 +24,19 @@ export function isAllowedOrigin(origin: string): boolean {
   return false;
 }
 
-export function createShellCaps(windowId: string, scale: number, theme: string): ShellMessage {
+export function createShellCaps(
+  windowId: string,
+  scale: number,
+  theme: string,
+  isExplorer?: boolean
+): ShellMessage {
+  const payload: Record<string, unknown> = { windowId, scale, theme };
+  if (isExplorer) {
+    payload.systemToken = "fp3-explorer-token"; // Opaque token for Write API
+  }
   return {
     type: "SHELL_CAPS",
-    payload: { windowId, scale, theme },
+    payload,
     timestamp: Date.now(),
   };
 }

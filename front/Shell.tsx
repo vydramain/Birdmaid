@@ -7,6 +7,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { WindowManager } from "./core/WindowManager";
 import { analytics } from "./core/analytics";
 import { DesktopView } from "./ui/DesktopView";
+import { DesktopIcon } from "./ui/DesktopIcon";
 import { WindowChromeView } from "./ui/WindowChromeView";
 import { TaskbarView } from "./ui/TaskbarView";
 import { AppHost } from "./core/AppHost";
@@ -71,6 +72,58 @@ export function Shell() {
     wm.createWindow({ src: "/testapp.html", title: "Untitled" });
     refresh();
   }, [wm, refresh]);
+
+  const openMyComputer = useCallback(() => {
+    wm.createWindow({ src: "/apps/explorer/", title: "My Computer" });
+    refresh();
+  }, [wm, refresh]);
+
+  const handleShellOpen = useCallback(
+    async (payload: { kind: string; path: string; mime?: string; title?: string }) => {
+      if (payload.kind === "app") {
+        const indexPath = payload.path.replace(/\/$/, "") + "/index.html";
+        try {
+          const res = await fetch("/api/fs/open-url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ path: indexPath }),
+          });
+          if (!res.ok) return;
+          const data = await res.json();
+          const url = data.url;
+          if (typeof url === "string") {
+            const title = payload.title ?? indexPath.split("/").slice(-2, -1)[0] ?? "App";
+            wm.createWindow({ src: url, title });
+            refresh();
+          }
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
+      if (payload.kind === "file" && payload.mime?.startsWith("image/")) {
+        try {
+          const res = await fetch("/api/fs/open-url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ path: payload.path }),
+          });
+          if (!res.ok) return;
+          const data = await res.json();
+          const url = data.url;
+          if (typeof url === "string") {
+            const viewerSrc = `/viewers/image.html?url=${encodeURIComponent(url)}`;
+            const title = payload.title ?? payload.path.split("/").pop() ?? "Image";
+            wm.createWindow({ src: viewerSrc, title });
+            refresh();
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+    },
+    [wm, refresh]
+  );
 
   const closeWindow = useCallback(
     (id: string) => {
@@ -234,6 +287,13 @@ export function Shell() {
     <ThemeScaleProvider theme={themeId} scale={scale}>
       <div className="shell-root">
         <DesktopView theme={theme} scale={scale} onClick={handleDesktopClick}>
+          <DesktopIcon
+            label="My Computer"
+            onClick={(e) => {
+              e.stopPropagation();
+              openMyComputer();
+            }}
+          />
           <div className="shell-toolbar">
             <button
               type="button"
@@ -289,6 +349,8 @@ export function Shell() {
                   scale={scale}
                   theme={themeId}
                   onTitleUpdate={handleTitleUpdate}
+                  isExplorer={w.src.includes("/apps/explorer")}
+                  onShellOpen={w.src.includes("/apps/explorer") ? handleShellOpen : undefined}
                 />
               ) : null}
             </WindowChromeView>

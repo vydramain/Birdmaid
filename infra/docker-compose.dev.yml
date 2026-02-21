@@ -46,9 +46,10 @@ services:
       - |
         until mc alias set myminio http://minio:9000 minioadmin minioadmin 2>/dev/null; do echo "Waiting for MinIO..."; sleep 2; done
         mc mb myminio/birdmaid-dev --ignore-existing
-        mc cors set /minio/cors.json myminio/birdmaid-dev
+        mc cors set myminio/birdmaid-dev /minio/cors.xml
+        mc cp --recursive /minio/fixtures/DISK_A/ myminio/birdmaid-dev/roots/DISK_A/ 2>/dev/null || true
         mc cp --recursive /minio/fixtures/DISK_C/ myminio/birdmaid-dev/roots/DISK_C/ 2>/dev/null || true
-        mc cp --recursive /minio/fixtures/APPS/ myminio/birdmaid-dev/roots/APPS/ 2>/dev/null || true
+        mc cp --recursive /minio/fixtures/DISK_D/ myminio/birdmaid-dev/roots/DISK_D/ 2>/dev/null || true
         echo "MinIO init done."
 
   gateway:
@@ -60,7 +61,7 @@ services:
     command:
       - sh
       - -c
-      - corepack enable pnpm && pnpm install && pnpm dev
+      - corepack enable pnpm && pnpm install --no-frozen-lockfile && pnpm dev
     environment:
       CI: "true"
       PORT: "3000"
@@ -83,7 +84,7 @@ services:
   dev-server:
     build:
       context: ..
-      dockerfile: Dockerfile.dev
+      dockerfile: infra/Dockerfile.dev
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.shell.rule=Host(`shell.local`)"
@@ -96,6 +97,7 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
+      - VITE_API_PROXY_TARGET=http://gateway:3000
 
 volumes:
   minio_data: {}

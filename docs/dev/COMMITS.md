@@ -34,15 +34,15 @@
 
 ## Scope (опционально)
 
-| Scope     | Область                |
-| --------- | ---------------------- |
-| `front`   | Frontend (Shell, UI)   |
-| `back`    | Gateway, API           |
-| `docs`    | Документация           |
-| `infra`   | Docker, compose, MinIO |
-| `e2e`     | E2E тесты              |
-| `scripts` | Скрипты проверок       |
-| `deps`    | Зависимости            |
+| Scope     | Область                     |
+| --------- | --------------------------- |
+| `front`   | Frontend (Shell, UI)        |
+| `back`    | Gateway, API                |
+| `docs`    | Документация                |
+| `infra`   | Docker, compose, MinIO      |
+| `e2e`     | E2E тесты                   |
+| `scripts` | Скрипты проверок            |
+| `deps`    | Зависимости                 |
 | `dev`     | Dev tooling, process, rules |
 
 ---

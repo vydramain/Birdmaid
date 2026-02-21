@@ -47,8 +47,9 @@ describe("FP2 API Integration", () => {
         expect(r).toHaveProperty("id");
         expect(r).toHaveProperty("label");
       }
+      expect(body.roots.map((r: { id: string }) => r.id)).toContain("DISK_A");
       expect(body.roots.map((r: { id: string }) => r.id)).toContain("DISK_C");
-      expect(body.roots.map((r: { id: string }) => r.id)).toContain("APPS");
+      expect(body.roots.map((r: { id: string }) => r.id)).toContain("DISK_D");
     });
   });
 
@@ -75,10 +76,10 @@ describe("FP2 API Integration", () => {
       const files = body.items.filter((i: { kind: string }) => i.kind === "file");
       expect(dirs.length + files.length).toBe(body.items.length);
       for (let i = 1; i < dirs.length; i++) {
-        expect(dirs[i].name >= dirs[i - 1].name).toBe(true);
+        expect(dirs[i].name.localeCompare(dirs[i - 1].name) >= 0).toBe(true);
       }
       for (let i = 1; i < files.length; i++) {
-        expect(files[i].name >= files[i - 1].name).toBe(true);
+        expect(files[i].name.localeCompare(files[i - 1].name) >= 0).toBe(true);
       }
     });
   });

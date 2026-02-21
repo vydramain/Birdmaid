@@ -4,20 +4,30 @@
 
 ## Overview
 
-| FP  | Scope summary                       | Status |
-| --- | ----------------------------------- | ------ |
-| FP1 | Shell MVP: окна + таскбар + AppHost | plan   |
+| FP  | Scope summary                           | Status |
+| --- | --------------------------------------- | ------ |
+| FP1 | Shell MVP: окна + таскбар + AppHost     | plan   |
+| FP3 | Explorer system app + Shell integration | plan   |
 
 ## CTA Table
 
-| CTA           | Endpoint | State            | Page  | Mock | Status |
-| ------------- | -------- | ---------------- | ----- | ---- | ------ |
-| open_window   | —        | ui.window_open   | Shell | yes  | todo   |
-| drag_window   | —        | ui.dragging      | Shell | yes  | todo   |
-| resize_window | —        | ui.resizing      | Shell | yes  | todo   |
-| taskbar_click | —        | ui.focus/restore | Shell | yes  | todo   |
-| switch_theme  | —        | ui.theme_changed | Shell | yes  | todo   |
-| switch_scale  | —        | ui.scale_changed | Shell | yes  | todo   |
+| CTA              | Endpoint                   | State               | Page     | Mock | Status |
+| ---------------- | -------------------------- | ------------------- | -------- | ---- | ------ |
+| open_window      | —                          | ui.window_open      | Shell    | yes  | todo   |
+| drag_window      | —                          | ui.dragging         | Shell    | yes  | todo   |
+| resize_window    | —                          | ui.resizing         | Shell    | yes  | todo   |
+| taskbar_click    | —                          | ui.focus/restore    | Shell    | yes  | todo   |
+| switch_theme     | —                          | ui.theme_changed    | Shell    | yes  | todo   |
+| switch_scale     | —                          | ui.scale_changed    | Shell    | yes  | todo   |
+| open_my_computer | —                          | ui.explorer_open    | Shell    | yes  | todo   |
+| load_roots       | GET /api/fs/roots          | ui.roots_loaded     | Explorer | yes  | todo   |
+| list_dir         | GET /api/fs/list           | ui.list_loaded      | Explorer | yes  | todo   |
+| open_file        | SHELL_OPEN (file)          | ui.viewer_requested | Shell    | yes  | todo   |
+| run_app          | SHELL_OPEN (app)           | ui.app_requested    | Shell    | yes  | todo   |
+| create_folder    | POST /api/fs/create-folder | ui.folder_created   | Explorer | yes  | todo   |
+| upload_file      | POST /api/fs/upload-file   | ui.file_uploaded    | Explorer | yes  | todo   |
+| delete_item      | DELETE /api/fs/delete      | ui.item_deleted     | Explorer | yes  | todo   |
+| rename_item      | PUT /api/fs/rename         | ui.item_renamed     | Explorer | yes  | todo   |
 
 - **CTA:** Call-to-action (user action).
 - **Endpoint:** API used (from API.yaml).
