@@ -30,12 +30,18 @@ if [[ "$FP" == "FP1" ]]; then
   exit 0
 fi
 
-echo "==> 3. Test API"
-"$SCRIPT_DIR/test-api.sh"
-
 if [[ "$FP" == "FP2" ]]; then
+  echo "==> 3. Test API (FP2 scoped)"
+  "$SCRIPT_DIR/test-api-fp.sh" FP2
   echo "==> Skip E2E (FP2: E2E not in DoD)"
+elif [[ "$FP" == "FP3" ]]; then
+  echo "==> 3. Test API (FP3 scoped)"
+  "$SCRIPT_DIR/test-api-fp.sh" FP3
+  echo "==> 4. Test E2E"
+  "$SCRIPT_DIR/test-e2e.sh"
 else
+  echo "==> 3. Test API (full)"
+  "$SCRIPT_DIR/test-api.sh"
   echo "==> 4. Test E2E"
   "$SCRIPT_DIR/test-e2e.sh"
 fi
