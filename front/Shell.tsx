@@ -272,7 +272,7 @@ export function Shell() {
 
   const visibleOrder = zOrder.filter((id) => {
     const w = wm.getWindow(id);
-    return w && w.state !== "minimized";
+    return w && w.state !== "closed";
   });
 
   const cycleTheme = useCallback(() => {
@@ -330,7 +330,7 @@ export function Shell() {
 
         {visibleOrder.map((id, idx) => {
           const w = wm.getWindow(id);
-          if (!w || w.state === "minimized") return null;
+          if (!w) return null;
           const winState = toWindowState(w);
           return (
             <WindowChromeView

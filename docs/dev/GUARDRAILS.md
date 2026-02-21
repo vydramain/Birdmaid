@@ -17,6 +17,7 @@
 - Use classes, mixins, or design tokens for visual properties (colors, borders, fonts, spacing) where the project has a frontend
 - Use relative units (`rem`, `em`, `%`, `vh`, `vw`) in CSS/SCSS where applicable
 - Prefer CSS custom properties for runtime values; apply via classes, not inline batches
+- Если агент не может предоставить фактический вывод команд (exit codes), итог по умолчанию REJECT
 
 ### MUST NOT
 
@@ -79,15 +80,54 @@ See [GUIDE_STYLE.md](../../GUIDE_STYLE.md) for inline-style policy, unit policy,
 
 ### Gate (manual / CI)
 
-| Command             | Purpose                             |
-| ------------------- | ----------------------------------- |
-| `pnpm lint`         | ESLint + Stylelint (max-warnings=0) |
-| `pnpm format:check` | Prettier check                      |
-| `pnpm test:api`     | API integration tests (16/16)       |
-| `./infra/smoke.sh`  | Platform health (PLATFORM OK)       |
-| `.husky/commit-msg` | commitlint (Conventional Commits)   |
+| Command                  | Purpose                                     |
+| ------------------------ | ------------------------------------------- |
+| `git status --porcelain` | Clean-state (host-only)                     |
+| `./infra/smoke.sh`       | Platform health PLATFORM OK (host-only)     |
+| `./infra/test-lint.sh`   | Lint + format:check (container canonical)   |
+| `./infra/test-unit.sh`   | Unit tests (container canonical)            |
+| `./infra/test-api.sh`    | API integration tests (container canonical) |
+| `./infra/test-e2e.sh`    | E2E tests (container canonical)             |
+| `./infra/gate.sh [FP]`   | Full gate sequence per FP                   |
+| `.husky/commit-msg`      | commitlint (Conventional Commits)           |
+
+**Canonical execution:** Container scripts (`./infra/*.sh`) for lint, format, tests. **Host-only:** `git status`, `./infra/smoke.sh`. Host `pnpm lint` / `pnpm test` / etc for gate verification is **prohibited** (use container scripts).
 
 CI: `.github/workflows/ci.yml` — lint, format:check, test, audit.
+
+---
+
+## Gate Semantics
+
+**PASS is allowed ONLY when ALL conditions below are met. Otherwise → REJECT.**
+
+### Conditions for PASS
+
+1. **Clean-state:** `git status --porcelain` empty. Exceptions: only if explicitly whitelisted in this section (rare, by default forbidden).
+2. **Stack:** `./infra/smoke.sh` outputs "PLATFORM OK".
+3. **Lint/format:** `./infra/test-lint.sh` exit=0 (container canonical). Host `pnpm lint` / `pnpm format:check` prohibited for gate.
+4. **All FP tests:** `./infra/test-api.sh` exit=0; `./infra/test-unit.sh` exit=0 if FP has unit in DoD; `./infra/test-e2e.sh` exit=0 if FP has E2E in DoD. NO skipped tests that belong to the FP; NO "known failing". Host `pnpm test` / `pnpm test:api` / `pnpm test:e2e` prohibited for gate.
+5. **AC/DoD:** All AC/DoD from `docs/fps/FP<N>.md` marked as done. Each item has evidence: file paths + verification commands.
+
+### Prohibited
+
+- **PASS (but…)** — forbidden.
+- **Partial PASS** — forbidden.
+- **Known failing** — forbidden; fix before gate.
+- **Skipped allowed** — forbidden for tests that belong to the FP.
+
+### Clean-state whitelist
+
+By default: **none**. `git status --porcelain` must be empty. If a project has generated dirs that must be ignored (e.g. `build/`, `dist/`), add them to `.gitignore`; they must not appear in `git status`. If `git status` shows untracked files from tooling (e.g. IDE), add to `.gitignore` or fix before gate.
+
+### Agent enforcement
+
+An agent **MUST NOT** declare PASS without:
+
+- A table of **Command | Expected exit | Actual exit | Evidence link**.
+- Attached outputs of all commands.
+
+If any command output is missing → treat as **REJECT**.
 
 ### PNPM build scripts (container/CI)
 
@@ -120,11 +160,7 @@ If `pnpm install` fails on host with EACCES (permission denied on node_modules o
 
    Or: `rm -rf node_modules .pnpm-store && pnpm install`.
 
-3. **Container fallback (canonical):** Pre-commit on host will fail until EACCES is fixed. Use container for verification before commit:
-   ```bash
-   docker run --rm --add-host api.shell.local:host-gateway --add-host s3.shell.local:host-gateway \
-     -v $(pwd):/app -w /app node:22 sh -c "git config --global --add safe.directory /app && corepack enable pnpm && pnpm install && pnpm lint && pnpm format:check && pnpm test:api && bash .husky/pre-commit"
-   ```
+3. **Container fallback (canonical):** Pre-commit on host will fail until EACCES is fixed. Use container scripts for verification before commit. **FP gates:** Use `./infra/test-lint.sh`, `./infra/test-api.sh`, `./infra/test-unit.sh`, `./infra/test-e2e.sh` (or `./infra/gate.sh FP<N>`).
 
 ### Pre-commit policy
 

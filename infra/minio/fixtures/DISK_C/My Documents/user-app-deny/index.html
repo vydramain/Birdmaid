@@ -1,23 +1,23 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>User App Deny Test</title>
-</head>
-<body>
-  <p data-testid="user-app-deny-content">FP3 M6 user app — fetch should be denied</p>
-  <script>
-    (function () {
-      fetch("http://api.shell.local/api/fs/roots")
-        .then(function (r) {
-          document.body.dataset.fetchStatus = String(r.status);
-          document.body.dataset.fetchResult = r.ok ? "ok" : "denied";
-        })
-        .catch(function () {
-          document.body.dataset.fetchResult = "denied";
-          document.body.dataset.fetchStatus = "error";
-        });
-    })();
-  </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>User App Deny Test</title>
+  </head>
+  <body>
+    <p data-testid="user-app-deny-content">FP3 M6 user app — fetch should be denied</p>
+    <script>
+      (function () {
+        fetch("http://api.shell.local/api/fs/roots")
+          .then(function (r) {
+            document.body.dataset.fetchStatus = String(r.status);
+            document.body.dataset.fetchResult = r.ok ? "ok" : "denied";
+          })
+          .catch(function () {
+            document.body.dataset.fetchResult = "denied";
+            document.body.dataset.fetchStatus = "error";
+          });
+      })();
+    </script>
+  </body>
 </html>

@@ -459,15 +459,16 @@ sequenceDiagram
 - [archive/FP2/README.md](../../archive/FP2/README.md) (описание состава)
 - archive/FP2/transcripts/\* (design/build transcripts)
 
-**E) Verification commands (canonical):**
+**E) Gate Commands (canonical):**
 
-- Start stack: `docker compose -f infra/docker-compose.dev.yml up -d traefik minio minio-init gateway`
-- Smoke: `./infra/smoke.sh`
-- API tests (canonical container):
-  ```bash
-  docker run --rm --add-host api.shell.local:host-gateway --add-host s3.shell.local:host-gateway \
-    -v $(pwd):/app -w /app node:22 sh -c "git config --global --add safe.directory /app && corepack enable pnpm && pnpm install && pnpm test:api"
-  ```
+| Command                  | Expected exit   | E2E in DoD |
+| ------------------------ | --------------- | ---------- |
+| `git status --porcelain` | 0 (empty)       | —          |
+| `./infra/smoke.sh`       | 0 (PLATFORM OK) | —          |
+| `./infra/test-lint.sh`   | 0               | —          |
+| `./infra/test-api.sh`    | 0               | **no**     |
+
+**Canonical (container):** `./infra/gate.sh FP2`. Host-only: `git status`, `./infra/smoke.sh`. Host `pnpm lint/test/etc` prohibited for gate. Prerequisite: `docker compose -f infra/docker-compose.dev.yml up -d`.
 
 **F) Known caveats:**
 

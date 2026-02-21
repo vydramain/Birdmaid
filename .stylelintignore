@@ -1,2 +1,4 @@
 # W2: temporary exclude until FP7 migration (px → rem)
 front/index.css
+# FP3.1: shared fs-tile (stylelint-config compat)
+front/shared/fs-tile.css

@@ -60,11 +60,11 @@ describe("FP3 M5: Write operations (api-fs-write)", () => {
   });
 
   it("T-M5.4: upload-file -> appears in list", async () => {
-    const fileName = testPrefix + "file-" + Date.now() + ".txt";
+    const fileName = testPrefix + "file-" + Date.now() + ".png";
     const path = basePath + fileName;
     const form = new FormData();
     form.append("path", path);
-    form.append("file", new Blob(["hello fp3"]), fileName);
+    form.append("file", new Blob(["fake png"], { type: "image/png" }), fileName);
 
     const res = await fetchApi("/api/fs/upload-file", {
       method: "POST",
@@ -82,11 +82,11 @@ describe("FP3 M5: Write operations (api-fs-write)", () => {
   });
 
   it("T-M5.6: delete -> item removed", async () => {
-    const fileName = testPrefix + "del-" + Date.now() + ".txt";
+    const fileName = testPrefix + "del-" + Date.now() + ".png";
     const path = basePath + fileName;
     const form = new FormData();
     form.append("path", path);
-    form.append("file", new Blob(["x"]), fileName);
+    form.append("file", new Blob(["x"], { type: "image/png" }), fileName);
     await fetchApi("/api/fs/upload-file", { method: "POST", headers: WRITE_HEADERS, body: form });
 
     const delRes = await fetchApi("/api/fs/delete", {
@@ -103,14 +103,14 @@ describe("FP3 M5: Write operations (api-fs-write)", () => {
   });
 
   it("T-M5.7: rename same-parent -> 200", async () => {
-    const fromName = testPrefix + "rn-from-" + Date.now() + ".txt";
-    const toName = testPrefix + "rn-to-" + Date.now() + ".txt";
+    const fromName = testPrefix + "rn-from-" + Date.now() + ".png";
+    const toName = testPrefix + "rn-to-" + Date.now() + ".png";
     const fromPath = basePath + fromName;
     const toPath = basePath + toName;
 
     const form = new FormData();
     form.append("path", fromPath);
-    form.append("file", new Blob(["rename test"]), fromName);
+    form.append("file", new Blob(["rename test"], { type: "image/png" }), fromName);
     await fetchApi("/api/fs/upload-file", { method: "POST", headers: WRITE_HEADERS, body: form });
 
     const res = await fetchApi("/api/fs/rename", {
@@ -127,11 +127,11 @@ describe("FP3 M5: Write operations (api-fs-write)", () => {
   });
 
   it("T-M5.7: rename cross-parent -> 403", async () => {
-    const fromName = testPrefix + "cross-" + Date.now() + ".txt";
+    const fromName = testPrefix + "cross-" + Date.now() + ".png";
     const fromPath = basePath + fromName;
     const form = new FormData();
     form.append("path", fromPath);
-    form.append("file", new Blob(["x"]), fromName);
+    form.append("file", new Blob(["x"], { type: "image/png" }), fromName);
     await fetchApi("/api/fs/upload-file", { method: "POST", headers: WRITE_HEADERS, body: form });
 
     const toPath = "/@root/DISK_C/docs/moved.txt"; // different parent

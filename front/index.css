@@ -66,15 +66,10 @@ body {
   top: 3rem;
   left: 0.625rem;
   z-index: 40;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
   cursor: pointer;
   background: transparent;
   border: none;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  text-align: center;
 }
 
 .desktop-icon:hover {

@@ -20,20 +20,22 @@ export function WindowChromeView({
   zIndex = 100,
 }: WindowChromeViewProps) {
   const isMinimized = win.state === "minimized";
-  if (isMinimized) return null;
 
   return (
     <div
       data-testid="window-chrome"
       className="wm-window"
       data-active={isActive ? "true" : undefined}
+      data-minimized={isMinimized ? "true" : undefined}
       // inline-style: allowed (reason: drag/resize; why: bounds from WindowManager state; revisit: FP7)
+      // FP3.1 M9: display:none when minimized keeps iframe mounted, preserves Explorer path
       style={{
         left: win.bounds.x,
         top: win.bounds.y,
         width: win.bounds.width,
         height: win.bounds.height,
         zIndex,
+        display: isMinimized ? "none" : undefined,
       }}
     >
       <div

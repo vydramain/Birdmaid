@@ -2,20 +2,40 @@
 
 **Role:** @Delivery  
 **Mode:** FP=&lt;id&gt; mode=release  
-**Purpose:** Checklist to verify readiness for release. Copy and adapt for each FP.
+**Purpose:** Checklist to verify readiness for release. Copy and adapt for each FP.  
+**Reference:** [docs/dev/GUARDRAILS.md](../dev/GUARDRAILS.md) § Gate Semantics.
 
 ## Gate goal
 
-Verify that the FP meets critical criteria before marking as released. Adjust the sections below to your project (e.g. environment, smoke tests, security, compliance).
+Verify that the FP meets critical criteria before marking as released. **PASS only when all checks are green.** No "PASS with known failures", no "Partial PASS".
 
 ## Result
 
 - **PASS** — all critical checks passed; FP is ready for release.
-- **REJECT** — blockers found; fix before re-running gate.
+- **REJECT** — any check failed; fix before re-running gate.
+
+**Rule:** If `Actual exit != 0` for any required command → **REJECT**.
 
 ---
 
-## 1. Environment
+## 1. Gate Commands (canonical)
+
+Each FP **MUST** fill this table. **Canonical execution:** container scripts (`./infra/*.sh`). **Host-only:** `git status`, `./infra/smoke.sh`. Host `pnpm lint/test/etc` prohibited for gate. Evidence = link to log/output.
+
+| Command                  | Expected exit             | Actual exit | Evidence |
+| ------------------------ | ------------------------- | ----------- | -------- |
+| `git status --porcelain` | 0 (empty)                 |             |          |
+| `./infra/smoke.sh`       | 0 (PLATFORM OK)           |             |          |
+| `./infra/test-lint.sh`   | 0                         |             |          |
+| `./infra/test-unit.sh`   | 0 (if FP has unit in DoD) |             |          |
+| `./infra/test-api.sh`    | 0 (if FP has API in DoD)  |             |          |
+| `./infra/test-e2e.sh`    | 0 (if FP has E2E in DoD)  |             |          |
+
+**Prohibited:** "PASS with known failures", "Partial PASS", "skipped allowed" for FP tests. Host-only lint/format/test runs for gate verification.
+
+---
+
+## 2. Environment
 
 - [ ] Required services (DB, APIs, etc.) are up.
 - [ ] App (frontend/backend) starts and responds (e.g. health endpoint).
@@ -26,16 +46,13 @@ Verify that the FP meets critical criteria before marking as released. Adjust th
 # Start dependencies (adapt to your stack)
 # docker compose up -d ...
 
-# Start backend (if applicable)
-# cd back && npm run start:dev
-
-# Start frontend (if applicable)
-# cd front && npm run dev
+# Smoke
+./infra/smoke.sh
 ```
 
 ---
 
-## 2. Critical flows
+## 3. Critical flows
 
 - [ ] Main user journey works end-to-end.
 - [ ] Auth (if applicable): login, role, permissions.
@@ -43,19 +60,20 @@ Verify that the FP meets critical criteria before marking as released. Adjust th
 
 ---
 
-## 3. Quality & compliance
+## 4. Quality & compliance
 
-- [ ] Tests pass (unit, integration, E2E as defined).
+- [ ] Tests pass (unit, integration, E2E as defined). **No skipped FP tests.**
 - [ ] Lint / style checks pass (if configured).
 - [ ] No known security or compliance blockers.
 - [ ] Docs (FP file, ADRs) updated.
 
 ---
 
-## 4. Evidence
+## 5. Evidence
 
 - [ ] Demo notes or screenshot/video if needed.
 - [ ] Links to PR(s), CI, coverage (if applicable).
 - [ ] Update `docs/fps/FP<N>.md`: Status = released, Evidence section filled.
+- [ ] All AC/DoD items have evidence (file paths + verification commands).
 
 After gate: update the FP file with status and evidence; optionally move to an "examples" or "released" area per your process.

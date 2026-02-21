@@ -7,10 +7,10 @@
 
 ## 1. Sandbox Matrix (Explorer vs User App vs Viewer)
 
-| App Type | sandbox                           | Notes                                            |
-| -------- | --------------------------------- | ------------------------------------------------ |
-| Explorer | `allow-scripts allow-same-origin` | Same-origin with Shell; fetch to api.shell.local |
-| User app | `allow-scripts`                   | No same-origin; no gateway access                |
+| App Type | sandbox                           | Notes                                                                |
+| -------- | --------------------------------- | -------------------------------------------------------------------- |
+| Explorer | `allow-scripts allow-same-origin` | Same-origin with Shell; fetch to api.shell.local                     |
+| User app | `allow-scripts`                   | No same-origin; no gateway access                                    |
 | Viewer   | `allow-scripts`                   | Receives signed URL via iframe src query; no gateway, no same-origin |
 
 **Check:** Explorer iframe MUST have same-origin with Shell (e.g. shell.local/apps/explorer/). Explorer boot is NOT via open-url or S3 signed URL.
@@ -53,7 +53,7 @@
 ### 4.1 Viewer (M4)
 
 - Token **never** sent to viewer iframes. Viewer receives only signed URL (via iframe src query param).
-- Viewer sandbox: `allow-scripts` only; no `allow-same-origin` → cannot fetch /api/fs/*.
+- Viewer sandbox: `allow-scripts` only; no `allow-same-origin` → cannot fetch /api/fs/\*.
 
 ---
 
@@ -82,6 +82,29 @@
 
 ---
 
+## 7. FP3 Patchset Compliance Additions
+
+### 7.1 User Apps Cannot Call Upload/Write
+
+- **MUST:** User app iframe has `sandbox="allow-scripts"` only (no same-origin).
+- **MUST:** Gateway Write API (create-folder, upload-file, upload-zip-app, delete, rename) requires `X-System-App: explorer` + `X-System-Token`.
+- **MUST:** Gateway rejects requests without valid token → 403 PERMISSION_DENIED.
+- **Check:** User app cannot obtain token (Shell sends token ONLY to Explorer windows).
+
+### 7.2 Token Only to Explorer
+
+- **MUST:** Shell includes `systemToken` in SHELL_CAPS ONLY when target is Explorer window (`w.src.includes("/apps/explorer")` or equivalent).
+- **MUST NOT:** Token in querystring, URL, or sent to user app/viewer iframes.
+- **Check:** AppHost routes SHELL_CAPS with token only for Explorer; user app never receives token.
+
+### 7.3 CORS + Origin Allowlist Unchanged
+
+- **MUST:** Gateway CORS allowlist: shell.local, api.shell.local, localhost:5173 (no `*`).
+- **MUST:** MinIO CORS allowlist unchanged (for signed URLs).
+- **Check:** Disallowed origin → 403.
+
+---
+
 ## DoD Checklist (Design-stage)
 
 - [ ] Sandbox attrs defined for Explorer, user app, viewer
@@ -90,3 +113,6 @@
 - [ ] Token handling (handshake only, origin-check) documented
 - [ ] postMessage rules (no \*) documented
 - [ ] Path policy matrix complete
+- [ ] FP3 patchset: User apps cannot call upload/write (documented)
+- [ ] FP3 patchset: Token only to Explorer (documented)
+- [ ] FP3 patchset: CORS + origin allowlist unchanged (documented)
