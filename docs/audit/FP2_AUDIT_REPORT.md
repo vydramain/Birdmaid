@@ -11,14 +11,14 @@
 
 ## 1. Gate Summary
 
-| Check                      | Result   | Notes                                      |
-| -------------------------- | -------- | ------------------------------------------ |
-| Clean-state                | **PASS** | `git status --porcelain` empty (post-M3)    |
-| Stack (smoke.sh)            | **PASS** | PLATFORM OK                                |
-| ./infra/test-lint.sh       | **PASS** | exit 0 (lint + format:check)               |
-| ./infra/test-api-fp.sh FP2 | **PASS** | exit 0; 16 passed (back/__tests__/fp2/)    |
-| ./infra/test-e2e-fp.sh FP2 | **PASS** | exit 0; E2E not in DoD → skip              |
-| AC/DoD evidence            | **PASS** | FP2 released; evidence in FP2.md           |
+| Check                      | Result   | Notes                                    |
+| -------------------------- | -------- | ---------------------------------------- |
+| Clean-state                | **PASS** | `git status --porcelain` empty (post-M3) |
+| Stack (smoke.sh)           | **PASS** | PLATFORM OK                              |
+| ./infra/test-lint.sh       | **PASS** | exit 0 (lint + format:check)             |
+| ./infra/test-api-fp.sh FP2 | **PASS** | exit 0; 16 passed (back/**tests**/fp2/)  |
+| ./infra/test-e2e-fp.sh FP2 | **PASS** | exit 0; E2E not in DoD → skip            |
+| AC/DoD evidence            | **PASS** | FP2 released; evidence in FP2.md         |
 
 ---
 
@@ -36,10 +36,10 @@
 
 ## 3. Test Accounting
 
-| Suite            | Passed | Failed | Skipped | In FP scope   |
-| ---------------- | ------ | ------ | ------- | ------------- |
-| test-api-fp FP2  | 16     | 0      | 0       | api-fs: 16/16 |
-| test-e2e-fp FP2  | —      | —      | —       | E2E not in DoD |
+| Suite           | Passed | Failed | Skipped | In FP scope    |
+| --------------- | ------ | ------ | ------- | -------------- |
+| test-api-fp FP2 | 16     | 0      | 0       | api-fs: 16/16  |
+| test-e2e-fp FP2 | —      | —      | —       | E2E not in DoD |
 
 **Scoped API:** FP2 gate runs only FP2 tests. FP3 excluded. FP2 can PASS independently.
 

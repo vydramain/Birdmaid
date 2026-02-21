@@ -2,7 +2,7 @@
 
 **Milestone:** M3_FP3_E2E_FETCH_RESULT_FIX  
 **Date:** 2025-02-22  
-**Scope:** T-M6.1 (user app fetch → 403 → FETCH_RESULT → __lastFetchStatus)
+**Scope:** T-M6.1 (user app fetch → 403 → FETCH_RESULT → \_\_lastFetchStatus)
 
 ---
 
@@ -10,11 +10,11 @@
 
 ### Changed files
 
-| File | Change |
-|------|--------|
-| `back/src/index.ts` | Add `Access-Control-Allow-Origin: origin` to 403 response in onRequest (bad origin) |
-| `front/core/protocol.ts` | Add `http://s3.shell.local`, `http://s3.shell.local:80` to ALLOWED_ORIGINS |
-| `front/core/AppHost.tsx` | Add console.info for FETCH_RESULT (dev only) |
+| File                     | Change                                                                              |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `back/src/index.ts`      | Add `Access-Control-Allow-Origin: origin` to 403 response in onRequest (bad origin) |
+| `front/core/protocol.ts` | Add `http://s3.shell.local`, `http://s3.shell.local:80` to ALLOWED_ORIGINS          |
+| `front/core/AppHost.tsx` | Add console.info for FETCH_RESULT (dev only)                                        |
 
 ### Commands
 
@@ -44,10 +44,10 @@
 
 ## Fix mapping
 
-| Root cause | Fix |
-|------------|-----|
+| Root cause                       | Fix                                                                   |
+| -------------------------------- | --------------------------------------------------------------------- |
 | 403 response not readable (CORS) | `reply.header("Access-Control-Allow-Origin", origin)` before 403 send |
-| postMessage rejected (origin) | Add s3.shell.local to protocol ALLOWED_ORIGINS |
+| postMessage rejected (origin)    | Add s3.shell.local to protocol ALLOWED_ORIGINS                        |
 
 ---
 

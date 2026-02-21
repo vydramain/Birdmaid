@@ -51,7 +51,7 @@ Error: element(s) not found
 
 #### 2) T-B1.1c — Simulated failure: revert to old name
 
-*(Not reproduced in this run — passed. Audit lists it as flaky.)*
+_(Not reproduced in this run — passed. Audit lists it as flaky.)_
 
 **Exact selector:** `frame.getByTestId("rename-spinner")`  
 **Expectation:** Spinner visible within 2000ms before revert.
@@ -73,11 +73,11 @@ Error: page.waitForFunction: Test timeout of 30000ms exceeded.
 
 ### Files to change (planned)
 
-| File | Change |
-|------|--------|
-| `e2e/fp3-explorer.spec.ts` | T-M5-NF3: use `new-folder-spinner` + increase mock delay; T-B1.1c: add mock delay for rename 403; T-M6.1: CORS fix or test scope |
-| `back/src/index.ts` | T-M6.1: add CORS headers to 403 origin-reject response so user-app can read status |
-| `front/apps/explorer/main.ts` | (optional) T-M5-NF3: set stable testid on placeholder from start |
+| File                          | Change                                                                                                                           |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `e2e/fp3-explorer.spec.ts`    | T-M5-NF3: use `new-folder-spinner` + increase mock delay; T-B1.1c: add mock delay for rename 403; T-M6.1: CORS fix or test scope |
+| `back/src/index.ts`           | T-M6.1: add CORS headers to 403 origin-reject response so user-app can read status                                               |
+| `front/apps/explorer/main.ts` | (optional) T-M5-NF3: set stable testid on placeholder from start                                                                 |
 
 ---
 

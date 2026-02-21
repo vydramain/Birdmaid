@@ -10,26 +10,26 @@
 
 ## 1. Gate Summary
 
-| Check                        | Result   | Notes                                      |
-| ---------------------------- | -------- | ------------------------------------------ |
-| Clean-state                  | **PASS** | `git status --porcelain` empty (post-M3)   |
-| Stack (smoke.sh)             | **PASS** | PLATFORM OK                                |
-| ./infra/test-lint.sh         | **PASS** | exit 0 (lint + format:check)               |
-| ./infra/test-api-fp.sh FP3   | **PASS** | exit 0; 46 passed (fp2+fp3)                |
-| ./infra/test-e2e-fp.sh FP3   | **FAIL** | exit 1; 27 passed, 3 failed                 |
-| AC/DoD evidence              | **PASS** | Evidence in FP3.md                         |
+| Check                      | Result   | Notes                                    |
+| -------------------------- | -------- | ---------------------------------------- |
+| Clean-state                | **PASS** | `git status --porcelain` empty (post-M3) |
+| Stack (smoke.sh)           | **PASS** | PLATFORM OK                              |
+| ./infra/test-lint.sh       | **PASS** | exit 0 (lint + format:check)             |
+| ./infra/test-api-fp.sh FP3 | **PASS** | exit 0; 46 passed (fp2+fp3)              |
+| ./infra/test-e2e-fp.sh FP3 | **FAIL** | exit 1; 27 passed, 3 failed              |
+| AC/DoD evidence            | **PASS** | Evidence in FP3.md                       |
 
 ---
 
 ## 2. Commands Table
 
-| Command                        | Expected exit | Actual exit | Evidence                       |
-| ------------------------------ | ------------- | ----------- | ------------------------------ |
-| `git status --porcelain`       | 0 (empty)     | 0           | empty (post-M3 commit)         |
-| `./infra/smoke.sh`             | 0             | 0           | PLATFORM OK                    |
-| `./infra/test-lint.sh`         | 0             | 0           | Style guardrails OK, format OK |
-| `./infra/test-api-fp.sh FP3`   | 0             | 0           | 46 passed (10 files)            |
-| `./infra/test-e2e-fp.sh FP3`   | 0             | 1           | 27 passed, 3 failed             |
+| Command                      | Expected exit | Actual exit | Evidence                       |
+| ---------------------------- | ------------- | ----------- | ------------------------------ |
+| `git status --porcelain`     | 0 (empty)     | 0           | empty (post-M3 commit)         |
+| `./infra/smoke.sh`           | 0             | 0           | PLATFORM OK                    |
+| `./infra/test-lint.sh`       | 0             | 0           | Style guardrails OK, format OK |
+| `./infra/test-api-fp.sh FP3` | 0             | 0           | 46 passed (10 files)           |
+| `./infra/test-e2e-fp.sh FP3` | 0             | 1           | 27 passed, 3 failed            |
 
 ---
 
@@ -45,9 +45,9 @@
 
 ### test:e2e (FP3 scoped)
 
-| Status    | Passed | Failed | Cause                                                                 |
-| --------- | ------ | ------ | --------------------------------------------------------------------- |
-| FP3 scope | 27     | 3      | T-M5-NF3 (spinner timeout), T-B1.1c (rename-spinner), T-M6.1 (__lastFetchStatus) |
+| Status    | Passed | Failed | Cause                                                                              |
+| --------- | ------ | ------ | ---------------------------------------------------------------------------------- |
+| FP3 scope | 27     | 3      | T-M5-NF3 (spinner timeout), T-B1.1c (rename-spinner), T-M6.1 (\_\_lastFetchStatus) |
 
 **Failed tests (3):**
 
@@ -75,9 +75,9 @@ docker compose -f infra/docker-compose.dev.yml up -d
 
 ## 5. P0 Blockers (REJECT)
 
-| #   | Blocker   | Cause                                                       | Fix path                                                                 |
-| --- | --------- | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
-| 1   | test-e2e  | 3 FP3 e2e tests fail: T-M5-NF3, T-B1.1c, T-M6.1            | Adjust timeouts/spinner asserts; fix user-app 403 + postMessage routing  |
+| #   | Blocker  | Cause                                           | Fix path                                                                |
+| --- | -------- | ----------------------------------------------- | ----------------------------------------------------------------------- |
+| 1   | test-e2e | 3 FP3 e2e tests fail: T-M5-NF3, T-B1.1c, T-M6.1 | Adjust timeouts/spinner asserts; fix user-app 403 + postMessage routing |
 
 ---
 
@@ -91,8 +91,8 @@ P0 blocker: `./infra/test-e2e-fp.sh FP3` exit 1. All required commands must exit
 
 ## 7. Summary: FP → PASS/REJECT (M4)
 
-| FP  | Verdict | Причина                                                       |
-| --- | ------- | ------------------------------------------------------------- |
-| FP1 | **PASS** | clean-state empty, smoke, lint, unit 14, e2e-fp FP1 10 — all exit 0 |
-| FP2 | **PASS** | clean-state empty, smoke, lint, api-fp FP2 16, e2e-fp FP2 skip — all exit 0 |
-| FP3 | **REJECT** | test-e2e-fp FP3 exit 1; 3 failed: T-M5-NF3, T-B1.1c, T-M6.1 |
+| FP  | Verdict    | Причина                                                                     |
+| --- | ---------- | --------------------------------------------------------------------------- |
+| FP1 | **PASS**   | clean-state empty, smoke, lint, unit 14, e2e-fp FP1 10 — all exit 0         |
+| FP2 | **PASS**   | clean-state empty, smoke, lint, api-fp FP2 16, e2e-fp FP2 skip — all exit 0 |
+| FP3 | **REJECT** | test-e2e-fp FP3 exit 1; 3 failed: T-M5-NF3, T-B1.1c, T-M6.1                 |

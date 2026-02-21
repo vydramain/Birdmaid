@@ -10,8 +10,8 @@
 
 ### Changed files
 
-| File | Change |
-|------|--------|
+| File                       | Change                                                                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `e2e/fp3-explorer.spec.ts` | Route pattern `/upload-zip-app/` (regex) for reliable interception; mock delay 600ms; simplified asserts; timeout 15s for tile |
 
 ### Commands
@@ -25,11 +25,11 @@
 
 ### Triage (layers)
 
-| Layer | Finding |
-|-------|---------|
-| **A) UI/E2E** | `upload-zip-input` exists (created in Explorer init). `setInputFiles` works. Multipart field `file` correct. |
-| **B) Gateway** | Endpoint `/api/fs/upload-zip-app` accepts multipart, validates .zip, checks index.html. Mock returns 201. |
-| **C) MinIO** | Not used in test (mock intercepts). Fixture `e2e/fixtures/e2e-zip-app.zip` exists with index.html. |
+| Layer          | Finding                                                                                                      |
+| -------------- | ------------------------------------------------------------------------------------------------------------ |
+| **A) UI/E2E**  | `upload-zip-input` exists (created in Explorer init). `setInputFiles` works. Multipart field `file` correct. |
+| **B) Gateway** | Endpoint `/api/fs/upload-zip-app` accepts multipart, validates .zip, checks index.html. Mock returns 201.    |
+| **C) MinIO**   | Not used in test (mock intercepts). Fixture `e2e/fixtures/e2e-zip-app.zip` exists with index.html.           |
 
 ---
 
