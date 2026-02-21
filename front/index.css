@@ -61,6 +61,27 @@ body {
   cursor: pointer;
 }
 
+.desktop-icon {
+  position: absolute;
+  top: 3rem;
+  left: 0.625rem;
+  z-index: 40;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.desktop-icon:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 0.25rem;
+}
+
 /* AppHost layout */
 .app-host-root {
   position: relative;

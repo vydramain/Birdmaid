@@ -6,6 +6,9 @@ import {
   ListObjectsV2Command,
   HeadObjectCommand,
   GetObjectCommand,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  CopyObjectCommand,
   S3Client,
   _Object,
   CommonPrefix,
@@ -17,9 +20,11 @@ const TTL_DEFAULT = 120;
 const TTL_MIN = 60;
 const TTL_MAX = 300;
 
+// FP3: roots = DISK_A, DISK_C, DISK_D only. APPS deprecated.
 const ROOTS: { id: string; label: string }[] = [
-  { id: "DISK_C", label: "Disk C" },
-  { id: "APPS", label: "Apps" },
+  { id: "DISK_A", label: "Floppy (A:)" },
+  { id: "DISK_C", label: "(C:)" },
+  { id: "DISK_D", label: "(D:)" },
 ];
 
 const KNOWN_ROOT_IDS = ROOTS.map((r) => r.id);
@@ -243,4 +248,199 @@ export async function getOpenUrl(
   const url = await getSignedUrl(client, command, { expiresIn: effectiveTtl });
 
   return { ok: true, url, expiresIn: effectiveTtl };
+}
+
+export async function createFolder(
+  s3: S3Client,
+  bucket: string,
+  rawPath: string
+): Promise<
+  | { ok: true; path: string; name: string }
+  | { ok: false; code: "BAD_PATH" | "ROOT_NOT_FOUND"; message: string }
+  | { ok: false; code: "INTERNAL_ERROR"; message: string }
+> {
+  const v = validatePath(rawPath, KNOWN_ROOT_IDS, true);
+  if (!v.ok) return { ok: false, code: v.code, message: v.message };
+
+  const prefix = toS3Prefix(v.rootId, v.suffix);
+  if (!prefix.endsWith("/")) {
+    return { ok: false, code: "BAD_PATH", message: "Path must be a directory" };
+  }
+
+  try {
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: prefix,
+        Body: "",
+      })
+    );
+    const name = prefix.slice(0, -1).split("/").pop() ?? "";
+    return { ok: true, path: v.path, name };
+  } catch (e) {
+    return {
+      ok: false,
+      code: "INTERNAL_ERROR",
+      message: (e as Error).message,
+    };
+  }
+}
+
+export async function deleteItem(
+  s3: S3Client,
+  bucket: string,
+  rawPath: string
+): Promise<
+  | { ok: true }
+  | { ok: false; code: "BAD_PATH" | "ROOT_NOT_FOUND"; message: string }
+  | { ok: false; code: "NOT_FOUND"; message: string }
+  | { ok: false; code: "INTERNAL_ERROR"; message: string }
+> {
+  const v = validatePath(rawPath, KNOWN_ROOT_IDS, false);
+  if (!v.ok) return { ok: false, code: v.code, message: v.message };
+
+  const key = toS3Key(v.rootId, v.suffix);
+  try {
+    await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+    return { ok: true };
+  } catch (e: unknown) {
+    const meta = (e as { $metadata?: { httpStatusCode?: number } }).$metadata;
+    if (meta?.httpStatusCode === 404 || (e as { name?: string }).name === "NotFound") {
+      return { ok: false, code: "NOT_FOUND", message: "Item not found" };
+    }
+    return { ok: false, code: "INTERNAL_ERROR", message: (e as Error).message };
+  }
+}
+
+export async function renameItem(
+  s3: S3Client,
+  bucket: string,
+  fromPath: string,
+  toPath: string
+): Promise<
+  | { ok: true; path: string; name: string }
+  | { ok: false; code: "BAD_PATH" | "ROOT_NOT_FOUND"; message: string }
+  | { ok: false; code: "NOT_FOUND"; message: string }
+  | { ok: false; code: "INTERNAL_ERROR"; message: string }
+> {
+  const vFrom = validatePath(fromPath, KNOWN_ROOT_IDS, false);
+  if (!vFrom.ok) return { ok: false, code: vFrom.code, message: vFrom.message };
+  const vTo = validatePath(toPath, KNOWN_ROOT_IDS, false);
+  if (!vTo.ok) return { ok: false, code: vTo.code, message: vTo.message };
+
+  const fromKey = toS3Key(vFrom.rootId, vFrom.suffix);
+  const toKey = toS3Key(vTo.rootId, vTo.suffix);
+
+  try {
+    await s3.send(
+      new CopyObjectCommand({
+        Bucket: bucket,
+        CopySource: `${bucket}/${fromKey}`,
+        Key: toKey,
+      })
+    );
+    await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: fromKey }));
+    const name = toKey.slice(toKey.lastIndexOf("/") + 1) || toKey;
+    return { ok: true, path: vTo.path, name };
+  } catch (e: unknown) {
+    const meta = (e as { $metadata?: { httpStatusCode?: number } }).$metadata;
+    if (meta?.httpStatusCode === 404 || (e as { name?: string }).name === "NotFound") {
+      return { ok: false, code: "NOT_FOUND", message: "Source not found" };
+    }
+    return { ok: false, code: "INTERNAL_ERROR", message: (e as Error).message };
+  }
+}
+
+export async function uploadFile(
+  s3: S3Client,
+  bucket: string,
+  rawPath: string,
+  body: Buffer | Uint8Array,
+  contentType?: string
+): Promise<
+  | { ok: true; path: string; name: string }
+  | { ok: false; code: "BAD_PATH" | "ROOT_NOT_FOUND"; message: string }
+  | { ok: false; code: "INTERNAL_ERROR"; message: string }
+> {
+  const v = validatePath(rawPath, KNOWN_ROOT_IDS, false);
+  if (!v.ok) return { ok: false, code: v.code, message: v.message };
+
+  const key = toS3Key(v.rootId, v.suffix);
+  if (key.endsWith("/")) {
+    return { ok: false, code: "BAD_PATH", message: "Path must be a file" };
+  }
+
+  try {
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType ?? "application/octet-stream",
+      })
+    );
+    const name = key.slice(key.lastIndexOf("/") + 1) || key;
+    return { ok: true, path: v.path, name };
+  } catch (e) {
+    return { ok: false, code: "INTERNAL_ERROR", message: (e as Error).message };
+  }
+}
+
+export async function uploadZipApp(
+  s3: S3Client,
+  bucket: string,
+  rawPath: string,
+  zipBuffer: Buffer
+): Promise<
+  | { ok: true; path: string; name: string }
+  | { ok: false; code: "BAD_PATH" | "ROOT_NOT_FOUND"; message: string }
+  | { ok: false; code: "NO_INDEX_HTML"; message: string }
+  | { ok: false; code: "INTERNAL_ERROR"; message: string }
+> {
+  const v = validatePath(rawPath, KNOWN_ROOT_IDS, true);
+  if (!v.ok) return { ok: false, code: v.code, message: v.message };
+
+  const prefix = toS3Prefix(v.rootId, v.suffix);
+  const AdmZip = (await import("adm-zip")).default;
+  const zip = new AdmZip(zipBuffer);
+  const entries = zip.getEntries();
+
+  const hasIndex = entries.some(
+    (e) => !e.isDirectory && (e.entryName === "index.html" || e.entryName.endsWith("/index.html"))
+  );
+  if (!hasIndex) {
+    return { ok: false, code: "NO_INDEX_HTML", message: "Zip must contain index.html in root" };
+  }
+
+  const uploaded: string[] = [];
+  try {
+    for (const e of entries) {
+      if (e.isDirectory) continue;
+      const name = e.entryName.replace(/\/$/, "");
+      if (name.includes("..") || name.startsWith("/")) continue;
+      const key = prefix + name;
+      const data = e.getData();
+      if (!data) continue;
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: key,
+          Body: data,
+          ContentType: e.header?.contentType ?? "application/octet-stream",
+        })
+      );
+      uploaded.push(key);
+    }
+    const dirName = prefix.slice(0, -1).split("/").pop() ?? "";
+    return { ok: true, path: v.path, name: dirName };
+  } catch (err) {
+    for (const key of uploaded) {
+      try {
+        await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+      } catch {
+        /* ignore rollback errors */
+      }
+    }
+    return { ok: false, code: "INTERNAL_ERROR", message: (err as Error).message };
+  }
 }

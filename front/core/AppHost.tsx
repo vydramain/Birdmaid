@@ -9,6 +9,13 @@ import { analytics } from "./analytics";
 
 const HANDSHAKE_TIMEOUT_MS = 2000;
 
+interface ShellOpenPayload {
+  kind: "file" | "app";
+  path: string;
+  mime?: string;
+  title?: string;
+}
+
 interface AppHostProps {
   windowId: string;
   src: string;
@@ -16,6 +23,10 @@ interface AppHostProps {
   theme: string;
   onTitleUpdate: (windowId: string, title: string) => void;
   contentWindowRef?: (win: Window | null) => void;
+  /** FP3: Explorer gets allow-same-origin sandbox + systemToken in SHELL_CAPS */
+  isExplorer?: boolean;
+  /** FP3: Called when Explorer sends SHELL_OPEN (only when isExplorer) */
+  onShellOpen?: (payload: ShellOpenPayload) => void;
 }
 
 export function AppHost({
@@ -25,6 +36,8 @@ export function AppHost({
   theme,
   onTitleUpdate,
   contentWindowRef,
+  isExplorer = false,
+  onShellOpen,
 }: AppHostProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [placeholder, setPlaceholder] = useState<string | null>("Loading...");
@@ -47,9 +60,9 @@ export function AppHost({
   const sendShellCaps = useCallback(() => {
     const r = readyRef.current;
     if (!r) return;
-    const caps = createShellCaps(windowId, scale, theme);
+    const caps = createShellCaps(windowId, scale, theme, isExplorer);
     sendToSource(r.source, r.origin, caps);
-  }, [windowId, scale, theme, sendToSource]);
+  }, [windowId, scale, theme, isExplorer, sendToSource]);
 
   useEffect(() => {
     if (readyRef.current) {
@@ -86,7 +99,7 @@ export function AppHost({
         setPlaceholder(null);
         readyRef.current = { source, origin };
         analytics.app_ready(windowId);
-        const caps = createShellCaps(windowId, scale, theme);
+        const caps = createShellCaps(windowId, scale, theme, isExplorer);
         sendToSource(source, origin, caps);
         (window as unknown as { __shellCapsSent?: boolean }).__shellCapsSent = true;
       } else if (data.type === "WINDOW_TITLE") {
@@ -94,9 +107,14 @@ export function AppHost({
         if (typeof title === "string") {
           onTitleUpdate(knownWindowId, title);
         }
+      } else if (data.type === "SHELL_OPEN" && isExplorer && onShellOpen) {
+        const payload = data.payload as ShellOpenPayload;
+        if (payload && typeof payload.kind === "string" && typeof payload.path === "string") {
+          onShellOpen(payload);
+        }
       }
     },
-    [windowId, scale, theme, onTitleUpdate, sendToSource]
+    [windowId, scale, theme, isExplorer, onTitleUpdate, onShellOpen, sendToSource]
   );
 
   useEffect(() => {
@@ -141,7 +159,7 @@ export function AppHost({
         ref={iframeRef}
         src={src}
         title={windowId}
-        sandbox="allow-scripts"
+        sandbox={isExplorer ? "allow-scripts allow-same-origin" : "allow-scripts"}
         onLoad={onIframeLoad}
         className="app-host-iframe"
       />

@@ -27,14 +27,18 @@ mc mb "myminio/$BUCKET" --ignore-existing
 # Apply CORS
 mc cors set "$CORS_JSON" "myminio/$BUCKET"
 
-# Upload fixtures (roots/DISK_C, roots/APPS)
+# Upload fixtures (roots/DISK_A, DISK_C, DISK_D). FP3: APPS deprecated.
+if [ -d "$FIXTURES/DISK_A" ]; then
+  mc cp --recursive "$FIXTURES/DISK_A/" "myminio/$BUCKET/roots/DISK_A/" 2>/dev/null || true
+  echo "Uploaded roots/DISK_A"
+fi
 if [ -d "$FIXTURES/DISK_C" ]; then
   mc cp --recursive "$FIXTURES/DISK_C/" "myminio/$BUCKET/roots/DISK_C/"
   echo "Uploaded roots/DISK_C"
 fi
-if [ -d "$FIXTURES/APPS" ]; then
-  mc cp --recursive "$FIXTURES/APPS/" "myminio/$BUCKET/roots/APPS/"
-  echo "Uploaded roots/APPS"
+if [ -d "$FIXTURES/DISK_D" ]; then
+  mc cp --recursive "$FIXTURES/DISK_D/" "myminio/$BUCKET/roots/DISK_D/" 2>/dev/null || true
+  echo "Uploaded roots/DISK_D"
 fi
 
 echo "MinIO init done."

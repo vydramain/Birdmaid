@@ -237,7 +237,52 @@ init → waiting_ready → ready
 
 ---
 
+## 7. FP3 Extensions (Explorer ↔ Shell)
+
+**Scope:** Explorer system app, SHELL_OPEN, token handshake.
+
+### 7.1 Explorer → Shell
+
+| Type         | Payload                                                                  | When                                   |
+| ------------ | ------------------------------------------------------------------------ | -------------------------------------- |
+| `SHELL_OPEN` | `{ kind: "file" \| "app", path: string, mime?: string, title?: string }` | Explorer requests open file or run app |
+
+**SHELL_OPEN payload schema:**
+
+| Field | Type   | Required | Description                                                  |
+| ----- | ------ | -------- | ------------------------------------------------------------ |
+| kind  | string | yes      | `"file"` (viewer) or `"app"` (run app-dir)                   |
+| path  | string | yes      | Canonical path (e.g. `/@root/DISK_C/My Documents/image.png`) |
+| mime  | string | no       | MIME type (for viewer selection)                             |
+| title | string | no       | Suggested window title                                       |
+
+**Shell response:** Opens viewer window (file) or app window (app); no reply message. On deny: Shell may send `SHELL_OPEN_DENIED` (optional).
+
+### 7.2 Shell → Explorer
+
+| Type                | Payload                             | When                                       |
+| ------------------- | ----------------------------------- | ------------------------------------------ |
+| `SHELL_CAPS`        | (existing) + `systemToken?: string` | After APP_READY from Explorer window only  |
+| `SHELL_OPEN_DENIED` | `{ reason: string, path?: string }` | Open rejected (policy, unknown mime, etc.) |
+
+**Token handling (MUST):**
+
+- Shell MUST include `systemToken` in SHELL_CAPS ONLY when target is Explorer window (identified by window type/source).
+- Shell MUST NOT send token to user app or viewer iframes.
+- Explorer stores token; adds `X-System-App: explorer` + `X-System-Token` to Write API requests.
+- No `"*"` in postMessage targetOrigin.
+
+### 7.3 Error surfacing
+
+| Event               | When                                    |
+| ------------------- | --------------------------------------- |
+| `shell_open_denied` | Shell rejects SHELL_OPEN (policy, etc.) |
+| `permission_denied` | Gateway returns 403 on Write API        |
+
+---
+
 ## References
 
 - FP1: [docs/fps/FP1.md](../fps/FP1.md)
+- FP3: [docs/fps/FP3.md](../fps/FP3.md)
 - QNA_DECISIONS: [docs/core/QNA_DECISIONS.md](./QNA_DECISIONS.md)

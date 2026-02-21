@@ -1,7 +1,19 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import multipart from "@fastify/multipart";
 import { S3Client } from "@aws-sdk/client-s3";
-import { getRoots, listDir, statItem, getOpenUrl } from "./fs.js";
+import {
+  getRoots,
+  listDir,
+  statItem,
+  getOpenUrl,
+  createFolder,
+  deleteItem,
+  renameItem,
+  uploadFile,
+  uploadZipApp,
+} from "./fs.js";
+import { checkWritable, validateRenameSameParent } from "./path-policy.js";
 
 const ALLOWED_ORIGINS = ["http://shell.local", "http://api.shell.local", "http://localhost:5173"];
 
@@ -46,6 +58,7 @@ app.addHook("onRequest", (req, reply, done) => {
   done();
 });
 
+app.register(multipart, { limits: { fileSize: 50 * 1024 * 1024 } });
 app.register(cors, {
   origin: (origin, cb) => {
     if (!origin || ALLOWED_ORIGINS.includes(origin)) {
@@ -176,6 +189,255 @@ app.post("/api/fs/open-url", async (req, reply) => {
     return reply.status(403).send({ error: { code: r.code, message: r.message } });
   if (r.code === "NOT_FOUND")
     return reply.status(404).send({ error: { code: r.code, message: r.message } });
+  return reply.status(500).send({ error: { code: r.code, message: r.message } });
+});
+
+function requireExplorerToken(
+  req: { headers: { [k: string]: string | string[] | undefined } },
+  reply: { status: (n: number) => { send: (o: object) => void } }
+) {
+  const appHeader = req.headers["x-system-app"];
+  const tokenHeader = req.headers["x-system-token"];
+  const token = Array.isArray(tokenHeader) ? tokenHeader[0] : tokenHeader;
+  if (appHeader !== "explorer" || !token) {
+    reply.status(403).send({
+      error: { code: "PERMISSION_DENIED", message: "Explorer token required" },
+    });
+    return false;
+  }
+  return true;
+}
+
+app.post("/api/fs/create-folder", async (req, reply) => {
+  if (!requireExplorerToken(req, reply)) return;
+  const body = (req.body ?? {}) as { path?: string };
+  const path = body?.path;
+  if (!path || typeof path !== "string") {
+    return reply.status(400).send({
+      error: { code: "BAD_PATH", message: "Path is required" },
+    });
+  }
+  const pathMatch = path.match(/^\/@root\/([^/]+)\/(.*)$/);
+  if (!pathMatch) {
+    return reply.status(400).send({
+      error: { code: "BAD_PATH", message: "Invalid path format" },
+    });
+  }
+  const [, rootId, suffix] = pathMatch;
+  const writable = checkWritable(rootId, suffix);
+  if (!writable.ok) {
+    return reply.status(403).send({
+      error: { code: writable.code, message: writable.message },
+    });
+  }
+  const start = Date.now();
+  const r = await createFolder(s3, BUCKET, path);
+  const durationMs = Date.now() - start;
+  if (r.ok) {
+    logEvent(app.log, "fs_create_folder", { path, durationMs, status: "ok" });
+    return reply.status(201).send({ path: r.path + r.name + "/", name: r.name });
+  }
+  if (r.code === "BAD_PATH" || r.code === "ROOT_NOT_FOUND") {
+    return reply.status(r.code === "BAD_PATH" ? 400 : 403).send({
+      error: { code: r.code, message: r.message },
+    });
+  }
+  return reply.status(500).send({ error: { code: r.code, message: r.message } });
+});
+
+app.delete("/api/fs/delete", async (req, reply) => {
+  if (!requireExplorerToken(req, reply)) return;
+  const body = (req.body ?? {}) as { path?: string };
+  const path = body?.path;
+  if (!path || typeof path !== "string") {
+    return reply.status(400).send({ error: { code: "BAD_PATH", message: "Path is required" } });
+  }
+  const pathMatch = path.match(/^\/@root\/([^/]+)\/(.*)$/);
+  if (!pathMatch) {
+    return reply.status(400).send({ error: { code: "BAD_PATH", message: "Invalid path format" } });
+  }
+  const [, rootId, suffix] = pathMatch;
+  const writable = checkWritable(rootId, suffix);
+  if (!writable.ok) {
+    return reply.status(403).send({ error: { code: writable.code, message: writable.message } });
+  }
+  const start = Date.now();
+  const r = await deleteItem(s3, BUCKET, path);
+  const durationMs = Date.now() - start;
+  if (r.ok) {
+    logEvent(app.log, "fs_delete", { path, durationMs, status: "ok" });
+    return reply.status(204).send();
+  }
+  if (r.code === "NOT_FOUND")
+    return reply.status(404).send({ error: { code: r.code, message: r.message } });
+  if (r.code === "BAD_PATH" || r.code === "ROOT_NOT_FOUND") {
+    return reply
+      .status(r.code === "BAD_PATH" ? 400 : 403)
+      .send({ error: { code: r.code, message: r.message } });
+  }
+  return reply.status(500).send({ error: { code: r.code, message: r.message } });
+});
+
+app.put("/api/fs/rename", async (req, reply) => {
+  if (!requireExplorerToken(req, reply)) return;
+  const body = (req.body ?? {}) as { fromPath?: string; toPath?: string };
+  const fromPath = body?.fromPath;
+  const toPath = body?.toPath;
+  if (!fromPath || !toPath || typeof fromPath !== "string" || typeof toPath !== "string") {
+    return reply
+      .status(400)
+      .send({ error: { code: "BAD_PATH", message: "fromPath and toPath required" } });
+  }
+  const sameParent = validateRenameSameParent(fromPath, toPath);
+  if (!sameParent.ok) {
+    return reply
+      .status(403)
+      .send({ error: { code: sameParent.code, message: sameParent.message } });
+  }
+  const fromMatch = fromPath.match(/^\/@root\/([^/]+)\/(.*)$/);
+  if (!fromMatch) {
+    return reply.status(400).send({ error: { code: "BAD_PATH", message: "Invalid path format" } });
+  }
+  const [, rootId, suffix] = fromMatch;
+  const writable = checkWritable(rootId, suffix);
+  if (!writable.ok) {
+    return reply.status(403).send({ error: { code: writable.code, message: writable.message } });
+  }
+  const start = Date.now();
+  const r = await renameItem(s3, BUCKET, fromPath, toPath);
+  const durationMs = Date.now() - start;
+  if (r.ok) {
+    logEvent(app.log, "fs_rename", { fromPath, toPath, durationMs, status: "ok" });
+    return reply.send({ path: r.path + r.name, name: r.name });
+  }
+  if (r.code === "NOT_FOUND")
+    return reply.status(404).send({ error: { code: r.code, message: r.message } });
+  if (r.code === "BAD_PATH" || r.code === "ROOT_NOT_FOUND") {
+    return reply
+      .status(r.code === "BAD_PATH" ? 400 : 403)
+      .send({ error: { code: r.code, message: r.message } });
+  }
+  return reply.status(500).send({ error: { code: r.code, message: r.message } });
+});
+
+app.post("/api/fs/upload-file", async (req, reply) => {
+  if (!requireExplorerToken(req, reply)) return;
+  let path: string | undefined;
+  let fileData: { toBuffer: () => Promise<Buffer>; mimetype: string } | null = null;
+  const reqParts = (
+    req as {
+      parts: () => AsyncIterable<{
+        type: string;
+        fieldname: string;
+        value?: string;
+        toBuffer?: () => Promise<Buffer>;
+        mimetype?: string;
+      }>;
+    }
+  ).parts;
+  if (!reqParts) {
+    return reply
+      .status(400)
+      .send({ error: { code: "BAD_REQUEST", message: "multipart required" } });
+  }
+  for await (const part of reqParts()) {
+    if (part.type === "field" && part.fieldname === "path") {
+      path = part.value;
+    } else if (part.type === "file" && part.fieldname === "file") {
+      fileData = part as { toBuffer: () => Promise<Buffer>; mimetype: string };
+      break;
+    }
+  }
+  if (!fileData || !path || typeof path !== "string") {
+    return reply
+      .status(400)
+      .send({ error: { code: "BAD_REQUEST", message: "path and file required" } });
+  }
+  const data = fileData;
+  const pathMatch = path.match(/^\/@root\/([^/]+)\/(.*)$/);
+  if (!pathMatch) {
+    return reply.status(400).send({ error: { code: "BAD_PATH", message: "Invalid path format" } });
+  }
+  const [, rootId, suffix] = pathMatch;
+  const writable = checkWritable(rootId, suffix);
+  if (!writable.ok) {
+    return reply.status(403).send({ error: { code: writable.code, message: writable.message } });
+  }
+  const buf = await data.toBuffer();
+  const start = Date.now();
+  const r = await uploadFile(s3, BUCKET, path, buf, data.mimetype);
+  const durationMs = Date.now() - start;
+  if (r.ok) {
+    logEvent(app.log, "fs_upload_file", { path, size: buf.length, durationMs, status: "ok" });
+    return reply.status(201).send({ path: r.path + r.name, name: r.name });
+  }
+  if (r.code === "BAD_PATH" || r.code === "ROOT_NOT_FOUND") {
+    return reply
+      .status(r.code === "BAD_PATH" ? 400 : 403)
+      .send({ error: { code: r.code, message: r.message } });
+  }
+  return reply.status(500).send({ error: { code: r.code, message: r.message } });
+});
+
+app.post("/api/fs/upload-zip-app", async (req, reply) => {
+  if (!requireExplorerToken(req, reply)) return;
+  let path: string | undefined;
+  let fileData: { toBuffer: () => Promise<Buffer>; mimetype: string } | null = null;
+  const reqParts = (
+    req as {
+      parts: () => AsyncIterable<{
+        type: string;
+        fieldname: string;
+        value?: string;
+        toBuffer?: () => Promise<Buffer>;
+        mimetype?: string;
+      }>;
+    }
+  ).parts;
+  if (!reqParts) {
+    return reply
+      .status(400)
+      .send({ error: { code: "BAD_REQUEST", message: "multipart required" } });
+  }
+  for await (const part of reqParts()) {
+    if (part.type === "field" && part.fieldname === "path") {
+      path = part.value;
+    } else if (part.type === "file" && part.fieldname === "file") {
+      fileData = part as { toBuffer: () => Promise<Buffer>; mimetype: string };
+      break;
+    }
+  }
+  if (!fileData || !path || typeof path !== "string") {
+    return reply
+      .status(400)
+      .send({ error: { code: "BAD_REQUEST", message: "path and file required" } });
+  }
+  const data = fileData;
+  const pathMatch = path.match(/^\/@root\/([^/]+)\/(.*)$/);
+  if (!pathMatch) {
+    return reply.status(400).send({ error: { code: "BAD_PATH", message: "Invalid path format" } });
+  }
+  const [, rootId, suffix] = pathMatch;
+  const writable = checkWritable(rootId, suffix);
+  if (!writable.ok) {
+    return reply.status(403).send({ error: { code: writable.code, message: writable.message } });
+  }
+  const buf = await data.toBuffer();
+  const start = Date.now();
+  const r = await uploadZipApp(s3, BUCKET, path, buf);
+  const durationMs = Date.now() - start;
+  if (r.ok) {
+    logEvent(app.log, "fs_upload_zip_app", { path, durationMs, status: "ok", hasIndexHtml: true });
+    return reply.status(201).send({ path: r.path + r.name + "/", name: r.name });
+  }
+  if (r.code === "NO_INDEX_HTML") {
+    return reply.status(400).send({ error: { code: r.code, message: r.message } });
+  }
+  if (r.code === "BAD_PATH" || r.code === "ROOT_NOT_FOUND") {
+    return reply
+      .status(r.code === "BAD_PATH" ? 400 : 403)
+      .send({ error: { code: r.code, message: r.message } });
+  }
   return reply.status(500).send({ error: { code: r.code, message: r.message } });
 });
 
