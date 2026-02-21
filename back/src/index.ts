@@ -51,6 +51,8 @@ app.addHook("onRequest", (req, reply, done) => {
   const origin = req.headers.origin;
   if (origin && !ALLOWED_ORIGINS.includes(origin)) {
     app.log.info({ event: "request_rejected", reason: "bad_origin", origin }, "request_rejected");
+    // FP3 M6: Add CORS so user-app can read 403 (fetch completes, script gets status for FETCH_RESULT)
+    reply.header("Access-Control-Allow-Origin", origin);
     reply.status(403).send({
       error: { code: "BAD_ORIGIN", message: "Origin not allowed" },
     });

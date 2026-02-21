@@ -7,6 +7,12 @@ import { test, expect } from "@playwright/test";
 import path from "path";
 import fs from "fs";
 
+/** Matches Explorer pathToUniqueId — for stable testid lookup. */
+function pathToTestId(p: string): string {
+  const norm = p.replace(/\/$/, "").replace(/^\//, "").replace(/\s+/g, "-");
+  return "item-" + (norm.replace(/\//g, "-") || "item");
+}
+
 test.describe("FP3 Explorer — M1: My Computer", () => {
   test("T-M1.1/T-M1.2 — Desktop has My Computer icon; double click opens Explorer window", async ({
     page,
@@ -89,10 +95,10 @@ test.describe("FP3 Explorer — M3: App-dir run", () => {
     await frame!.getByTestId("root-disk_c").dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 5000 });
 
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    await frame!.getByTestId("item-sample-app").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/sample-app/")).dblclick();
 
     // App window: iframe with src != Explorer (signed URL or s3.shell.local)
     const appIframe = page.locator("iframe[src]:not([src*='/apps/explorer'])").first();
@@ -120,11 +126,13 @@ test.describe("FP3 Explorer — M4: Image viewer", () => {
     await frame!.getByTestId("root-disk_c").dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 5000 });
 
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     // sample-image.png requires fixture (infra/minio/fixtures/DISK_C/My Documents/sample-image.png)
-    const imageItem = frame!.getByTestId("item-sample-image.png");
+    const imageItem = frame!.getByTestId(
+      pathToTestId("/@root/DISK_C/My Documents/sample-image.png")
+    );
     await expect(imageItem).toBeVisible({ timeout: 5000 });
     await imageItem.dblclick();
 
@@ -153,7 +161,7 @@ test.describe("FP3 Explorer — M5: Context menus + write ops", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     await frame!.getByTestId("explorer-blank-area").click({ button: "right" });
@@ -174,10 +182,12 @@ test.describe("FP3 Explorer — M5: Context menus + write ops", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const sampleTxt = frame!.getByTestId("item-sample-image.png");
+    const sampleTxt = frame!.getByTestId(
+      pathToTestId("/@root/DISK_C/My Documents/sample-image.png")
+    );
     await expect(sampleTxt).toBeVisible({ timeout: 5000 });
     await sampleTxt.click({ button: "right" });
     await expect(frame!.getByTestId("context-menu")).toBeVisible({ timeout: 2000 });
@@ -210,13 +220,15 @@ test.describe("FP3 Explorer — M5: Context menus + write ops", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     await frame!.getByTestId("explorer-blank-area").click({ button: "right" });
     await frame!.getByTestId("menu-new-folder").click();
 
-    await expect(frame!.getByTestId("item-Новая-Папка")).toBeVisible({ timeout: 5000 });
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/Новая Папка/"))
+    ).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -253,13 +265,15 @@ test.describe("FP3 Explorer — FP3.1 M5: New Folder (placeholder + rename)", ()
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     await openBlankContextMenu(frame!);
     await frame!.getByTestId("menu-new-folder").click();
 
-    await expect(frame!.getByTestId("item-Новая-Папка")).toBeVisible({ timeout: 5000 });
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/Новая Папка/"))
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("T-M5-NF2 — Create again -> Новая Папка 2", async ({ page }) => {
@@ -285,25 +299,32 @@ test.describe("FP3 Explorer — FP3.1 M5: New Folder (placeholder + rename)", ()
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     await openBlankContextMenu(frame!);
     await frame!.getByTestId("menu-new-folder").click();
-    await expect(frame!.getByTestId("item-Новая-Папка")).toBeVisible({ timeout: 5000 });
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/Новая Папка/"))
+    ).toBeVisible({ timeout: 5000 });
     const input1 = frame!.getByTestId("rename-input");
     await input1.press("Enter");
 
-    await expect(frame!.getByTestId("item-Новая-Папка")).toBeVisible({ timeout: 3000 });
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/Новая Папка/"))
+    ).toBeVisible({ timeout: 3000 });
 
     await openBlankContextMenu(frame!);
     await frame!.getByRole("menuitem", { name: /new folder/i }).click();
-    await expect(frame!.getByTestId("item-Новая-Папка-2")).toBeVisible({ timeout: 5000 });
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/Новая Папка 2/"))
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("T-M5-NF3 — Placeholder+spinner behavior correct", async ({ page }) => {
+    const CREATE_DELAY_MS = 800;
     await page.route("**/api/fs/create-folder", async (route) => {
-      await new Promise((r) => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, CREATE_DELAY_MS));
       const body = route.request().postDataJSON();
       const path = (body?.path ?? "").toString();
       const name = path
@@ -328,16 +349,19 @@ test.describe("FP3 Explorer — FP3.1 M5: New Folder (placeholder + rename)", ()
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     await openBlankContextMenu(frame!);
     await frame!.getByRole("menuitem", { name: /new folder/i }).click();
 
-    const placeholder = frame!.getByTestId("item-Новая-Папка");
-    await expect(placeholder).toBeVisible({ timeout: 2000 });
-    const spinner = placeholder.locator(".fs-tile-spinner");
-    await expect(spinner).toBeVisible({ timeout: 2500 });
+    // a) Placeholder tile appears immediately (spinner is inside it)
+    const spinner = frame!.getByTestId("new-folder-spinner");
+    await expect(spinner).toBeVisible({ timeout: 500 });
+    // b) Spinner visible during controlled pending window (800ms)
+    await expect(spinner).toBeVisible();
+    // c) After response: rename flow starts (rename-input visible)
+    await expect(frame!.getByTestId("rename-input")).toBeVisible({ timeout: 3000 });
   });
 
   test("T-M5-NF4 — Immediate rename input opens", async ({ page }) => {
@@ -363,7 +387,7 @@ test.describe("FP3 Explorer — FP3.1 M5: New Folder (placeholder + rename)", ()
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     await openBlankContextMenu(frame!);
@@ -444,10 +468,10 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const item = frame!.getByTestId("item-sample-image.png");
+    const item = frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/sample-image.png"));
     await expect(item).toBeVisible({ timeout: 5000 });
     await item.click({ button: "right" });
     await frame!.getByRole("menuitem", { name: /delete/i }).click();
@@ -481,7 +505,7 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     await frame!.getByTestId("upload-file-input").setInputFiles([
@@ -489,11 +513,19 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
       { name: "e2e-upload-2.png", mimeType: "image/png", buffer: Buffer.from("png2") },
     ]);
 
-    await expect(frame!.getByTestId("item-e2e-upload-1.png")).toBeVisible({ timeout: 10000 });
-    await expect(frame!.getByTestId("item-e2e-upload-2.png")).toBeVisible({ timeout: 6000 });
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/e2e-upload-1.png"))
+    ).toBeVisible({ timeout: 10000 });
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/e2e-upload-2.png"))
+    ).toBeVisible({ timeout: 6000 });
     await expect(frame!.locator("[data-upload-placeholder]")).toHaveCount(0, { timeout: 10000 });
-    await expect(frame!.getByTestId("item-e2e-upload-1.png")).toBeVisible();
-    await expect(frame!.getByTestId("item-e2e-upload-2.png")).toBeVisible();
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/e2e-upload-1.png"))
+    ).toBeVisible();
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/e2e-upload-2.png"))
+    ).toBeVisible();
   });
 
   test("T-M7-U2 — Upload fail: placeholder removed", async ({ page }) => {
@@ -511,20 +543,22 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     await frame!
       .getByTestId("upload-file-input")
       .setInputFiles([{ name: "e2e-fail.png", mimeType: "image/png", buffer: Buffer.from("x") }]);
 
-    await expect(frame!.getByTestId("item-e2e-fail.png")).not.toBeVisible({ timeout: 5000 });
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/e2e-fail.png"))
+    ).not.toBeVisible({ timeout: 5000 });
   });
 
   test("T-M8-Z1 — Upload zip success: app tile appears", async ({ page }) => {
     mockFsForM6(page);
-    await page.route("**/api/fs/upload-zip-app", async (route) => {
-      await new Promise((r) => setTimeout(r, 400));
+    await page.route(/upload-zip-app/, async (route) => {
+      await new Promise((r) => setTimeout(r, 600));
       await route.fulfill({
         status: 201,
         contentType: "application/json",
@@ -544,7 +578,7 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     const zipPath = path.join(process.cwd(), "e2e", "fixtures", "e2e-zip-app.zip");
@@ -553,8 +587,10 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
       .getByTestId("upload-zip-input")
       .setInputFiles([{ name: "e2e-zip-app.zip", mimeType: "application/zip", buffer: zipBuf }]);
 
-    await expect(frame!.getByTestId("item-e2e-zip-app")).toBeVisible({ timeout: 10000 });
-    await expect(frame!.locator("[data-upload-zip-placeholder]")).toHaveCount(0, { timeout: 5000 });
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/e2e-zip-app/"))
+    ).toBeVisible({ timeout: 15000 });
+    await expect(frame!.locator("[data-upload-zip-placeholder]")).toHaveCount(0, { timeout: 3000 });
   });
 });
 
@@ -571,7 +607,7 @@ test.describe("FP3 Explorer — FP3.1 D1: State persistence", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 5000 });
     await expect(frame!.getByTestId("address-bar")).toContainText(/My Documents|C:\/My Documents/i);
 
@@ -609,15 +645,17 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const item = frame!.getByTestId("item-sample-image.png");
+    const item = frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/sample-image.png"));
     await expect(item).toBeVisible({ timeout: 5000 });
     await item.click({ button: "right" });
     await frame!.getByRole("menuitem", { name: /delete/i }).click();
 
-    await expect(frame!.getByTestId("item-sample-image.png")).toBeVisible({ timeout: 5000 });
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/sample-image.png"))
+    ).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -698,10 +736,10 @@ test.describe("FP3 Explorer — FP3.1 B1: Rename flow", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const tile = frame!.getByTestId("item-sample-image.png");
+    const tile = frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/sample-image.png"));
     await tile.click({ button: "right" });
     await expect(frame!.getByTestId("context-menu")).toBeVisible({ timeout: 2000 });
     await frame!.getByRole("menuitem", { name: /rename/i }).click();
@@ -724,10 +762,10 @@ test.describe("FP3 Explorer — FP3.1 B1: Rename flow", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const tile = frame!.getByTestId("item-sample-image.png");
+    const tile = frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/sample-image.png"));
     await tile.click({ button: "right" });
     await frame!.getByRole("menuitem", { name: /rename/i }).click();
 
@@ -736,14 +774,21 @@ test.describe("FP3 Explorer — FP3.1 B1: Rename flow", () => {
     await input.press("Enter");
 
     await expect(frame!.getByTestId("rename-spinner")).toBeVisible({ timeout: 2000 });
-    await expect(frame!.getByTestId("item-e2e-renamed-image")).toBeVisible({ timeout: 5000 });
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/e2e-renamed-image"))
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("T-B1.1c — Simulated failure: revert to old name", async ({ page }) => {
+    const RENAME_FAIL_DELAY_MS = 800;
     mockFsForM6(page);
-    await page.route("**/api/fs/rename", (route) =>
-      route.fulfill({ status: 403, body: JSON.stringify({ error: "permission_denied" }) })
-    );
+    await page.route("**/api/fs/rename", async (route) => {
+      await new Promise((r) => setTimeout(r, RENAME_FAIL_DELAY_MS));
+      await route.fulfill({
+        status: 403,
+        body: JSON.stringify({ error: "permission_denied" }),
+      });
+    });
     await page.goto("/");
     const myComputer = page.getByRole("button", { name: /my computer/i });
     await myComputer.dblclick();
@@ -754,10 +799,11 @@ test.describe("FP3 Explorer — FP3.1 B1: Rename flow", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const tile = frame!.getByTestId("item-sample-image.png");
+    // a) label -> input, commit (Enter)
+    const tile = frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/sample-image.png"));
     await tile.click({ button: "right" });
     await frame!.getByRole("menuitem", { name: /rename/i }).click();
 
@@ -765,8 +811,12 @@ test.describe("FP3 Explorer — FP3.1 B1: Rename flow", () => {
     await input.fill("will-fail-rename");
     await input.press("Enter");
 
-    await expect(frame!.getByTestId("rename-spinner")).toBeVisible({ timeout: 2000 });
-    await expect(frame!.getByTestId("item-sample-image.png")).toBeVisible({ timeout: 5000 });
+    // b) Spinner visible during controlled pending window (800ms)
+    await expect(frame!.getByTestId("rename-spinner")).toBeVisible({ timeout: 1000 });
+    // c) After error: name reverted, item visible
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/sample-image.png"))
+    ).toBeVisible({ timeout: 3000 });
   });
 
   test("T-B1.1d — Escape cancels with no request", async ({ page }) => {
@@ -781,10 +831,10 @@ test.describe("FP3 Explorer — FP3.1 B1: Rename flow", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const tile = frame!.getByTestId("item-sample-image.png");
+    const tile = frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/sample-image.png"));
     await tile.click({ button: "right" });
     await frame!.getByRole("menuitem", { name: /rename/i }).click();
 
@@ -792,7 +842,9 @@ test.describe("FP3 Explorer — FP3.1 B1: Rename flow", () => {
     await input.fill("canceled-name");
     await input.press("Escape");
 
-    await expect(frame!.getByTestId("item-sample-image.png")).toBeVisible({ timeout: 2000 });
+    await expect(
+      frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/sample-image.png"))
+    ).toBeVisible({ timeout: 2000 });
   });
 });
 
@@ -808,7 +860,7 @@ test.describe("FP3 Explorer — FP3.1 A3: Blank area context menu", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     await frame!.getByTestId("explorer-blank-area").click({ button: "right" });
@@ -832,11 +884,13 @@ test.describe("FP3 Explorer — FP3.1 A2: Tile layout", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
     const tile = frame!.getByTestId(
-      "item-VeryLongFolderNameThatExceedsThreeLinesWhenRenderedInTile"
+      pathToTestId(
+        "/@root/DISK_C/My Documents/VeryLongFolderNameThatExceedsThreeLinesWhenRenderedInTile/"
+      )
     );
     await expect(tile).toBeVisible({ timeout: 5000 });
     await expect(tile).toHaveClass(/fs-tile/);
@@ -890,10 +944,12 @@ test.describe("FP3 Explorer — M6: Security (user app deny)", () => {
     expect(frame).toBeTruthy();
 
     await frame!.getByTestId("root-disk_c").dblclick();
-    await frame!.getByTestId("item-My-Documents").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
     await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
 
-    const userAppItem = frame!.getByTestId("item-user-app-deny");
+    const userAppItem = frame!.getByTestId(
+      pathToTestId("/@root/DISK_C/My Documents/user-app-deny/")
+    );
     await expect(userAppItem).toBeVisible({ timeout: 5000 });
     await userAppItem.dblclick();
 

@@ -56,9 +56,9 @@
 
 ### 1.3 Untracked
 
-| Path                  | Description                          |
-| --------------------- | ------------------------------------ |
-| infra/test-e2e-fp.sh  | M1: scoped E2E per FP (FP1/FP2/FP3)  |
+| Path                 | Description                         |
+| -------------------- | ----------------------------------- |
+| infra/test-e2e-fp.sh | M1: scoped E2E per FP (FP1/FP2/FP3) |
 
 **No generated/runtime dirs** in status. `playwright-report/`, `test-results/` already in .gitignore.
 
@@ -68,31 +68,31 @@
 
 ### A) Mandatory (M1/M2 fixes)
 
-| Path                                                  | Action  | Rationale                                      |
-| ----------------------------------------------------- | ------- | ---------------------------------------------- |
-| infra/test-e2e-fp.sh                                  | **add** | M1: scoped E2E (FP1/FP2/FP3)                   |
-| infra/gate.sh                                         | **add** | M1: uses test-e2e-fp.sh, scoped gate           |
-| infra/test-e2e.sh                                     | **add** | Smoke + dev-server setup, Playwright v1.58.2  |
-| e2e/fp3-explorer.spec.ts                              | **add** | M2: stable selectors, mockFsForM6, FETCH_RESULT |
-| front/apps/explorer/main.ts                           | **add** | M2: explorer-blank-area, menu testids, pathToStableId |
-| front/core/AppHost.tsx                                | **add** | M2: FETCH_RESULT → __lastFetchStatus           |
-| infra/minio/fixtures/.../user-app-deny/index.html     | **add** | M2: postMessage FETCH_RESULT on fetch complete |
+| Path                                              | Action  | Rationale                                             |
+| ------------------------------------------------- | ------- | ----------------------------------------------------- |
+| infra/test-e2e-fp.sh                              | **add** | M1: scoped E2E (FP1/FP2/FP3)                          |
+| infra/gate.sh                                     | **add** | M1: uses test-e2e-fp.sh, scoped gate                  |
+| infra/test-e2e.sh                                 | **add** | Smoke + dev-server setup, Playwright v1.58.2          |
+| e2e/fp3-explorer.spec.ts                          | **add** | M2: stable selectors, mockFsForM6, FETCH_RESULT       |
+| front/apps/explorer/main.ts                       | **add** | M2: explorer-blank-area, menu testids, pathToStableId |
+| front/core/AppHost.tsx                            | **add** | M2: FETCH_RESULT → \_\_lastFetchStatus                |
+| infra/minio/fixtures/.../user-app-deny/index.html | **add** | M2: postMessage FETCH_RESULT on fetch complete        |
 
 ### B) Docs / audits
 
 | Path                                   | Action  | Rationale                    |
 | -------------------------------------- | ------- | ---------------------------- |
-| docs/audit/CLEAN_STATE_INSTRUCTIONS.md  | **add** | Audit artifact; table format |
+| docs/audit/CLEAN_STATE_INSTRUCTIONS.md | **add** | Audit artifact; table format |
 | docs/audit/FP1_AUDIT_REPORT.md         | **add** | Gate Summary, commands       |
 | docs/audit/FP2_AUDIT_REPORT.md         | **add** | Gate Summary, scoped API     |
 | docs/audit/FP3_AUDIT_REPORT.md         | **add** | M2 root causes, evidence     |
 | docs/dev/DEV_DOMAIN.md                 | **add** | E2E canonical note           |
 | docs/dev/GUARDRAILS.md                 | **add** | test-e2e-fp.sh, scoped E2E   |
-| docs/fps/FP1.md                       | **add** | Gate Commands, test-e2e-fp    |
-| docs/fps/FP2.md                       | **add** | Gate Commands, test-e2e-fp    |
-| docs/fps/FP3.md                       | **add** | Gate Commands, test-e2e-fp    |
-| docs/fps/RELEASE_GATE_TEMPLATE.md     | **add** | Per-FP command matrix        |
-| infra/README.md                       | **add** | test-e2e-fp.sh, commands     |
+| docs/fps/FP1.md                        | **add** | Gate Commands, test-e2e-fp   |
+| docs/fps/FP2.md                        | **add** | Gate Commands, test-e2e-fp   |
+| docs/fps/FP3.md                        | **add** | Gate Commands, test-e2e-fp   |
+| docs/fps/RELEASE_GATE_TEMPLATE.md      | **add** | Per-FP command matrix        |
+| infra/README.md                        | **add** | test-e2e-fp.sh, commands     |
 
 ### C) Random / generated
 

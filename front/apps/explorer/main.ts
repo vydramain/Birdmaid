@@ -45,11 +45,13 @@ const historyStack: string[] = [];
 /** FP3.1 A3: Current list items for context menu delegation. */
 let currentListItems: FsItem[] = [];
 
-/** Stable testid from API path (for item-<id>). Uses basename; unique per path. */
-function pathToStableId(path: string): string {
-  const basename = path.replace(/\/$/, "").split("/").pop() ?? "item";
-  return basename.replace(/\s+/g, "-");
+/** Unique testid from full path (M2a: avoids strict-mode duplicates). */
+function pathToUniqueId(path: string): string {
+  const norm = path.replace(/\/$/, "").replace(/^\//, "").replace(/\s+/g, "-");
+  return norm.replace(/\//g, "-") || "item";
 }
+
+let pendingCreateId = 0;
 
 function labelToDisplay(id: string, label: string): string {
   if (id === "DISK_A") return "Floppy (A:)";
@@ -480,7 +482,8 @@ async function onNewFolder(): Promise<void> {
     return;
   }
   const idx = currentListItems.length - 1;
-  const tempTestId = `item-newfolder-${idx}`;
+  const pendingId = pendingCreateId++;
+  const tempTestId = `item-pending-${pendingId}`;
   const div = createFsTile("fs-icon-folder", name, tempTestId, () => {}, undefined, idx);
   div.setAttribute("data-placeholder", "1");
   const spinner = document.createElement("div");
@@ -494,7 +497,7 @@ async function onNewFolder(): Promise<void> {
     placeholder.path = apiPath + nextName.replace(/[/\\]/g, "") + "/";
     const labelEl = div.querySelector(".fs-tile-label");
     if (labelEl) labelEl.textContent = nextName;
-    div.setAttribute("data-testid", `item-newfolder-${idx}`);
+    div.setAttribute("data-testid", `item-pending-${pendingId}`);
   });
   if (!result.ok) {
     div.remove();
@@ -505,8 +508,7 @@ async function onNewFolder(): Promise<void> {
   }
   placeholder.path = result.path;
   placeholder.name = result.name;
-  const stableId = pathToStableId(result.path);
-  div.setAttribute("data-testid", `item-${stableId}`);
+  div.setAttribute("data-testid", `item-${pathToUniqueId(result.path)}`);
   const labelEl = div.querySelector(".fs-tile-label");
   if (labelEl) labelEl.textContent = result.name;
   spinner.remove();
@@ -599,7 +601,7 @@ async function onUploadFileChange(): Promise<void> {
         const data = (await res.json()) as { path?: string; name?: string };
         placeholder.path = data.path ?? path;
         placeholder.name = data.name ?? file.name;
-        div.setAttribute("data-testid", `item-${placeholder.name.replace(/\s/g, "-")}`);
+        div.setAttribute("data-testid", `item-${pathToUniqueId(placeholder.path)}`);
         const restored = document.createElement("span");
         restored.className = "fs-tile-label";
         restored.textContent = placeholder.name;
@@ -681,7 +683,7 @@ async function onUploadZipChange(): Promise<void> {
       placeholder.path = (data.path ?? path).replace(/\/?$/, "/");
       placeholder.name = data.name ?? dirName;
       placeholder.isApp = true;
-      div.setAttribute("data-testid", `item-${placeholder.name.replace(/\s/g, "-")}`);
+      div.setAttribute("data-testid", `item-${pathToUniqueId(placeholder.path)}`);
       const restored = document.createElement("span");
       restored.className = "fs-tile-label";
       restored.textContent = placeholder.name;
@@ -861,7 +863,7 @@ async function commitRename(
         currentListItems[idx] = updated;
       }
       labelEl.textContent = newName;
-      tile.setAttribute("data-testid", `item-${newName.replace(/\s/g, "-")}`);
+      tile.setAttribute("data-testid", `item-${pathToUniqueId(toPath)}`);
       tile.appendChild(labelEl);
     } else {
       labelEl.textContent = oldName;
@@ -910,7 +912,7 @@ async function loadAndRenderList(): Promise<void> {
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const iconClass = item.kind === "dir" ? "fs-icon-folder" : "fs-icon-file";
-      const testId = `item-${pathToStableId(item.path)}`;
+      const testId = `item-${pathToUniqueId(item.path)}`;
       const div = createFsTile(
         iconClass,
         item.name,
