@@ -8,14 +8,32 @@
     <p data-testid="user-app-deny-content">FP3 M6 user app — fetch should be denied</p>
     <script>
       (function () {
-        fetch("http://api.shell.local/api/fs/roots")
+        var apiUrl = "http://api.shell.local/api/fs/roots";
+        fetch(apiUrl)
           .then(function (r) {
-            document.body.dataset.fetchStatus = String(r.status);
+            var status = r.status;
+            document.body.dataset.fetchStatus = String(status);
             document.body.dataset.fetchResult = r.ok ? "ok" : "denied";
+            if (window.parent !== window) {
+              try {
+                window.parent.postMessage(
+                  { type: "FETCH_RESULT", payload: { status: status }, timestamp: Date.now() },
+                  "*"
+                );
+              } catch (_) {}
+            }
           })
           .catch(function () {
             document.body.dataset.fetchResult = "denied";
             document.body.dataset.fetchStatus = "error";
+            if (window.parent !== window) {
+              try {
+                window.parent.postMessage(
+                  { type: "FETCH_RESULT", payload: { status: 0 }, timestamp: Date.now() },
+                  "*"
+                );
+              } catch (_) {}
+            }
           });
       })();
     </script>

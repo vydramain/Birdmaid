@@ -1,12 +1,38 @@
 #!/usr/bin/env bash
-# Canonical test:e2e — Playwright image (avoids libnspr4.so in node:22).
-# Ensures stack is up (smoke + dev-server) before running tests.
-# Usage: ./infra/test-e2e.sh
+# Canonical test:e2e scoped to FP — runs only the E2E spec for that FP.
+# FP1 → e2e/fp1-shell.spec.ts
+# FP2 → E2E not in DoD → exit 0, "E2E not required for FP2"
+# FP3 → e2e/fp3-explorer.spec.ts
+# Prerequisite: stack up (smoke + dev-server). Same setup as test-e2e.sh.
+# Usage: ./infra/test-e2e-fp.sh FP1 | FP2 | FP3
 
 set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 COMPOSE_FILE="${COMPOSE_FILE:-infra/docker-compose.dev.yml}"
+
+FP="${1:-}"
+if [[ -z "$FP" ]]; then
+  echo "Usage: $0 FP1 | FP2 | FP3"
+  exit 1
+fi
+
+case "$FP" in
+  FP2)
+    echo "E2E not required for FP2"
+    exit 0
+    ;;
+  FP1)
+    SPEC="e2e/fp1-shell.spec.ts"
+    ;;
+  FP3)
+    SPEC="e2e/fp3-explorer.spec.ts"
+    ;;
+  *)
+    echo "Unknown FP: $FP. Use FP1, FP2, or FP3."
+    exit 1
+    ;;
+esac
 
 echo "==> 1. Smoke (gateway, traefik, minio)"
 "$SCRIPT_DIR/smoke.sh"
@@ -28,8 +54,7 @@ for i in $(seq 1 60); do
   sleep 1
 done
 
-echo "==> 4. Running E2E (Playwright image)"
-# Playwright image has Chromium + deps; add-host for dev-domain routing
+echo "==> 4. Running E2E (FP scoped: $SPEC)"
 docker run --rm \
   --init \
   --ipc=host \
@@ -40,4 +65,4 @@ docker run --rm \
   -w /app \
   -e PLAYWRIGHT_BASE_URL=http://shell.local \
   mcr.microsoft.com/playwright:v1.58.2-noble \
-  sh -c "npm install -g pnpm@10 && pnpm install && pnpm test:e2e"
+  sh -c "npm install -g pnpm@10 && pnpm install && pnpm exec playwright test $SPEC"

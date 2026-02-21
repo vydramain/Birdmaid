@@ -222,14 +222,14 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md):
 
 ## Gate Commands
 
-| Command                  | Required | Suites                  |
-| ------------------------ | -------- | ----------------------- |
-| `git status --porcelain` | yes      | —                       |
-| `./infra/smoke.sh`       | yes      | —                       |
-| `./infra/test-lint.sh`   | yes      | —                       |
-| `./infra/test-unit.sh`   | yes      | `front/__tests__/fp1/`  |
-| `./infra/test-api-fp.sh` | no       | FP1 has no API in DoD   |
-| `./infra/test-e2e.sh`    | yes      | `e2e/fp1-shell.spec.ts` |
+| Command                      | Required | Suites                  |
+| ---------------------------- | -------- | ----------------------- |
+| `git status --porcelain`     | yes      | —                       |
+| `./infra/smoke.sh`           | yes      | —                       |
+| `./infra/test-lint.sh`       | yes      | —                       |
+| `./infra/test-unit.sh`       | yes      | `front/__tests__/fp1/`  |
+| `./infra/test-api-fp.sh`     | no       | FP1 has no API in DoD   |
+| `./infra/test-e2e-fp.sh FP1` | yes      | `e2e/fp1-shell.spec.ts` |
 
 **Run gate:** `./infra/gate.sh FP1`
 
@@ -603,15 +603,15 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md):
 
 ### Gate Commands
 
-| Command                  | Expected exit   | E2E in DoD |
-| ------------------------ | --------------- | ---------- |
-| `git status --porcelain` | 0 (empty)       | —          |
-| `./infra/smoke.sh`       | 0 (PLATFORM OK) | —          |
-| `./infra/test-lint.sh`   | 0               | —          |
-| `./infra/test-unit.sh`   | 0 (unit)        | —          |
-| `./infra/test-e2e.sh`    | 0               | **yes**    |
+| Command                      | Expected exit   | E2E in DoD |
+| ---------------------------- | --------------- | ---------- |
+| `git status --porcelain`     | 0 (empty)       | —          |
+| `./infra/smoke.sh`           | 0 (PLATFORM OK) | —          |
+| `./infra/test-lint.sh`       | 0               | —          |
+| `./infra/test-unit.sh`       | 0 (unit)        | —          |
+| `./infra/test-e2e-fp.sh FP1` | 0               | **yes**    |
 
-**Canonical (container):** `./infra/gate.sh FP1`. Host-only: `git status`, `./infra/smoke.sh`. Host `pnpm lint/test/etc` prohibited for gate. Prerequisite: `docker compose -f infra/docker-compose.dev.yml up -d`.
+**Canonical (container):** `./infra/gate.sh FP1`. Host-only: `git status`, `./infra/smoke.sh`. Host `pnpm lint/test/etc` prohibited for gate. Prerequisite: `docker compose -f infra/docker-compose.dev.yml up -d`. Any non-zero exit → REJECT. No partial PASS. Host-only: `git status`, `./infra/smoke.sh`. Host `pnpm lint/test/etc` prohibited for gate. Prerequisite: `docker compose -f infra/docker-compose.dev.yml up -d`.
 
 ### Verification commands
 
