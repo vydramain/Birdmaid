@@ -566,15 +566,17 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 
 ### Gate Commands
 
-| Command                      | Expected exit   | E2E in DoD |
-| ---------------------------- | --------------- | ---------- |
-| `git status --porcelain`     | 0 (empty)       | —          |
-| `./infra/smoke.sh`           | 0 (PLATFORM OK) | —          |
-| `./infra/test-lint.sh`       | 0               | —          |
-| `./infra/test-api-fp.sh FP3` | 0               | —          |
-| `./infra/test-e2e-fp.sh FP3` | 0               | **yes**    |
+| Command                      | Expected exit   | E2E in DoD | Evidence (M5)        |
+| ---------------------------- | --------------- | ---------- | -------------------- |
+| `git status --porcelain`     | 0 (empty)       | —          | Commit before gate   |
+| `./infra/smoke.sh`           | 0 (PLATFORM OK) | —          | `PLATFORM OK`        |
+| `./infra/test-lint.sh`       | 0               | —          | lint + format:check  |
+| `./infra/test-api-fp.sh FP3` | 0               | —          | 46 passed            |
+| `./infra/test-e2e-fp.sh FP3` | 0               | **yes**    | 30 passed, 0 skipped |
 
 **Canonical (container):** `./infra/gate.sh FP3`. Host-only: `git status`, `./infra/smoke.sh`. Host `pnpm lint/test/etc` prohibited for gate. Prerequisite: `docker compose -f infra/docker-compose.dev.yml up -d`. Any non-zero exit → REJECT. No partial PASS.
+
+**Evidence paths:** `back/__tests__/fp3/*.ts`, `e2e/fp3-explorer.spec.ts`, `front/apps/explorer/main.ts`.
 
 ### Hygiene / Gates
 
