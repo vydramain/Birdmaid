@@ -10,26 +10,26 @@
 
 ## 1. Gate Summary
 
-| Check                     | Result   | Notes                                      |
-| ------------------------- | -------- | ------------------------------------------ |
-| Clean-state               | **PASS** | `git status --porcelain` empty (post-M3)   |
-| Stack (smoke.sh)           | **PASS** | PLATFORM OK                                |
-| ./infra/test-lint.sh      | **PASS** | exit 0 (lint + format:check)               |
-| ./infra/test-unit.sh      | **PASS** | exit 0; 14 passed (WindowManager)          |
+| Check                      | Result   | Notes                                     |
+| -------------------------- | -------- | ----------------------------------------- |
+| Clean-state                | **PASS** | `git status --porcelain` empty (post-M3)  |
+| Stack (smoke.sh)           | **PASS** | PLATFORM OK                               |
+| ./infra/test-lint.sh       | **PASS** | exit 0 (lint + format:check)              |
+| ./infra/test-unit.sh       | **PASS** | exit 0; 14 passed (WindowManager)         |
 | ./infra/test-e2e-fp.sh FP1 | **PASS** | exit 0; 10 passed (e2e/fp1-shell.spec.ts) |
-| AC/DoD evidence           | **PASS** | FP1 released; evidence in FP1.md           |
+| AC/DoD evidence            | **PASS** | FP1 released; evidence in FP1.md          |
 
 ---
 
 ## 2. Commands Table
 
-| Command                     | Expected exit | Actual exit | Evidence                        |
-| --------------------------- | ------------- | ----------- | ------------------------------- |
-| `git status --porcelain`    | 0 (empty)     | 0           | empty (post-M3 commit)          |
-| `./infra/smoke.sh`          | 0             | 0           | PLATFORM OK                     |
-| `./infra/test-lint.sh`      | 0             | 0           | Style guardrails OK, format OK   |
-| `./infra/test-unit.sh`      | 0             | 0           | 14 passed (front/__tests__/fp1/) |
-| `./infra/test-e2e-fp.sh FP1` | 0            | 0           | 10 passed (fp1-shell)            |
+| Command                      | Expected exit | Actual exit | Evidence                         |
+| ---------------------------- | ------------- | ----------- | -------------------------------- |
+| `git status --porcelain`     | 0 (empty)     | 0           | empty (post-M3 commit)           |
+| `./infra/smoke.sh`           | 0             | 0           | PLATFORM OK                      |
+| `./infra/test-lint.sh`       | 0             | 0           | Style guardrails OK, format OK   |
+| `./infra/test-unit.sh`       | 0             | 0           | 14 passed (front/**tests**/fp1/) |
+| `./infra/test-e2e-fp.sh FP1` | 0             | 0           | 10 passed (fp1-shell)            |
 
 ---
 

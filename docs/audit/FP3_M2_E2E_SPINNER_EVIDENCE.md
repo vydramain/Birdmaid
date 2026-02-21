@@ -10,8 +10,8 @@
 
 ### Changed files
 
-| File | Change |
-|------|--------|
+| File                       | Change                                                                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `e2e/fp3-explorer.spec.ts` | T-M5-NF3: mock delay 800ms, use `new-folder-spinner`, assert rename-input after; T-B1.1c: mock delay 800ms for rename 403 |
 
 ### Commands
@@ -28,12 +28,12 @@ cd /home/vydra/Repositories/vydramain/Birdmaid_v2
 
 ### Result summary
 
-| Test | Before | After |
-|------|--------|-------|
-| T-M5-NF3 | FAIL (spinner timeout) | **PASS** |
-| T-B1.1c | FAIL (flaky) | **PASS** |
-| T-M6.1 | FAIL | FAIL (M3 scope) |
-| T-M8-Z1 | — | FAIL (unrelated) |
+| Test     | Before                 | After            |
+| -------- | ---------------------- | ---------------- |
+| T-M5-NF3 | FAIL (spinner timeout) | **PASS**         |
+| T-B1.1c  | FAIL (flaky)           | **PASS**         |
+| T-M6.1   | FAIL                   | FAIL (M3 scope)  |
+| T-M8-Z1  | —                      | FAIL (unrelated) |
 
 **M2 DoD:** T-M5-NF3 and T-B1.1c are green.
 
@@ -43,17 +43,17 @@ cd /home/vydra/Repositories/vydramain/Birdmaid_v2
 
 ### T-M5-NF3
 
-| Root cause | Fix |
-|------------|-----|
+| Root cause                                                                                                                 | Fix                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Placeholder uses `item-newfolder-{idx}` until API returns; test expected `item-Новая-Папка`; spinner removed before assert | Use `getByTestId("new-folder-spinner")` directly; mock delay 800ms; assert rename-input after response |
-| Timing race: 2s delay but wrong selector | 800ms controlled delay; stable spinner testid |
+| Timing race: 2s delay but wrong selector                                                                                   | 800ms controlled delay; stable spinner testid                                                          |
 
 ### T-B1.1c
 
-| Root cause | Fix |
-|------------|-----|
-| Rename mock returns 403 immediately; spinner visible <1ms | Add 800ms delay in route handler before fulfill |
-| Non-deterministic spinner visibility | Controlled pending window; assert spinner within 1000ms |
+| Root cause                                                | Fix                                                     |
+| --------------------------------------------------------- | ------------------------------------------------------- |
+| Rename mock returns 403 immediately; spinner visible <1ms | Add 800ms delay in route handler before fulfill         |
+| Non-deterministic spinner visibility                      | Controlled pending window; assert spinner within 1000ms |
 
 ---
 
