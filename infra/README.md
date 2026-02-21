@@ -52,13 +52,24 @@ Brings up traefik, minio, minio-init, gateway; waits for /health; checks /api/fs
 
 ---
 
+## test:api (canonical)
+
+```bash
+./infra/test-api.sh
+```
+
+Runs `pnpm test:api` in a clean container. Avoids rollup optional deps / host store issues. **Prerequisite:** stack running (`./infra/smoke.sh` first).
+
+---
+
 ## Files
 
-| File                     | Purpose                     |
-| ------------------------ | --------------------------- |
-| `docker-compose.dev.yml` | Canonical compose           |
-| `Dockerfile.dev`         | dev-server (Vite) image     |
-| `minio/`                 | Init script, fixtures, CORS |
-| `smoke.sh`               | Platform health check       |
+| File                     | Purpose                        |
+| ------------------------ | ------------------------------ |
+| `docker-compose.dev.yml` | Canonical compose              |
+| `Dockerfile.dev`         | dev-server (Vite) image        |
+| `minio/`                 | Init script, fixtures, CORS    |
+| `smoke.sh`               | Platform health check          |
+| `test-api.sh`            | Canonical test:api (container) |
 
 **Prerequisite:** `/etc/hosts` with shell.local, api.shell.local, s3.shell.local. See [docs/dev/DEV_DOMAIN.md](../docs/dev/DEV_DOMAIN.md).

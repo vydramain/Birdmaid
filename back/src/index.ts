@@ -14,6 +14,7 @@ import {
   uploadZipApp,
 } from "./fs.js";
 import { checkWritable, validateRenameSameParent } from "./path-policy.js";
+import { checkUploadAllowlist } from "./upload-allowlist.js";
 
 const ALLOWED_ORIGINS = ["http://shell.local", "http://api.shell.local", "http://localhost:5173"];
 
@@ -323,7 +324,8 @@ app.put("/api/fs/rename", async (req, reply) => {
 app.post("/api/fs/upload-file", async (req, reply) => {
   if (!requireExplorerToken(req, reply)) return;
   let path: string | undefined;
-  let fileData: { toBuffer: () => Promise<Buffer>; mimetype: string } | null = null;
+  let fileData: { toBuffer: () => Promise<Buffer>; mimetype: string; filename?: string } | null =
+    null;
   const reqParts = (
     req as {
       parts: () => AsyncIterable<{
@@ -332,6 +334,7 @@ app.post("/api/fs/upload-file", async (req, reply) => {
         value?: string;
         toBuffer?: () => Promise<Buffer>;
         mimetype?: string;
+        filename?: string;
       }>;
     }
   ).parts;
@@ -344,7 +347,7 @@ app.post("/api/fs/upload-file", async (req, reply) => {
     if (part.type === "field" && part.fieldname === "path") {
       path = part.value;
     } else if (part.type === "file" && part.fieldname === "file") {
-      fileData = part as { toBuffer: () => Promise<Buffer>; mimetype: string };
+      fileData = part as { toBuffer: () => Promise<Buffer>; mimetype: string; filename?: string };
       break;
     }
   }
@@ -363,6 +366,11 @@ app.post("/api/fs/upload-file", async (req, reply) => {
   if (!writable.ok) {
     return reply.status(403).send({ error: { code: writable.code, message: writable.message } });
   }
+  const nameForAllowlist = (data.filename ?? path.slice(path.lastIndexOf("/") + 1)) || "file";
+  const allowlist = checkUploadAllowlist(nameForAllowlist, data.mimetype ?? "");
+  if (!allowlist.ok) {
+    return reply.status(415).send({ error: { code: allowlist.code, message: allowlist.message } });
+  }
   const buf = await data.toBuffer();
   const start = Date.now();
   const r = await uploadFile(s3, BUCKET, path, buf, data.mimetype);
@@ -375,6 +383,18 @@ app.post("/api/fs/upload-file", async (req, reply) => {
     return reply
       .status(r.code === "BAD_PATH" ? 400 : 403)
       .send({ error: { code: r.code, message: r.message } });
+  }
+  if (r.code === "NOT_FOUND") {
+    return reply.status(404).send({ error: { code: r.code, message: r.message } });
+  }
+  if (r.code === "NAME_CONFLICT") {
+    return reply.status(409).send({ error: { code: r.code, message: r.message } });
+  }
+  if (r.code === "SERVICE_UNAVAILABLE") {
+    return reply.status(503).send({ error: { code: r.code, message: r.message } });
+  }
+  if (r.code === "PAYLOAD_TOO_LARGE") {
+    return reply.status(413).send({ error: { code: r.code, message: r.message } });
   }
   return reply.status(500).send({ error: { code: r.code, message: r.message } });
 });

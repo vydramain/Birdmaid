@@ -549,11 +549,23 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 - Обновление `docs/core/API.yaml` (write endpoints).
 - Обновление `docs/dev/DEV_DOMAIN.md` при необходимости.
 
+### Gate Commands
+
+| Command                  | Expected exit   | E2E in DoD |
+| ------------------------ | --------------- | ---------- |
+| `git status --porcelain` | 0 (empty)       | —          |
+| `./infra/smoke.sh`       | 0 (PLATFORM OK) | —          |
+| `./infra/test-lint.sh`   | 0               | —          |
+| `./infra/test-api.sh`    | 0               | —          |
+| `./infra/test-e2e.sh`    | 0               | **yes**    |
+
+**Canonical (container):** `./infra/gate.sh FP3`. Host-only: `git status`, `./infra/smoke.sh`. Host `pnpm lint/test/etc` prohibited for gate. Prerequisite: `docker compose -f infra/docker-compose.dev.yml up -d`.
+
 ### Hygiene / Gates
 
 - `node tools/check-doc-links.cjs docs/` PASS
 - `./infra/smoke.sh` PLATFORM OK
-- Container gate: `pnpm lint` + `pnpm format:check` + `pnpm test:api` + `pnpm test:e2e` (при добавлении)
+- All Gate Commands exit=0 for PASS (no "Partial PASS", no "known failing", no skipped FP tests)
 
 ---
 
@@ -569,41 +581,202 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 
 ## Evidence (M3)
 
-| Item | Location | Notes |
-| ---- | -------- | ----- |
-| isApp integration | `back/__tests__/fp3/isapp.integration.test.ts` | list Program Files/Explorer, My Documents/sample-app → isApp true |
-| E2E T-M3.3 | `e2e/fp3-explorer.spec.ts` | Double click sample-app → new window with iframe (src signed URL). Content assert requires s3.shell.local in /etc/hosts |
-| Explorer dispatch | `front/apps/explorer/main.ts` | onItemDblClick: isApp or checkIsApp → SHELL_OPEN(kind=app, path, title) |
-| Shell handler | `front/Shell.tsx` | handleShellOpen: kind=app → open-url → createWindow(src=signed URL) |
-| Security | `front/core/AppHost.tsx` | SHELL_OPEN only when isExplorer && onShellOpen; Shell passes onShellOpen only for Explorer windows |
+| Item              | Location                                       | Notes                                                                                                                   |
+| ----------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| isApp integration | `back/__tests__/fp3/isapp.integration.test.ts` | list Program Files/Explorer, My Documents/sample-app → isApp true                                                       |
+| E2E T-M3.3        | `e2e/fp3-explorer.spec.ts`                     | Double click sample-app → new window with iframe (src signed URL). Content assert requires s3.shell.local in /etc/hosts |
+| Explorer dispatch | `front/apps/explorer/main.ts`                  | onItemDblClick: isApp or checkIsApp → SHELL_OPEN(kind=app, path, title)                                                 |
+| Shell handler     | `front/Shell.tsx`                              | handleShellOpen: kind=app → open-url → createWindow(src=signed URL)                                                     |
+| Security          | `front/core/AppHost.tsx`                       | SHELL_OPEN only when isExplorer && onShellOpen; Shell passes onShellOpen only for Explorer windows                      |
 
 ## Evidence (M5)
 
-| Item | Location | Notes |
-| ---- | -------- | ----- |
-| api-fs-write integration | `back/__tests__/fp3/api-fs-write.integration.test.ts` | create-folder, upload-file, delete, rename same-parent, rename cross-parent 403, upload-zip-app |
-| E2E T-M5.1/T-M5.2/T-M5.3 | `e2e/fp3-explorer.spec.ts` | Context menu blank (New Folder, Upload File, Upload Zip), item (Delete, Rename), New Folder flow |
-| Gateway write endpoints | `back/src/index.ts` | create-folder, delete, rename, upload-file, upload-zip-app with token check |
-| path-policy | `back/src/path-policy.ts` | checkWritable, validateRenameSameParent (cross-parent → 403) |
-| Explorer | `front/apps/explorer/main.ts` | SHELL_CAPS listener (systemToken), context menu, fetchWithToken for write ops |
+| Item                     | Location                                              | Notes                                                                                            |
+| ------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| api-fs-write integration | `back/__tests__/fp3/api-fs-write.integration.test.ts` | create-folder, upload-file, delete, rename same-parent, rename cross-parent 403, upload-zip-app  |
+| E2E T-M5.1/T-M5.2/T-M5.3 | `e2e/fp3-explorer.spec.ts`                            | Context menu blank (New Folder, Upload File, Upload Zip), item (Delete, Rename), New Folder flow |
+| Gateway write endpoints  | `back/src/index.ts`                                   | create-folder, delete, rename, upload-file, upload-zip-app with token check                      |
+| path-policy              | `back/src/path-policy.ts`                             | checkWritable, validateRenameSameParent (cross-parent → 403)                                     |
+| Explorer                 | `front/apps/explorer/main.ts`                         | SHELL_CAPS listener (systemToken), context menu, fetchWithToken for write ops                    |
 
 ## Evidence (M4)
 
-| Item | Location | Notes |
-| ---- | -------- | ----- |
-| open-url integration | `back/__tests__/fp3/open-url-viewer.integration.test.ts` | POST open-url returns url; GET on url returns 200 (requires stack) |
-| E2E T-M4.1 | `e2e/fp3-explorer.spec.ts` | Double click sample-image.png → viewer window with iframe src /viewers/image.html?url=...; img has signed URL |
-| Explorer file dispatch | `front/apps/explorer/main.ts` | onItemDblClick: file + image mime → SHELL_OPEN(kind=file, path, mime, title) |
-| Shell viewer handler | `front/Shell.tsx` | handleShellOpen: kind=file + image/* → open-url → createWindow(src=/viewers/image.html?url=...) |
-| ImageViewer | `front/viewers/image.html` | Reads url from query, sets img.src; sandbox allow-scripts only (no gateway access) |
-| Security | `front/core/AppHost.tsx` | Viewer windows: isExplorer=false → sandbox allow-scripts only; token never sent |
+| Item                   | Location                                                 | Notes                                                                                                         |
+| ---------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| open-url integration   | `back/__tests__/fp3/open-url-viewer.integration.test.ts` | POST open-url returns url; GET on url returns 200 (requires stack)                                            |
+| E2E T-M4.1             | `e2e/fp3-explorer.spec.ts`                               | Double click sample-image.png → viewer window with iframe src /viewers/image.html?url=...; img has signed URL |
+| Explorer file dispatch | `front/apps/explorer/main.ts`                            | onItemDblClick: file + image mime → SHELL_OPEN(kind=file, path, mime, title)                                  |
+| Shell viewer handler   | `front/Shell.tsx`                                        | handleShellOpen: kind=file + image/\* → open-url → createWindow(src=/viewers/image.html?url=...)              |
+| ImageViewer            | `front/viewers/image.html`                               | Reads url from query, sets img.src; sandbox allow-scripts only (no gateway access)                            |
+| Security               | `front/core/AppHost.tsx`                                 | Viewer windows: isExplorer=false → sandbox allow-scripts only; token never sent                               |
+
+---
+
+## FP3 Patchset (Post-Build Gaps, M5–M9)
+
+**Status:** design  
+**Created:** 2025-02-21  
+**Context:** FP3 build частично реализован; выявлены gaps в UX, async-flows, upload. Delta без изменения глобального scope.  
+**Source of truth:** этот раздел; тесты — docs/tests/FP3_TESTS.md; design log — docs/dev/DESIGN_LOG.md.
+
+### FP3 Patchset Before→After (P0/P1)
+
+| #   | Before (current)                | After (patchset)                                                |
+| --- | ------------------------------- | --------------------------------------------------------------- |
+| 1   | No Back button                  | Back слева от address bar; history stack; disabled если пусто   |
+| 2   | Tiles auto-fill, variable width | Фикс. ширина, 3 строки текста, ellipsis                         |
+| 3   | RMB только на grid items        | RMB по всей области контента (включая ниже последнего ряда)     |
+| 4   | DesktopIcon ≠ Explorer tiles    | Единый набор иконок (folder, file, disk, My Computer)           |
+| 5   | Rename: prompt                  | Inline input, Enter/click-out commit, spinner, apply/revert     |
+| 6   | Create: prompt для имени        | "Новая Папка" / "Новая Папка N", сразу rename flow              |
+| 7   | Delete: confirm → reload        | Spinner pending, remove on success, revert on fail              |
+| 8   | Errors: UI message              | Только logs (no toasts)                                         |
+| 9   | Upload: 500, no allowlist       | allowlist png/jpg/webp/mp3/mp4/webm; 1..10 files; optimistic UI |
+| 10  | Upload zip: как file            | Только zip, 1 файл; rollback on no index.html                   |
+| 11  | State lost on minimize          | Path (+ опц. selection) восстанавливается при restore           |
+
+### FP3 Patchset Requirements (A1..D1)
+
+| ID  | Requirement                                                                                                                                            | Priority |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| A1  | Back button слева от address bar; ведёт на предыдущий путь в истории; disabled если истории нет                                                        | P0       |
+| A2  | Tile: фиксированная ширина, квадрат (aspect-ratio: 1); текст меньший, перенос до 3 строк; ellipsis; текст под иконкой; путь в заголовке окна и taskbar | P0       |
+| A3  | Blank space: grid занимает всю видимую область; RMB в любой точке пустой области → context menu "blank"                                                | P0       |
+| A4  | Desktop и Explorer используют одну и ту же компоненту для иконок (имитация Win98 desktop)                                                              | P0       |
+| B1  | Rename: inline input, Enter/click-out commit, spinner pending, apply only on success, revert on fail, logs only                                        | P0       |
+| B2  | Create folder: "Новая Папка", auto-increment при конфликте; placeholder + rename сразу; rollback on fail                                               | P0       |
+| B3  | Delete: spinner pending, remove on success, revert on fail; logs only                                                                                  | P0       |
+| B4  | Errors: только в логах (no UI toasts yet)                                                                                                              | P0       |
+| C1  | Upload file: 1..10 файлов; allowlist png/jpg/webp, mp3, mp4/webm; per-file placeholder+spinner; remove on fail                                         | P0       |
+| C2  | Upload zip app: только 1; placeholder+spinner; validate index.html + rollback                                                                          | P0       |
+| C3  | Upload: no uncontrolled 500; controlled 400/403/413/415; request id + error code в логах                                                               | P0       |
+| D1  | Explorer: при minimize/blur и restore/focus сохранять текущий path (минимум path; опционально selection/scroll)                                        | P0       |
+
+### FP3 Patchset Acceptance Criteria
+
+| AC   | Критерий (проверяемый)                                                                |
+| ---- | ------------------------------------------------------------------------------------- |
+| A1.1 | Back button виден слева от address bar                                                |
+| A1.2 | Back disabled когда history пуст                                                      |
+| A1.3 | Back click → переход на предыдущий путь в истории (без Shell)                         |
+| A2.1 | Tile фиксированной ширины (одинаково для всех)                                        |
+| A2.2 | Текст: меньший шрифт, до 3 строк, ellipsis при overflow                               |
+| A2.3 | Текст всегда под иконкой                                                              |
+| A3.1 | Grid контейнер занимает всю область контента до status bar                            |
+| A3.2 | RMB в пустой области (под последним рядом) → context menu blank                       |
+| A4.1 | Desktop и Explorer — одна компонента для иконок (folder, file, disk, My Computer)     |
+| B1.1 | Rename: label → input inline; Enter или click-out = commit; Escape = cancel           |
+| B1.2 | Pending: spinner вместо label; UI не меняет имя до success                            |
+| B1.3 | Success: tile показывает новое имя; Fail: откат к старому; ошибка в логах             |
+| B2.1 | New Folder: создаётся "Новая Папка" или "Новая Папка N" при конфликте                 |
+| B2.2 | Placeholder появляется сразу; сразу запускается rename flow                           |
+| B2.3 | Create fail: placeholder исчезает; ошибка в логах                                     |
+| B3.1 | Delete: spinner вместо названия пока в полёте                                         |
+| B3.2 | Success: item исчезает; Fail: label возвращается; ошибка в логах                      |
+| C1.1 | Upload file: 1..10; allowlist png/jpg/webp, mp3, mp4/webm                             |
+| C1.2 | Per-file placeholder со spinner; success → реальный tile; fail → placeholder исчезает |
+| C2.1 | Upload zip: только 1; placeholder+spinner; success → app-dir tile; fail → исчезает    |
+| C3.1 | Корректные upload запросы → 2xx или 4xx (не 500)                                      |
+| D1.1 | Minimize → restore: Explorer на том же path                                           |
+
+### FP3 Patchset UX Spec (flows)
+
+**Back (A1):** Слева от address bar; Win98-style; disabled когда history пуст; click → предыдущий путь (stack).  
+**Tile (A2):** Фиксированная ширина, `aspect-ratio: 1`; иконка сверху, текст снизу; `font-size: 0.75rem`, `-webkit-line-clamp: 3`, `text-overflow: ellipsis`. Текущий путь из address bar — в заголовке окна и taskbar.  
+**Blank (A3):** Grid `min-height: 100%`/flex-grow; RMB вне `[data-explorer-item]` → context menu blank.  
+**Shared icons (A4):** Desktop использует ту же компоненту, что и Explorer (folder, file, disk, My Computer).  
+**Rename (B1):** Context menu → Rename → label→input inline, selectAll; Enter/click-out=commit; Escape=cancel; pending=spinner; success/fail=apply/revert.  
+**Create folder (B2):** "Новая Папка" или "Новая Папка N"; placeholder сразу; API; success→rename flow; fail→placeholder исчезает.  
+**Delete (B3):** Spinner вместо label; success→item gone; fail→revert.  
+**Upload file (C1):** 1..10; allowlist png/jpg/webp/mp3/mp4/webm; per-file placeholder+spinner.  
+**Upload zip (C2):** 1 zip; placeholder; rollback on fail.  
+**State (D1):** currentPath в state; minimize→restore сохраняет path.
+
+### FP3 Patchset Non-Scope
+
+- UI уведомления (toasts) об ошибках — позже
+- F2 rename (только context menu Rename в MVP)
+- Copy/paste, drag-select, Properties
+- Move (cross-parent)
+
+### FP3 Patchset Risks
+
+| Risk                          | Probability | Impact | Mitigation                           |
+| ----------------------------- | ----------- | ------ | ------------------------------------ |
+| Upload 500 root cause unknown | medium      | high   | API contract + error mapping; logs   |
+| History state edge cases      | low         | low    | Minimize path only; no scroll/select |
+
+### FP3 Patchset Analytics Events
+
+| Event                          | Payload                    | When                |
+| ------------------------------ | -------------------------- | ------------------- |
+| explorer_nav_back              | —                          | Back clicked        |
+| explorer_nav_open              | path, kind=dir\|disk       | Path opened         |
+| explorer_context_open          | target=blank\|item, path?  | Context menu shown  |
+| explorer_rename_start          | path                       | Rename input opened |
+| explorer_rename_commit         | fromPath, toPath           | Enter/click-out     |
+| explorer_rename_success        | fromPath, toPath           | Server 200          |
+| explorer_rename_fail           | fromPath, toPath, error    | Server 4xx/5xx      |
+| explorer_create_folder_start   | parentPath                 | New Folder clicked  |
+| explorer_create_folder_success | path, name                 | Server 201          |
+| explorer_create_folder_fail    | parentPath, error          | Server fail         |
+| explorer_delete_start          | path                       | Delete clicked      |
+| explorer_delete_success        | path                       | Server 204          |
+| explorer_delete_fail           | path, error                | Server fail         |
+| explorer_upload_file_start     | count                      | Files selected      |
+| explorer_upload_file_success   | count, paths               | All succeeded       |
+| explorer_upload_file_fail      | count, failedCount, errors | Some/all failed     |
+| explorer_upload_zip_start      | —                          | Zip selected        |
+| explorer_upload_zip_success    | path                       | Server 201          |
+| explorer_upload_zip_fail       | error                      | Server fail         |
+
+### FP3 Patchset Design Package Index
+
+| Doc                                            | Purpose                                                           |
+| ---------------------------------------------- | ----------------------------------------------------------------- |
+| [API_FP3_DELTA](../core/API_FP3_DELTA.md)      | Upload contract, allowlist, error codes 400/403/413/415           |
+| [FP3_TESTS](../tests/FP3_TESTS.md)             | AC→tests mapping, patchset delta (T-A1.x, T-B1.x, T-C1.x, T-D1.1) |
+| [FP3_SECURITY_DOD](../dev/FP3_SECURITY_DOD.md) | Sandbox, token, CORS, path policy                                 |
+| [DESIGN_LOG](../dev/DESIGN_LOG.md)             | Contradictions scan, decisions                                    |
+| [UX_MAP](../core/UX_MAP.md)                    | CTA (nav_back), flows ref                                         |
+
+### FP3 Patchset DoD (Design-stage)
+
+- [x] Requirements A1..D1 задокументированы
+- [x] UX spec в FP3.md (back, tile, blank, flows)
+- [x] API_FP3_DELTA.md: upload contract, error codes, no 500
+- [x] FP3_SECURITY_DOD.md: user apps deny, token Explorer-only
+- [x] FP3_TESTS.md: patchset delta
+- [x] DESIGN_LOG.md: patchset секция, contradictions scan
+- [x] UX_MAP.md: nav_back CTA
+
+### FP3 Patchset DoD (Build-stage, reference)
+
+- [ ] Все AC покрыты тестами (unit+api+e2e где уместно)
+- [ ] Нет 500 на корректных upload (2xx/4xx)
+- [ ] Ошибки операций логируются (без UI)
+- [ ] Desktop/Explorer — один источник иконок
+- [ ] Back button работает и покрыт e2e
+- [ ] Placeholders/spinners для rename/create/delete/upload
+- [ ] Restore после minimize сохраняет path
+
+---
+
+## Pre-FP4 TODO
+
+- [ ] **Merge API_FP3_DELTA.md into docs/core/API.yaml** — Consolidate write endpoints, permission model, upload contract before FP4.
+
+**Docs consolidation:** FP3 patchset (M5–M9) merged into FP3; no separate patchset entity. Audit: docs/audit/FP3_AUDIT_REPORT.md (M6 + M10).
 
 ---
 
 ## References
 
-- [FP1: Shell MVP](../fps/FP1.md)
-- [FP2: Gateway + FS](../fps/FP2.md)
+- [FP1: Shell MVP](FP1.md)
+- [FP2: Gateway + FS](FP2.md)
+- [API_FP3_DELTA](../core/API_FP3_DELTA.md) — upload contract, error codes
+- [FP3_TESTS](../tests/FP3_TESTS.md) — тест-план, patchset delta
+- [DESIGN_LOG](../dev/DESIGN_LOG.md) — design log, FP3.0 + patchset
 - [PROTOCOL_v0](../core/PROTOCOL_v0.md)
 - [THEMING_v0](../core/THEMING_v0.md)
 - [UI_ADAPTER_v0](../core/UI_ADAPTER_v0.md)

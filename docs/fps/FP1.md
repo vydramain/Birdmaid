@@ -588,6 +588,18 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md):
 | transcripts | `archive/FP1/transcripts/` (optional, copy manually) |
 | reports     | `archive/FP1/reports/` (optional)                    |
 
+### Gate Commands
+
+| Command                  | Expected exit   | E2E in DoD |
+| ------------------------ | --------------- | ---------- |
+| `git status --porcelain` | 0 (empty)       | —          |
+| `./infra/smoke.sh`       | 0 (PLATFORM OK) | —          |
+| `./infra/test-lint.sh`   | 0               | —          |
+| `./infra/test-unit.sh`   | 0 (unit)        | —          |
+| `./infra/test-e2e.sh`    | 0               | **yes**    |
+
+**Canonical (container):** `./infra/gate.sh FP1`. Host-only: `git status`, `./infra/smoke.sh`. Host `pnpm lint/test/etc` prohibited for gate. Prerequisite: `docker compose -f infra/docker-compose.dev.yml up -d`.
+
 ### Verification commands
 
 | Command                             | Expected          |

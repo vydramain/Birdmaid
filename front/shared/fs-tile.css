@@ -1,0 +1,89 @@
+/**
+ * FP3.1 A2/A4: Shared FS tile and icon styles.
+ * Used by Desktop (My Computer) and Explorer (roots + list).
+ * Tokens: no magic constants.
+ */
+
+:root {
+  --fs-tile-width: 5rem;
+  --fs-tile-font-size: 0.75rem;
+  --fs-tile-line-clamp: 3;
+  --fs-tile-gap: 0.25rem;
+  --fs-tile-padding: 0.5rem;
+  --fs-tile-border: 0.0625rem solid #ccc;
+  --fs-tile-radius: 0.25rem;
+}
+
+.fs-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: var(--fs-tile-width);
+  min-width: var(--fs-tile-width);
+  max-width: var(--fs-tile-width);
+  padding: var(--fs-tile-padding);
+  border: var(--fs-tile-border);
+  border-radius: var(--fs-tile-radius);
+  text-align: center;
+  cursor: pointer;
+  background: transparent;
+  gap: var(--fs-tile-gap);
+}
+
+.fs-tile:disabled,
+.fs-tile[aria-disabled="true"] {
+  cursor: default;
+}
+
+.fs-tile-icon {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.fs-tile-label {
+  font-size: var(--fs-tile-font-size);
+  line-height: 1.2;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--fs-tile-line-clamp);
+  word-break: break-word;
+  width: 100%;
+}
+
+.fs-icon-my-computer::before {
+  content: "\1F4BB";
+}
+
+.fs-icon-disk::before {
+  content: "\1F4BE";
+}
+
+.fs-icon-folder::before {
+  content: "\1F4C1";
+}
+
+.fs-icon-file::before {
+  content: "\1F4C4";
+}
+
+.fs-tile-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 0.125rem solid #ccc;
+  border-top-color: var(--wm-accent, #0078d4);
+  border-radius: 50%;
+  animation: fs-spin 0.6s linear infinite;
+}
+
+@keyframes fs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

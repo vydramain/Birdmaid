@@ -1,191 +1,93 @@
-# FP3 Audit Report
+# FP3 Audit Report — Gate Semantics (ALL_FPS_GATES)
 
-**Purpose:** Minimal evidence package for FP3 M6 Security + Final Gate.  
-**Scope:** FP3 implementation vs FP3.md, FP3_SECURITY_DOD.md, FP3_TESTS.md.  
-**Date:** 2025-02-20  
-**Mode:** build (M6: Security + Final Gate).
-
----
-
-## Gate Summary
-
-| Gate          | Result    | Notes                                                                 |
-| ------------- | --------- | --------------------------------------------------------------------- |
-| Clean-state   | **PASS**  | Security tests + E2E T-M6.1 added; gateway + sandbox verified         |
-| Stack start   | **PASS**  | Traefik, MinIO, gateway (`--no-frozen-lockfile` for back/ install)      |
-| test:api      | **33/36** | Security (6/6) + FP2 (16/16) + roots/list/isapp/open-url/write-denied pass |
-| Security E2E  | **PASS**  | T-M6.1: User app fetch api.shell.local → 403 (requires dev-server up) |
-| **Final**     | **PASS**  | M6 Security DoD met; security tests green                             |
-
-**Evidence:** See STEP 0–5 outputs below.
+**Purpose:** Audit FP3 against Gate Semantics (PASS only when all green).  
+**Scope:** FP3 Explorer + Shell per docs/fps/FP3.md (M6 + patchset M5–M9).  
+**Date:** 2025-02-21  
+**Mode:** audit (ALL_FPS_GATES).
 
 ---
 
-## 1. Security Implementation (STEP 2)
+## 1. Gate Summary
 
-### 1.1 Gateway Origin Allowlist
-
-**File:** `back/src/index.ts`
-
-```typescript
-const ALLOWED_ORIGINS = ["http://shell.local", "http://api.shell.local", "http://localhost:5173"];
-
-app.addHook("onRequest", (req, reply, done) => {
-  const origin = req.headers.origin;
-  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
-    reply.status(403).send({ error: { code: "BAD_ORIGIN", message: "Origin not allowed" } });
-    return done();
-  }
-  done();
-});
-```
-
-- User app (s3.shell.local origin) → 403
-- Explorer (shell.local origin) → allowed
-
-### 1.2 Write Endpoints — Token Required
-
-- `X-System-App: explorer` + `X-System-Token` required
-- Wrong app header or missing token → 403 PERMISSION_DENIED
-- Path policy: system paths (WINDOWS, Program Files, etc.) → 403 POLICY_VIOLATION
-
-### 1.3 Sandbox Matrix
-
-**File:** `front/core/AppHost.tsx`
-
-| App Type | sandbox                           |
-| -------- | --------------------------------- |
-| Explorer | `allow-scripts allow-same-origin` |
-| User app | `allow-scripts`                   |
-| Viewer   | `allow-scripts`                   |
-
-**Check:** `isExplorer={w.src.includes("/apps/explorer")}` in Shell.tsx.
+| Check               | Result   | Notes                                            |
+| ------------------- | -------- | ------------------------------------------------ |
+| Clean-state         | **FAIL** | `git status --porcelain` not empty               |
+| Stack (smoke.sh)    | **PASS** | PLATFORM OK                                      |
+| pnpm lint           | **PASS** | exit 0                                           |
+| pnpm format:check   | **FAIL** | exit 1; 9 files need Prettier                    |
+| ./infra/test-api.sh | **FAIL** | exit 1; 8 FP3 tests failed                       |
+| pnpm test:e2e       | **FAIL** | 3 skipped (T-M7-U1, T-M7-U2, T-M8-Z1) — FP scope |
+| AC/DoD evidence     | **PASS** | Evidence in FP3.md                               |
 
 ---
 
-## 2. Security Tests (STEP 1 + STEP 3)
+## 2. Commands Table
 
-### 2.1 Integration Tests
-
-**File:** `back/__tests__/fp3/security.integration.test.ts`
-
-| Test ID      | Description                                      | Expected |
-| ------------ | ------------------------------------------------ | -------- |
-| T-M6.4       | Write without token → 403                        | 403      |
-| T-M6.4       | Write with wrong app header → 403                | 403      |
-| T-PATH       | Write to system path with token → 403            | 403      |
-| T-M6-origin  | Bad origin → 403 for /api/fs/roots               | 403      |
-| T-M6-origin  | Bad origin → 403 for /api/fs/list                 | 403      |
-| T-M6-origin  | s3.shell.local origin → 403 for read             | 403      |
-
-### 2.2 E2E Test
-
-**File:** `e2e/fp3-explorer.spec.ts`
-
-| Test ID | Description                                           | Expected                    |
-| ------- | ----------------------------------------------------- | --------------------------- |
-| T-M6.1  | User app fetch api.shell.local → denied (403)          | 403 response captured       |
-
-**Fixture:** `infra/minio/fixtures/DISK_C/My Documents/user-app-deny/index.html` — fetches `http://api.shell.local/api/fs/roots` on load. Loaded from s3.shell.local (signed URL) → Origin not in allowlist → 403.
+| Command                  | Expected exit | Actual exit   | Evidence                         |
+| ------------------------ | ------------- | ------------- | -------------------------------- |
+| `git status --porcelain` | 0 (empty)     | 0 (not empty) | 28 modified, 6 untracked         |
+| `./infra/smoke.sh`       | 0             | 0             | PLATFORM OK                      |
+| `pnpm lint`              | 0             | 0             | Style guardrails OK              |
+| `pnpm format:check`      | 0             | 1             | 9 files need Prettier            |
+| `./infra/test-api.sh`    | 0             | 1             | 8 failed (FP3 upload/rename)     |
+| `pnpm test:e2e`          | 0             | 0\*           | \*3 skipped in FP scope → REJECT |
 
 ---
 
-## 3. Commands (Evidence)
+## 3. Test Accounting
 
-### 3.1 Prerequisites
+### test:api
 
-```bash
-# /etc/hosts (or equivalent)
-127.0.0.1 shell.local api.shell.local s3.shell.local
-```
+| Suite                                      | Passed | Failed | Skipped | In FP scope      |
+| ------------------------------------------ | ------ | ------ | ------- | ---------------- |
+| api-fs-upload                              | 0      | 5      | 0       | Yes (FP3 M7, M8) |
+| api-fs-write                               | 3      | 3      | 0       | Yes (FP3 M5)     |
+| security, roots, list, isapp, write-denied | 22     | 0      | 0       | Yes              |
+| FP2 api-fs                                 | 16     | 0      | 0       | No               |
 
-### 3.2 Start Stack
+**FP3 test:api:** 25 passed, 8 failed. Failures: upload-file (500), upload-zip-app (500), rename (404).
 
-```bash
-$ docker compose -f infra/docker-compose.dev.yml up -d traefik minio minio-init gateway
-```
+### test:e2e
 
-### 3.3 Load Fixtures (user-app-deny)
+| Test                  | Status  | In FP scope |
+| --------------------- | ------- | ----------- |
+| T-M7-U1 (Upload file) | skipped | Yes         |
+| T-M7-U2 (Upload fail) | skipped | Yes         |
+| T-M8-Z1 (Upload zip)  | skipped | Yes         |
 
-```bash
-$ docker compose -f infra/docker-compose.dev.yml run --rm minio-init
-```
-
-### 3.4 Smoke
-
-```bash
-$ bash infra/smoke.sh
-```
-
-### 3.5 test:api (Integration)
-
-```bash
-$ pnpm test:api
-# OR (when api.shell.local unreachable from host):
-$ docker run --rm --add-host api.shell.local:host-gateway --add-host s3.shell.local:host-gateway \
-  -v $(pwd):/app -w /app node:22-alpine sh -c "corepack enable pnpm && pnpm install && pnpm test:api"
-```
-
-**Expected:** Security (6) + FP2 (16) + roots/list/isapp/open-url/write-denied pass. M5 write (upload/rename) may need MinIO path setup.
-
-### 3.6 E2E
-
-```bash
-$ pnpm test:e2e
-# OR
-$ pnpm exec playwright test e2e/fp3-explorer.spec.ts
-```
-
-**Expected:** All FP3 Explorer tests pass, including T-M6.1.
+**Skipped interpretation:** All 3 skipped tests belong to FP3 scope (upload). Per Gate Semantics: "если относятся к FP scope -> REJECT + P0 blocker."
 
 ---
 
-## 4. Inventory (File Paths)
+## 4. AC/DoD Checklist
 
-| Item                    | Path                                                              |
-| ----------------------- | ----------------------------------------------------------------- |
-| FP3 spec                | docs/fps/FP3.md                                                   |
-| Security DoD            | docs/dev/FP3_SECURITY_DOD.md                                      |
-| Tests plan              | docs/tests/FP3_TESTS.md                                           |
-| Gateway entry           | back/src/index.ts                                                 |
-| Path policy             | back/src/path-policy.ts                                            |
-| AppHost (sandbox)       | front/core/AppHost.tsx                                            |
-| Shell (isExplorer)       | front/core/Shell.tsx                                               |
-| Security integration    | back/__tests__/fp3/security.integration.test.ts                    |
-| FP3 E2E                 | e2e/fp3-explorer.spec.ts                                          |
-| User app deny fixture   | infra/minio/fixtures/DISK_C/My Documents/user-app-deny/index.html  |
+| Item           | Evidence                                  | Status     |
+| -------------- | ----------------------------------------- | ---------- |
+| M6 Security    | security.integration.test.ts, T-M6.1 E2E  | ✓          |
+| M5 Write       | api-fs-write.integration.test.ts          | ✓ (3 fail) |
+| M7 Upload file | api-fs-upload.integration.test.ts         | ✓ (5 fail) |
+| M8 Upload zip  | api-fs-upload.integration.test.ts T-M8-Z1 | ✓ (fail)   |
+| M9 State       | T-D1.1 E2E                                | ✓          |
+| Patchset A1–D1 | FP3.md, FP3_TESTS.md                      | ✓          |
 
 ---
 
-## 5. Final Gate Section
+## 5. Final Verdict
 
-### Gate: PASS
+**REJECT**
 
-**M6 DoD met:**
+**P0 blockers:**
 
-1. User apps cannot access gateway (read or write) — verified by T-M6.1 E2E + integration
-2. Only Explorer can write (token required) — verified by T-M6.4
-3. Shell read endpoints allowed only from Shell origin; s3.shell.local → 403
-4. Viewers use signed-url only; no gateway calls
-5. Sandbox matrix applied: Explorer same-origin; user app/viewer no same-origin
+1. **Clean-state:** `git status --porcelain` not empty.
+2. **format:check:** 9 files need `pnpm format`.
+3. **test:api:** 8 FP3 tests failed (upload 500, rename 404). Fix: gateway/MinIO multipart handling, path resolution.
+4. **test:e2e skipped:** T-M7-U1, T-M7-U2, T-M8-Z1 skipped — FP scope. Fix: remove skip or implement alternative (filechooser in iframe not supported by Playwright).
 
-### Checklist (all done)
+**How to reproduce:**
 
-1. ~~Add security integration tests.~~ ✓
-2. ~~Add E2E T-M6.1 (user app deny).~~ ✓
-3. ~~Verify gateway origin allowlist.~~ ✓
-4. ~~Verify write token enforcement.~~ ✓
-5. ~~Verify path policy (system paths denied).~~ ✓
-6. ~~Verify sandbox matrix.~~ ✓
-7. ~~Create FP3_AUDIT_REPORT.md.~~ ✓
-
-### Fixes Applied (M6)
-
-| Fix                    | File                         | Change                                                       |
-| ---------------------- | ---------------------------- | ------------------------------------------------------------ |
-| Gateway install        | infra/docker-compose.dev.yml | `pnpm install` → `pnpm install --no-frozen-lockfile` (CI=true) |
-
-### Known Risks (non-blocking)
-
-1. **M5 write tests:** upload-file, rename, upload-zip-app may return 500/404 (MinIO path or multipart handling).
-2. **Dev-only allowlist:** Must not leak to production; use env-based config for prod origins.
+```bash
+git status --porcelain   # expect empty
+pnpm format:check       # expect exit 0
+./infra/test-api.sh     # expect exit 0
+pnpm test:e2e           # expect 0 skipped in FP scope
+```

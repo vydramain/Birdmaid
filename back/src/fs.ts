@@ -351,6 +351,15 @@ export async function renameItem(
   }
 }
 
+type UploadFileError =
+  | "BAD_PATH"
+  | "ROOT_NOT_FOUND"
+  | "NOT_FOUND"
+  | "NAME_CONFLICT"
+  | "PAYLOAD_TOO_LARGE"
+  | "SERVICE_UNAVAILABLE"
+  | "INTERNAL_ERROR";
+
 export async function uploadFile(
   s3: S3Client,
   bucket: string,
@@ -358,9 +367,7 @@ export async function uploadFile(
   body: Buffer | Uint8Array,
   contentType?: string
 ): Promise<
-  | { ok: true; path: string; name: string }
-  | { ok: false; code: "BAD_PATH" | "ROOT_NOT_FOUND"; message: string }
-  | { ok: false; code: "INTERNAL_ERROR"; message: string }
+  { ok: true; path: string; name: string } | { ok: false; code: UploadFileError; message: string }
 > {
   const v = validatePath(rawPath, KNOWN_ROOT_IDS, false);
   if (!v.ok) return { ok: false, code: v.code, message: v.message };
@@ -382,7 +389,32 @@ export async function uploadFile(
     const name = key.slice(key.lastIndexOf("/") + 1) || key;
     return { ok: true, path: v.path, name };
   } catch (e) {
-    return { ok: false, code: "INTERNAL_ERROR", message: (e as Error).message };
+    const err = e as { name?: string; message?: string; $metadata?: { httpStatusCode?: number } };
+    const name = err.name ?? "";
+    const status = err.$metadata?.httpStatusCode;
+    if (name === "NoSuchBucket" || status === 404) {
+      return { ok: false, code: "NOT_FOUND", message: err.message ?? "Bucket or object not found" };
+    }
+    if (name === "AccessDenied" || name === "Forbidden" || status === 403) {
+      return { ok: false, code: "ROOT_NOT_FOUND", message: err.message ?? "Access denied" };
+    }
+    if (name === "RequestEntityTooLarge" || status === 413) {
+      return { ok: false, code: "PAYLOAD_TOO_LARGE", message: "Payload too large" };
+    }
+    if (
+      name === "InvalidAccessKeyId" ||
+      name === "SignatureDoesNotMatch" ||
+      name === "CredentialsError" ||
+      name === "NetworkingError" ||
+      status === 503
+    ) {
+      return {
+        ok: false,
+        code: "SERVICE_UNAVAILABLE",
+        message: err.message ?? "Service unavailable",
+      };
+    }
+    return { ok: false, code: "INTERNAL_ERROR", message: err.message ?? "Internal error" };
   }
 }
 

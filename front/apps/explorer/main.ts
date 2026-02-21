@@ -2,7 +2,10 @@
  * Explorer — system app, roots view + folder navigation.
  * FP3 M1: roots A/C/D. M2: double click C: -> C:/, list + address bar.
  * FP3 M5: context menu (New Folder, Upload, Delete, Rename), write API with token.
+ * FP3.1 A2/A4: fs-tile layout, shared icons.
  */
+
+import "../../shared/fs-tile.css";
 
 let systemToken: string | null = null;
 
@@ -37,6 +40,10 @@ type ViewState = { mode: "roots" } | { mode: "folder"; path: string; apiPath: st
 
 let state: ViewState = { mode: "roots" };
 let roots: Root[] = [];
+/** FP3.1: Navigation history stack. "" = roots; apiPath = folder. */
+const historyStack: string[] = [];
+/** FP3.1 A3: Current list items for context menu delegation. */
+let currentListItems: FsItem[] = [];
 
 function labelToDisplay(id: string, label: string): string {
   if (id === "DISK_A") return "Floppy (A:)";
@@ -110,47 +117,151 @@ function getRootEl(): HTMLElement | null {
   return document.getElementById("explorer-root");
 }
 
-function renderAddressBar(displayPath: string): void {
-  let bar = document.querySelector("[data-testid='address-bar']");
-  if (!bar) {
-    bar = document.createElement("div");
-    bar.setAttribute("data-testid", "address-bar");
-    bar.style.padding = "0.25rem 0.5rem";
-    bar.style.borderBottom = "1px solid #ccc";
-    bar.style.fontSize = "0.875rem";
+function renderToolbar(displayPath: string, backDisabled: boolean): void {
+  let toolbar = document.querySelector("[data-testid='explorer-toolbar']");
+  if (!toolbar) {
+    toolbar = document.createElement("div");
+    toolbar.setAttribute("data-testid", "explorer-toolbar");
+    toolbar.style.display = "flex";
+    toolbar.style.alignItems = "center";
+    toolbar.style.gap = "0.25rem";
+    toolbar.style.padding = "0.25rem 0.5rem";
+    toolbar.style.borderBottom = "1px solid #ccc";
     const container = getRootEl();
-    if (container) container.insertBefore(bar, container.firstChild);
+    if (container) container.insertBefore(toolbar, container.firstChild);
+
+    const backBtn = document.createElement("button");
+    backBtn.setAttribute("data-testid", "explorer-back");
+    backBtn.textContent = "Back";
+    backBtn.style.fontSize = "0.875rem";
+    backBtn.style.padding = "0.25rem 0.5rem";
+    backBtn.style.cursor = "pointer";
+    backBtn.addEventListener("click", onBackClick);
+    toolbar.appendChild(backBtn);
+
+    const bar = document.createElement("div");
+    bar.setAttribute("data-testid", "address-bar");
+    bar.style.fontSize = "0.875rem";
+    bar.style.flex = "1";
+    bar.style.minWidth = "1rem";
+    bar.style.minHeight = "1rem";
+    toolbar.appendChild(bar);
   }
-  bar.textContent = displayPath;
+  const backBtn = toolbar.querySelector("[data-testid='explorer-back']") as HTMLButtonElement;
+  const bar = toolbar.querySelector("[data-testid='address-bar']");
+  if (backBtn) {
+    backBtn.disabled = backDisabled;
+  }
+  if (bar) {
+    bar.textContent = displayPath;
+  }
+}
+
+function onBackClick(): void {
+  if (historyStack.length === 0) return;
+  const prev = historyStack.pop()!;
+  if (prev === "") {
+    state = { mode: "roots" };
+    renderRoots();
+  } else {
+    state = { mode: "folder", path: apiPathToDisplay(prev), apiPath: prev };
+    loadAndRenderList();
+  }
+}
+
+function pushHistory(): void {
+  const entry = state.mode === "roots" ? "" : state.apiPath;
+  historyStack.push(entry);
+}
+
+function createFsTile(
+  iconClass: string,
+  label: string,
+  testId: string,
+  onClick: () => void,
+  iconTestId?: string,
+  dataItemIndex?: number
+): HTMLDivElement {
+  const tile = document.createElement("div");
+  tile.setAttribute("data-testid", testId);
+  tile.setAttribute("data-explorer-item", "1");
+  if (dataItemIndex !== undefined) tile.setAttribute("data-item-index", String(dataItemIndex));
+  tile.className = "fs-tile";
+  tile.style.cursor = "pointer";
+  const icon = document.createElement("span");
+  icon.className = `fs-tile-icon ${iconClass}`;
+  if (iconTestId) icon.setAttribute("data-testid", iconTestId);
+  icon.setAttribute("aria-hidden", "true");
+  const labelEl = document.createElement("span");
+  labelEl.className = "fs-tile-label";
+  labelEl.textContent = label;
+  tile.appendChild(icon);
+  tile.appendChild(labelEl);
+  tile.addEventListener("dblclick", onClick);
+  return tile;
+}
+
+function onContentContextMenu(e: MouseEvent): void {
+  e.preventDefault();
+  const target = e.target as HTMLElement;
+  const itemEl = target.closest("[data-explorer-item][data-item-index]");
+  if (itemEl) {
+    const idx = parseInt(itemEl.getAttribute("data-item-index") ?? "-1", 10);
+    const item = currentListItems[idx];
+    if (item) showContextMenu(e.clientX, e.clientY, "item", item);
+    return;
+  }
+  showContextMenu(e.clientX, e.clientY, "blank");
+}
+
+function createContentWrapper(): HTMLDivElement {
+  const content = document.createElement("div");
+  content.setAttribute("data-testid", "explorer-content");
+  content.style.flex = "1";
+  content.style.minHeight = "0";
+  content.style.overflow = "auto";
+  content.addEventListener("contextmenu", onContentContextMenu);
+  return content;
 }
 
 function renderRoots(): void {
   const root = getRootEl();
   if (!root) return;
   root.innerHTML = "";
-  renderAddressBar("");
+  renderToolbar("", true);
+  const content = createContentWrapper();
   const grid = document.createElement("div");
   grid.setAttribute("data-testid", "explorer-roots");
   grid.style.display = "grid";
-  grid.style.gridTemplateColumns = "repeat(auto-fill, minmax(80px, 1fr))";
+  grid.style.gridTemplateColumns =
+    "repeat(auto-fill, minmax(var(--fs-tile-width), var(--fs-tile-width)))";
   grid.style.gap = "1rem";
   grid.style.padding = "1rem";
+  const myComputerTile = createFsTile(
+    "fs-icon-my-computer",
+    "My Computer",
+    "root-my-computer",
+    () => {},
+    "my-computer-icon"
+  );
+  myComputerTile.style.cursor = "default";
+  myComputerTile.setAttribute("aria-disabled", "true");
+  grid.appendChild(myComputerTile);
   for (const r of roots) {
-    const item = document.createElement("div");
-    item.setAttribute("data-testid", `root-${r.id.toLowerCase()}`);
-    item.textContent = labelToDisplay(r.id, r.label);
-    item.style.cursor = "pointer";
-    item.style.padding = "0.5rem";
-    item.style.border = "1px solid #ccc";
-    item.style.borderRadius = "4px";
-    item.style.textAlign = "center";
-    item.addEventListener("dblclick", () => onRootDblClick(r.id));
+    const item = createFsTile(
+      "fs-icon-disk",
+      labelToDisplay(r.id, r.label),
+      `root-${r.id.toLowerCase()}`,
+      () => onRootDblClick(r.id)
+    );
     grid.appendChild(item);
   }
-  root.appendChild(grid);
+  content.appendChild(grid);
+  root.appendChild(content);
 }
 
 function onRootDblClick(rootId: string): void {
+  pushHistory();
   const apiPath = `/@root/${rootId}/`;
   state = { mode: "folder", path: apiPathToDisplay(apiPath), apiPath };
   loadAndRenderList();
@@ -183,16 +294,19 @@ async function onItemDblClick(item: FsItem): Promise<void> {
     send("SHELL_OPEN", { kind: "app", path: apiPath, title: item.name });
     return;
   }
+  pushHistory();
   state = { mode: "folder", path: apiPathToDisplay(apiPath), apiPath };
   loadAndRenderList();
 }
 
-// let contextMenuState: {
-//   x: number;
-//   y: number;
-//   target: "blank" | "item";
-//   item?: FsItem;
-// } | null = null;
+// State for context menu; used for positioning and target (item vs blank). Read when extending menu behavior.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- state holder for context menu
+let contextMenuState: {
+  x: number;
+  y: number;
+  target: "blank" | "item";
+  item?: FsItem;
+} | null = null;
 
 function hideContextMenu(): void {
   const menu = document.getElementById("explorer-context-menu");
@@ -283,36 +397,182 @@ function showContextMenu(x: number, y: number, target: "blank" | "item", item?: 
   requestAnimationFrame(() => document.addEventListener("click", close));
 }
 
-async function onNewFolder(): Promise<void> {
-  const name = window.prompt("New folder name:");
-  if (!name?.trim()) return;
-  const path =
-    state.mode === "folder" ? state.apiPath + name.trim().replace(/[/\\]/g, "") + "/" : "";
-  if (!path) return;
-  const url = API_BASE ? `${API_BASE}/api/fs/create-folder` : "/api/fs/create-folder";
-  const res = await fetchWithToken(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path }),
-  });
-  if (res.ok) loadAndRenderList();
+const NEW_FOLDER_BASE = "Новая Папка";
+const CREATE_FOLDER_RETRY_MAX = 5;
+
+function suggestNewFolderName(items: FsItem[]): string {
+  const used = new Set<string>();
+  for (const it of items) {
+    if (it.name === NEW_FOLDER_BASE) used.add("1");
+    const m = it.name.match(
+      new RegExp(`^${NEW_FOLDER_BASE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} (\\d+)$`)
+    );
+    if (m) used.add(m[1]);
+  }
+  if (!used.has("1")) return NEW_FOLDER_BASE;
+  for (let n = 2; n <= CREATE_FOLDER_RETRY_MAX + 2; n++) {
+    if (!used.has(String(n))) return `${NEW_FOLDER_BASE} ${n}`;
+  }
+  return `${NEW_FOLDER_BASE} ${Date.now()}`;
 }
+
+function nextNewFolderNameAfter(current: string): string {
+  if (current === NEW_FOLDER_BASE) return `${NEW_FOLDER_BASE} 2`;
+  const m = current.match(
+    new RegExp(`^${NEW_FOLDER_BASE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} (\\d+)$`)
+  );
+  if (m) return `${NEW_FOLDER_BASE} ${parseInt(m[1], 10) + 1}`;
+  return `${NEW_FOLDER_BASE} 2`;
+}
+
+async function createFolderWithRetry(
+  baseName: string,
+  onRetry: (nextName: string) => void
+): Promise<{ ok: true; path: string; name: string } | { ok: false }> {
+  const url = API_BASE ? `${API_BASE}/api/fs/create-folder` : "/api/fs/create-folder";
+  let name = baseName;
+  for (let k = 0; k < CREATE_FOLDER_RETRY_MAX; k++) {
+    const path = state.mode === "folder" ? state.apiPath + name.replace(/[/\\]/g, "") + "/" : "";
+    if (!path) return { ok: false };
+    const res = await fetchWithToken(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { path?: string; name?: string };
+      return { ok: true, path: data.path ?? path, name: data.name ?? name };
+    }
+    if (res.status === 409) {
+      name = nextNewFolderNameAfter(name);
+      onRetry(name);
+      continue;
+    }
+    return { ok: false };
+  }
+  return { ok: false };
+}
+
+async function onNewFolder(): Promise<void> {
+  if (state.mode !== "folder" || !isWritablePath(state.apiPath)) return;
+  const apiPath = state.apiPath;
+  const name = suggestNewFolderName(currentListItems);
+  const placeholderPath = apiPath + name.replace(/[/\\]/g, "") + "/";
+  const placeholder: FsItem = { path: placeholderPath, name, kind: "dir" };
+  currentListItems.push(placeholder);
+
+  const listEl = document.querySelector("[data-testid='explorer-list']") as HTMLDivElement | null;
+  if (!listEl) {
+    currentListItems.pop();
+    return;
+  }
+  const idx = currentListItems.length - 1;
+  const testId = `item-${name.replace(/\s/g, "-")}`;
+  const div = createFsTile("fs-icon-folder", name, testId, () => {}, undefined, idx);
+  div.setAttribute("data-placeholder", "1");
+  const spinner = document.createElement("div");
+  spinner.className = "fs-tile-spinner";
+  spinner.setAttribute("data-testid", "new-folder-spinner");
+  div.appendChild(spinner);
+  listEl.appendChild(div);
+
+  const result = await createFolderWithRetry(name, (nextName) => {
+    placeholder.name = nextName;
+    placeholder.path = apiPath + nextName.replace(/[/\\]/g, "") + "/";
+    const labelEl = div.querySelector(".fs-tile-label");
+    if (labelEl) labelEl.textContent = nextName;
+    div.setAttribute("data-testid", `item-${nextName.replace(/\s/g, "-")}`);
+  });
+  if (!result.ok) {
+    div.remove();
+    currentListItems.pop();
+    // eslint-disable-next-line no-console -- FP3.1 M5: log error only
+    console.error("[Explorer] create-folder failed");
+    return;
+  }
+  spinner.remove();
+  startRename(placeholder);
+}
+
+const UPLOAD_ACCEPT = ".png,.jpg,.jpeg,.webp,.mp3,.mp4,.webm";
+const UPLOAD_MAX_FILES = 10;
 
 function onUploadFile(): void {
   const input = document.createElement("input");
   input.type = "file";
+  input.multiple = true;
+  input.accept = UPLOAD_ACCEPT;
   input.onchange = async () => {
-    const file = input.files?.[0];
-    if (!file || state.mode !== "folder") return;
-    const path = state.apiPath + file.name;
+    const files = Array.from(input.files ?? []).slice(0, UPLOAD_MAX_FILES);
+    if (!files.length || state.mode !== "folder") return;
+    const apiPath = state.apiPath;
     const url = API_BASE ? `${API_BASE}/api/fs/upload-file` : "/api/fs/upload-file";
-    const form = new FormData();
-    form.append("path", path);
-    form.append("file", file);
-    const res = await fetchWithToken(url, { method: "POST", body: form });
-    if (res.ok) loadAndRenderList();
+    const listEl = document.querySelector("[data-testid='explorer-list']") as HTMLDivElement | null;
+    if (!listEl) return;
+
+    for (const file of files) {
+      const path = apiPath + file.name;
+      const placeholder: FsItem = { path, name: file.name, kind: "file" };
+      currentListItems.push(placeholder);
+      const idx = currentListItems.length - 1;
+      const testId = `item-${file.name.replace(/\s/g, "-")}`;
+      const div = createFsTile(
+        "fs-icon-file",
+        file.name,
+        testId,
+        () => onItemDblClick(placeholder),
+        undefined,
+        idx
+      );
+      div.setAttribute("data-placeholder", "1");
+      div.setAttribute("data-upload-placeholder", "1");
+      const labelEl = div.querySelector(".fs-tile-label") as HTMLElement;
+      const spinner = document.createElement("div");
+      spinner.className = "fs-tile-spinner";
+      spinner.setAttribute("data-testid", "upload-spinner");
+      if (labelEl) labelEl.replaceWith(spinner);
+      listEl.appendChild(div);
+
+      try {
+        const form = new FormData();
+        form.append("path", path);
+        form.append("file", file);
+        const res = await fetchWithToken(url, { method: "POST", body: form });
+        if (res.status === 201) {
+          const data = (await res.json()) as { path?: string; name?: string };
+          placeholder.path = data.path ?? path;
+          placeholder.name = data.name ?? file.name;
+          div.setAttribute("data-testid", `item-${placeholder.name.replace(/\s/g, "-")}`);
+          const restored = document.createElement("span");
+          restored.className = "fs-tile-label";
+          restored.textContent = placeholder.name;
+          spinner.replaceWith(restored);
+          div.removeAttribute("data-placeholder");
+          div.removeAttribute("data-upload-placeholder");
+        } else {
+          div.remove();
+          currentListItems.splice(currentListItems.indexOf(placeholder), 1);
+          // eslint-disable-next-line no-console -- FP3.1 M7: log only
+          console.error("[Explorer] upload failed:", res.status, await res.text());
+        }
+      } catch (e) {
+        div.remove();
+        currentListItems.splice(currentListItems.indexOf(placeholder), 1);
+        // eslint-disable-next-line no-console -- FP3.1 M7: log only
+        console.error("[Explorer] upload error:", e);
+      }
+      reindexListTiles();
+    }
   };
   input.click();
+}
+
+function reindexListTiles(): void {
+  const listEl = document.querySelector("[data-testid='explorer-list']");
+  if (!listEl) return;
+  for (let i = 0; i < listEl.children.length; i++) {
+    (listEl.children[i] as HTMLElement).setAttribute("data-item-index", String(i));
+  }
 }
 
 function onUploadZipApp(): void {
@@ -322,46 +582,244 @@ function onUploadZipApp(): void {
   input.onchange = async () => {
     const file = input.files?.[0];
     if (!file || state.mode !== "folder") return;
+    const apiPath = state.apiPath;
     const dirName = file.name.replace(/\.zip$/i, "") || "app";
-    const path = state.apiPath + dirName + "/";
+    const path = apiPath + dirName + "/";
+    const placeholder: FsItem = { path, name: dirName, kind: "dir", isApp: true };
+    currentListItems.push(placeholder);
+
+    const listEl = document.querySelector("[data-testid='explorer-list']") as HTMLDivElement | null;
+    if (!listEl) {
+      currentListItems.pop();
+      return;
+    }
+    const idx = currentListItems.length - 1;
+    const testId = `item-${dirName.replace(/\s/g, "-")}`;
+    const div = createFsTile(
+      "fs-icon-folder",
+      dirName,
+      testId,
+      () => onItemDblClick(placeholder),
+      undefined,
+      idx
+    );
+    div.setAttribute("data-placeholder", "1");
+    div.setAttribute("data-upload-zip-placeholder", "1");
+    const labelEl = div.querySelector(".fs-tile-label") as HTMLElement;
+    const spinner = document.createElement("div");
+    spinner.className = "fs-tile-spinner";
+    spinner.setAttribute("data-testid", "upload-zip-spinner");
+    if (labelEl) labelEl.replaceWith(spinner);
+    listEl.appendChild(div);
+
     const url = API_BASE ? `${API_BASE}/api/fs/upload-zip-app` : "/api/fs/upload-zip-app";
-    const form = new FormData();
-    form.append("path", path);
-    form.append("file", file);
-    const res = await fetchWithToken(url, { method: "POST", body: form });
-    if (res.ok) loadAndRenderList();
+    try {
+      const form = new FormData();
+      form.append("path", path);
+      form.append("file", file);
+      const res = await fetchWithToken(url, { method: "POST", body: form });
+      if (res.status === 201) {
+        const data = (await res.json()) as { path?: string; name?: string };
+        placeholder.path = (data.path ?? path).replace(/\/?$/, "/");
+        placeholder.name = data.name ?? dirName;
+        placeholder.isApp = true;
+        div.setAttribute("data-testid", `item-${placeholder.name.replace(/\s/g, "-")}`);
+        const restored = document.createElement("span");
+        restored.className = "fs-tile-label";
+        restored.textContent = placeholder.name;
+        spinner.replaceWith(restored);
+        div.removeAttribute("data-placeholder");
+        div.removeAttribute("data-upload-zip-placeholder");
+      } else {
+        div.remove();
+        currentListItems.splice(currentListItems.indexOf(placeholder), 1);
+        // eslint-disable-next-line no-console -- FP3.1 M8: log only
+        console.error("[Explorer] upload-zip-app failed:", res.status, await res.text());
+      }
+    } catch (e) {
+      div.remove();
+      currentListItems.splice(currentListItems.indexOf(placeholder), 1);
+      // eslint-disable-next-line no-console -- FP3.1 M8: log only
+      console.error("[Explorer] upload-zip-app error:", e);
+    }
+    reindexListTiles();
   };
   input.click();
 }
 
 async function onDelete(item: FsItem): Promise<void> {
   if (!window.confirm(`Delete ${item.name}?`)) return;
+  const found = getTileForItem(item);
+  if (!found) return;
+  const { tile, labelEl } = found;
+  const oldName = item.name;
+  const spinner = document.createElement("div");
+  spinner.setAttribute("data-testid", "delete-spinner");
+  spinner.className = "fs-tile-spinner";
+  labelEl.replaceWith(spinner);
+
   const path =
     item.kind === "dir" ? (item.path.endsWith("/") ? item.path : item.path + "/") : item.path;
   const url = API_BASE ? `${API_BASE}/api/fs/delete` : "/api/fs/delete";
-  const res = await fetchWithToken(url, {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path }),
-  });
-  if (res.status === 204) loadAndRenderList();
+  try {
+    const res = await fetchWithToken(url, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+    if (res.status === 204) {
+      const idx = currentListItems.findIndex((i) => itemPathMatch(i, item));
+      if (idx >= 0) {
+        currentListItems.splice(idx, 1);
+        tile.remove();
+        const listEl = document.querySelector("[data-testid='explorer-list']");
+        if (listEl) {
+          for (let i = idx; i < listEl.children.length; i++) {
+            (listEl.children[i] as HTMLElement).setAttribute("data-item-index", String(i));
+          }
+        }
+      }
+    } else {
+      const restored = document.createElement("span");
+      restored.className = "fs-tile-label";
+      restored.textContent = oldName;
+      spinner.replaceWith(restored);
+      // eslint-disable-next-line no-console -- FP3.1 M6: log error only
+      console.error("[Explorer] delete failed:", res.status, await res.text());
+    }
+  } catch (e) {
+    const restored = document.createElement("span");
+    restored.className = "fs-tile-label";
+    restored.textContent = oldName;
+    spinner.replaceWith(restored);
+    // eslint-disable-next-line no-console -- FP3.1 M6: log error only
+    console.error("[Explorer] delete error:", e);
+  }
 }
 
-async function onRename(item: FsItem): Promise<void> {
-  const newName = window.prompt("Rename to:", item.name);
-  if (!newName?.trim() || newName === item.name) return;
+function itemPathMatch(a: FsItem, b: FsItem): boolean {
+  const pa = a.kind === "dir" && !a.path.endsWith("/") ? a.path + "/" : a.path;
+  const pb = b.kind === "dir" && !b.path.endsWith("/") ? b.path + "/" : b.path;
+  return pa === pb;
+}
+
+function getTileForItem(item: FsItem): { tile: HTMLDivElement; labelEl: HTMLElement } | null {
+  const idx = currentListItems.findIndex((i) => itemPathMatch(i, item));
+  if (idx < 0) return null;
+  const tile = document.querySelector(`[data-item-index="${idx}"]`) as HTMLDivElement | null;
+  if (!tile) return null;
+  const labelEl = tile.querySelector(".fs-tile-label") as HTMLElement | null;
+  if (!labelEl) return null;
+  return { tile, labelEl };
+}
+
+function startRename(item: FsItem): void {
+  const found = getTileForItem(item);
+  if (!found) return;
+  const { tile, labelEl } = found;
+  const oldName = item.name;
+  const input = document.createElement("input");
+  input.setAttribute("data-testid", "rename-input");
+  input.type = "text";
+  input.value = oldName;
+  input.className = "fs-tile-label";
+  input.style.fontSize = "var(--fs-tile-font-size)";
+  input.style.width = "100%";
+  input.style.textAlign = "center";
+  input.style.border = "none";
+  input.style.background = "transparent";
+  input.style.outline = "1px solid var(--wm-accent, #0078d4)";
+  labelEl.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let done = false;
+  const commit = (): void => {
+    if (done) return;
+    const newName = input.value.trim();
+    if (!newName || newName === oldName) {
+      cancel();
+      return;
+    }
+    done = true;
+    void commitRename(item, newName, tile, oldName);
+  };
+
+  const cancel = (): void => {
+    if (done) return;
+    done = true;
+    input.replaceWith(labelEl);
+    labelEl.textContent = oldName;
+    labelEl.className = "fs-tile-label";
+  };
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commit();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancel();
+    }
+  });
+  input.addEventListener("blur", () => void Promise.resolve().then(() => commit()), {
+    capture: false,
+  });
+}
+
+async function commitRename(
+  item: FsItem,
+  newName: string,
+  tile: HTMLDivElement,
+  oldName: string
+): Promise<void> {
   const parentPath = item.path.replace(/\/[^/]+$/, "").replace(/([^/])$/, "$1/");
   const fromPath =
     item.kind === "dir" ? (item.path.endsWith("/") ? item.path : item.path + "/") : item.path;
-  const toPath =
-    item.kind === "dir" ? parentPath + newName.trim() + "/" : parentPath + newName.trim();
+  const toPath = item.kind === "dir" ? parentPath + newName + "/" : parentPath + newName;
+  const input = tile.querySelector("[data-testid='rename-input']") as HTMLInputElement | null;
+  if (input) input.remove();
+  const labelEl = document.createElement("span");
+  labelEl.className = "fs-tile-label";
+  const spinner = document.createElement("div");
+  spinner.setAttribute("data-testid", "rename-spinner");
+  spinner.className = "fs-tile-spinner";
+  tile.appendChild(spinner);
+
   const url = API_BASE ? `${API_BASE}/api/fs/rename` : "/api/fs/rename";
-  const res = await fetchWithToken(url, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fromPath, toPath }),
-  });
-  if (res.ok) loadAndRenderList();
+  try {
+    const res = await fetchWithToken(url, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fromPath, toPath }),
+    });
+    spinner.remove();
+    if (res.ok) {
+      const idx = currentListItems.findIndex((i) => itemPathMatch(i, item));
+      if (idx >= 0) {
+        const updated = { ...currentListItems[idx], name: newName, path: toPath };
+        currentListItems[idx] = updated;
+      }
+      labelEl.textContent = newName;
+      tile.setAttribute("data-testid", `item-${newName.replace(/\s/g, "-")}`);
+      tile.appendChild(labelEl);
+    } else {
+      labelEl.textContent = oldName;
+      tile.appendChild(labelEl);
+      // eslint-disable-next-line no-console -- FP3.1 B1.3: log error only
+      console.error("[Explorer] rename failed:", res.status, await res.text());
+    }
+  } catch (e) {
+    spinner.remove();
+    labelEl.textContent = oldName;
+    tile.appendChild(labelEl);
+    // eslint-disable-next-line no-console -- FP3.1 B1.3: log error only
+    console.error("[Explorer] rename error:", e);
+  }
+}
+
+function onRename(item: FsItem): void {
+  startRename(item);
 }
 
 async function loadAndRenderList(): Promise<void> {
@@ -369,40 +827,39 @@ async function loadAndRenderList(): Promise<void> {
   const root = getRootEl();
   if (!root) return;
   root.innerHTML = "";
-  renderAddressBar(state.path);
+  renderToolbar(state.path, historyStack.length === 0);
+  const content = createContentWrapper();
   const listEl = document.createElement("div");
   listEl.setAttribute("data-testid", "explorer-list");
   listEl.style.display = "grid";
-  listEl.style.gridTemplateColumns = "repeat(auto-fill, minmax(80px, 1fr))";
+  listEl.style.gridTemplateColumns =
+    "repeat(auto-fill, minmax(var(--fs-tile-width), var(--fs-tile-width)))";
   listEl.style.gap = "1rem";
   listEl.style.padding = "1rem";
-  listEl.addEventListener("contextmenu", (e) => {
-    e.preventDefault();
-    if ((e.target as HTMLElement).closest("[data-explorer-item]")) return;
-    showContextMenu(e.clientX, e.clientY, "blank");
-  });
-  root.appendChild(listEl);
+  content.appendChild(listEl);
+  root.appendChild(content);
   try {
     const items = await fetchList(state.apiPath);
-    for (const item of items) {
-      const div = document.createElement("div");
-      div.setAttribute("data-testid", `item-${item.name.replace(/\s/g, "-")}`);
-      div.setAttribute("data-explorer-item", "1");
-      div.textContent = item.name;
+    currentListItems = items;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const iconClass = item.kind === "dir" ? "fs-icon-folder" : "fs-icon-file";
+      const testId = `item-${item.name.replace(/\s/g, "-")}`;
+      const div = createFsTile(
+        iconClass,
+        item.name,
+        testId,
+        () => void onItemDblClick(item),
+        undefined,
+        i
+      );
       const isOpenable =
         item.kind === "dir" ||
         (item.kind === "file" && mimeFromExt(item.name)?.startsWith("image/"));
-      div.style.cursor = isOpenable ? "pointer" : "default";
-      div.style.padding = "0.5rem";
-      div.style.border = "1px solid #ccc";
-      div.style.borderRadius = "4px";
-      div.style.textAlign = "center";
-      div.addEventListener("dblclick", () => void onItemDblClick(item));
-      div.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        showContextMenu(e.clientX, e.clientY, "item", item);
-      });
+      if (!isOpenable) {
+        div.style.cursor = "default";
+        div.setAttribute("aria-disabled", "true");
+      }
       listEl.appendChild(div);
     }
   } catch (e) {
@@ -410,9 +867,18 @@ async function loadAndRenderList(): Promise<void> {
   }
 }
 
+function setupExplorerRootLayout(): void {
+  const root = getRootEl();
+  if (!root) return;
+  root.style.display = "flex";
+  root.style.flexDirection = "column";
+  root.style.minHeight = "100vh";
+}
+
 async function init(): Promise<void> {
   send("APP_READY", { appId: "explorer", version: "0.1.0" });
   send("WINDOW_TITLE", { title: "My Computer" });
+  setupExplorerRootLayout();
   try {
     roots = await fetchRoots();
     renderRoots();
