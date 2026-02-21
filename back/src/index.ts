@@ -326,28 +326,24 @@ app.post("/api/fs/upload-file", async (req, reply) => {
   let path: string | undefined;
   let fileData: { toBuffer: () => Promise<Buffer>; mimetype: string; filename?: string } | null =
     null;
-  const reqParts = (
-    req as {
-      parts: () => AsyncIterable<{
-        type: string;
-        fieldname: string;
-        value?: string;
-        toBuffer?: () => Promise<Buffer>;
-        mimetype?: string;
-        filename?: string;
-      }>;
-    }
-  ).parts;
-  if (!reqParts) {
+  if (!req.isMultipart?.()) {
     return reply
       .status(400)
       .send({ error: { code: "BAD_REQUEST", message: "multipart required" } });
   }
-  for await (const part of reqParts()) {
-    if (part.type === "field" && part.fieldname === "path") {
-      path = part.value;
-    } else if (part.type === "file" && part.fieldname === "file") {
-      fileData = part as { toBuffer: () => Promise<Buffer>; mimetype: string; filename?: string };
+  for await (const part of req.parts()) {
+    const p = part as {
+      type: string;
+      fieldname: string;
+      value?: string;
+      mimetype?: string;
+      filename?: string;
+      toBuffer?: () => Promise<Buffer>;
+    };
+    if (p.type === "field" && p.fieldname === "path") {
+      path = p.value;
+    } else if (p.type === "file" && p.fieldname === "file") {
+      fileData = p as { toBuffer: () => Promise<Buffer>; mimetype: string; filename?: string };
       break;
     }
   }
@@ -377,7 +373,7 @@ app.post("/api/fs/upload-file", async (req, reply) => {
   const durationMs = Date.now() - start;
   if (r.ok) {
     logEvent(app.log, "fs_upload_file", { path, size: buf.length, durationMs, status: "ok" });
-    return reply.status(201).send({ path: r.path + r.name, name: r.name });
+    return reply.status(201).send({ path: r.path, name: r.name });
   }
   if (r.code === "BAD_PATH" || r.code === "ROOT_NOT_FOUND") {
     return reply
@@ -402,28 +398,26 @@ app.post("/api/fs/upload-file", async (req, reply) => {
 app.post("/api/fs/upload-zip-app", async (req, reply) => {
   if (!requireExplorerToken(req, reply)) return;
   let path: string | undefined;
-  let fileData: { toBuffer: () => Promise<Buffer>; mimetype: string } | null = null;
-  const reqParts = (
-    req as {
-      parts: () => AsyncIterable<{
-        type: string;
-        fieldname: string;
-        value?: string;
-        toBuffer?: () => Promise<Buffer>;
-        mimetype?: string;
-      }>;
-    }
-  ).parts;
-  if (!reqParts) {
+  let fileData: { toBuffer: () => Promise<Buffer>; mimetype: string; filename?: string } | null =
+    null;
+  if (!req.isMultipart?.()) {
     return reply
       .status(400)
       .send({ error: { code: "BAD_REQUEST", message: "multipart required" } });
   }
-  for await (const part of reqParts()) {
-    if (part.type === "field" && part.fieldname === "path") {
-      path = part.value;
-    } else if (part.type === "file" && part.fieldname === "file") {
-      fileData = part as { toBuffer: () => Promise<Buffer>; mimetype: string };
+  for await (const part of req.parts()) {
+    const p = part as {
+      type: string;
+      fieldname: string;
+      value?: string;
+      mimetype?: string;
+      filename?: string;
+      toBuffer?: () => Promise<Buffer>;
+    };
+    if (p.type === "field" && p.fieldname === "path") {
+      path = p.value;
+    } else if (p.type === "file" && p.fieldname === "file") {
+      fileData = p as { toBuffer: () => Promise<Buffer>; mimetype: string; filename?: string };
       break;
     }
   }
@@ -433,6 +427,19 @@ app.post("/api/fs/upload-zip-app", async (req, reply) => {
       .send({ error: { code: "BAD_REQUEST", message: "path and file required" } });
   }
   const data = fileData;
+  const zipFilename = (data.filename ?? path.slice(path.lastIndexOf("/") + 1)) || "file";
+  const zipExt = zipFilename.slice(zipFilename.lastIndexOf(".")).toLowerCase();
+  const zipMime = (data.mimetype ?? "").toLowerCase().split(";")[0].trim();
+  if (zipExt !== ".zip") {
+    return reply.status(415).send({
+      error: { code: "UNSUPPORTED_MEDIA", message: "upload-zip-app requires .zip file" },
+    });
+  }
+  if (zipMime && !["application/zip", "application/octet-stream"].includes(zipMime)) {
+    return reply.status(415).send({
+      error: { code: "UNSUPPORTED_MEDIA", message: "upload-zip-app requires zip content type" },
+    });
+  }
   const pathMatch = path.match(/^\/@root\/([^/]+)\/(.*)$/);
   if (!pathMatch) {
     return reply.status(400).send({ error: { code: "BAD_PATH", message: "Invalid path format" } });

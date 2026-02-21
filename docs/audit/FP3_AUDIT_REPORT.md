@@ -9,15 +9,15 @@
 
 ## 1. Gate Summary
 
-| Check               | Result   | Notes                                            |
-| ------------------- | -------- | ------------------------------------------------ |
-| Clean-state         | **FAIL** | `git status --porcelain` not empty               |
-| Stack (smoke.sh)    | **PASS** | PLATFORM OK                                      |
-| pnpm lint           | **PASS** | exit 0                                           |
-| pnpm format:check   | **FAIL** | exit 1; 9 files need Prettier                    |
-| ./infra/test-api.sh | **FAIL** | exit 1; 8 FP3 tests failed                       |
-| pnpm test:e2e       | **FAIL** | 3 skipped (T-M7-U1, T-M7-U2, T-M8-Z1) — FP scope |
-| AC/DoD evidence     | **PASS** | Evidence in FP3.md                               |
+| Check               | Result   | Notes                                      |
+| ------------------- | -------- | ------------------------------------------ |
+| Clean-state         | **FAIL** | `git status --porcelain` not empty         |
+| Stack (smoke.sh)    | **PASS** | PLATFORM OK                                |
+| pnpm lint           | **PASS** | exit 0 (container)                         |
+| pnpm format:check   | **FAIL** | exit 1; 4 files need Prettier              |
+| ./infra/test-api.sh | **PASS** | exit 0; 46 passed (FP3 upload/write OK)   |
+| pnpm test:e2e       | **FAIL** | exit 1; Chromium libnspr4.so in container  |
+| AC/DoD evidence     | **PASS** | Evidence in FP3.md                         |
 
 ---
 
@@ -25,12 +25,12 @@
 
 | Command                  | Expected exit | Actual exit   | Evidence                         |
 | ------------------------ | ------------- | ------------- | -------------------------------- |
-| `git status --porcelain` | 0 (empty)     | 0 (not empty) | 28 modified, 6 untracked         |
+| `git status --porcelain` | 0 (empty)     | 0 (not empty) | 5 modified, 1 untracked          |
 | `./infra/smoke.sh`       | 0             | 0             | PLATFORM OK                      |
-| `pnpm lint`              | 0             | 0             | Style guardrails OK              |
-| `pnpm format:check`      | 0             | 1             | 9 files need Prettier            |
-| `./infra/test-api.sh`    | 0             | 1             | 8 failed (FP3 upload/rename)     |
-| `pnpm test:e2e`          | 0             | 0\*           | \*3 skipped in FP scope → REJECT |
+| `pnpm lint` (container)  | 0             | 0             | Style guardrails OK              |
+| `pnpm format:check`      | 0             | 1             | 4 files need Prettier            |
+| `./infra/test-api.sh`    | 0             | 0             | 46 passed (FP3 upload/write)     |
+| `pnpm test:e2e` (container) | 0          | 1             | 39 failed: libnspr4.so in node:22 |
 
 ---
 
@@ -40,35 +40,33 @@
 
 | Suite                                      | Passed | Failed | Skipped | In FP scope      |
 | ------------------------------------------ | ------ | ------ | ------- | ---------------- |
-| api-fs-upload                              | 0      | 5      | 0       | Yes (FP3 M7, M8) |
-| api-fs-write                               | 3      | 3      | 0       | Yes (FP3 M5)     |
-| security, roots, list, isapp, write-denied | 22     | 0      | 0       | Yes              |
+| api-fs-upload                              | 5      | 0      | 0       | Yes (FP3 M7, M8) |
+| api-fs-write                               | 6      | 0      | 0       | Yes (FP3 M5)     |
+| security, roots, list, isapp, write-denied  | 22     | 0      | 0       | Yes              |
 | FP2 api-fs                                 | 16     | 0      | 0       | No               |
 
-**FP3 test:api:** 25 passed, 8 failed. Failures: upload-file (500), upload-zip-app (500), rename (404).
+**FP3 test:api:** 33 passed, 0 failed.
 
 ### test:e2e
 
-| Test                  | Status  | In FP scope |
-| --------------------- | ------- | ----------- |
-| T-M7-U1 (Upload file) | skipped | Yes         |
-| T-M7-U2 (Upload fail) | skipped | Yes         |
-| T-M8-Z1 (Upload zip)  | skipped | Yes         |
+| Status  | Cause                                      |
+| ------- | ------------------------------------------ |
+| 39 failed | Container: Chromium libnspr4.so missing (node:22) |
 
-**Skipped interpretation:** All 3 skipped tests belong to FP3 scope (upload). Per Gate Semantics: "если относятся к FP scope -> REJECT + P0 blocker."
+**Skipped interpretation:** E2E did not execute; Chromium launch failed. FP3 upload tests (T-M7-U1, T-M7-U2, T-M8-Z1) no longer skipped per FP3_TESTS.md.
 
 ---
 
 ## 4. AC/DoD Checklist
 
-| Item           | Evidence                                  | Status     |
-| -------------- | ----------------------------------------- | ---------- |
-| M6 Security    | security.integration.test.ts, T-M6.1 E2E  | ✓          |
-| M5 Write       | api-fs-write.integration.test.ts          | ✓ (3 fail) |
-| M7 Upload file | api-fs-upload.integration.test.ts         | ✓ (5 fail) |
-| M8 Upload zip  | api-fs-upload.integration.test.ts T-M8-Z1 | ✓ (fail)   |
-| M9 State       | T-D1.1 E2E                                | ✓          |
-| Patchset A1–D1 | FP3.md, FP3_TESTS.md                      | ✓          |
+| Item           | Evidence                                  | Status |
+| -------------- | ----------------------------------------- | ------ |
+| M6 Security    | security.integration.test.ts, T-M6.1 E2E   | ✓      |
+| M5 Write       | api-fs-write.integration.test.ts          | ✓      |
+| M7 Upload file | api-fs-upload.integration.test.ts          | ✓      |
+| M8 Upload zip  | api-fs-upload.integration.test.ts T-M8-Z1 | ✓      |
+| M9 State       | T-D1.1 E2E                                | ✓      |
+| Patchset A1–D1 | FP3.md, FP3_TESTS.md                      | ✓      |
 
 ---
 
@@ -79,15 +77,5 @@
 **P0 blockers:**
 
 1. **Clean-state:** `git status --porcelain` not empty.
-2. **format:check:** 9 files need `pnpm format`.
-3. **test:api:** 8 FP3 tests failed (upload 500, rename 404). Fix: gateway/MinIO multipart handling, path resolution.
-4. **test:e2e skipped:** T-M7-U1, T-M7-U2, T-M8-Z1 skipped — FP scope. Fix: remove skip or implement alternative (filechooser in iframe not supported by Playwright).
-
-**How to reproduce:**
-
-```bash
-git status --porcelain   # expect empty
-pnpm format:check       # expect exit 0
-./infra/test-api.sh     # expect exit 0
-pnpm test:e2e           # expect 0 skipped in FP scope
-```
+2. **format:check:** 4 files need `pnpm format`.
+3. **test:e2e:** Container Chromium fails (libnspr4.so). Use Playwright image or host.

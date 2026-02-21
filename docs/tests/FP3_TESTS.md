@@ -127,10 +127,10 @@
 | C1.1 | T-C1.1   | Int  | Upload file: allowlist png/jpg/webp/mp3/mp4/webm → 201              |
 | C1.2 | T-C1.2   | Int  | Upload file: 415 for disallowed ext/mime                            |
 | C3.1 | T-C3.1   | Int  | Valid upload request → 2xx (no 500)                                 |
-| —    | T-M7-U1  | E2E  | Upload multiple: placeholders → success (skipped)                   |
-| —    | T-M7-U2  | E2E  | Upload fail: placeholder removed (skipped)                          |
+| —    | T-M7-U1  | E2E  | Upload multiple: placeholders → success                             |
+| —    | T-M7-U2  | E2E  | Upload fail: placeholder removed                                    |
 | C2.1 | T-M8-Z1  | Int  | Upload zip without index.html → 400 NO_INDEX_HTML, no partial files |
-| —    | T-M8-Z1  | E2E  | Upload zip success → app tile (skipped)                             |
+| —    | T-M8-Z1  | E2E  | Upload zip success → app tile                                       |
 | C2.1 | T-C2.1   | Int  | Upload zip: 1 file, rollback on no index.html                       |
 | C3.1 | T-C3.1   | Int  | Valid upload request → 2xx or 4xx (not 500)                         |
 | D1.1 | T-D1.1   | E2E  | Minimize → restore: same path                                       |
@@ -159,8 +159,8 @@
 | Rename flow        | Rename item, Enter commit, assert new name; Rename, Escape, assert old                                      |
 | Create folder flow | New Folder, assert "Новая Папка", rename inline                                                             |
 | Delete flow        | Delete item, assert spinner then gone; T-M6-D1/D2 mock delete API; `addInitScript` stubs `confirm` (iframe) |
-| Upload flow        | T-M7: allowlist 415, 2xx integration; E2E T-M7-U1/U2 skipped (filechooser in iframe not supported)          |
-| Upload zip flow    | T-M8-Z1: no index.html → 400, no partial; E2E T-M8-Z1 skipped (filechooser)                                 |
+| Upload flow        | T-M7: allowlist 415, 2xx integration; E2E T-M7-U1/U2 use setInputFiles on hidden inputs                   |
+| Upload zip flow    | T-M8-Z1: no index.html → 400, no partial; E2E T-M8-Z1 uses setInputFiles on upload-zip-input               |
 | State persistence  | T-D1.1: minimize → restore → same path                                                                      |
 | Upload file        | Upload png, assert tile; upload disallowed ext → 415                                                        |
 | State persistence  | Navigate to path, minimize, restore, assert same path                                                       |
@@ -178,6 +178,6 @@
 
 ## 8. E2E Upload Policy (FP3 patchset)
 
-**Upload UI via filechooser in iframe** — outside E2E scope. Playwright `filechooser` does not fire for inputs inside iframes. T-M7-U1/U2, T-M8-Z1 (E2E) remain skipped.
+**E2E upload uses `setInputFiles` on hidden inputs** — Explorer exposes persistent `input[type=file]` elements (`data-testid="upload-file-input"`, `data-testid="upload-zip-input"`) for Playwright. Tests call `frame.locator('[data-testid="upload-file-input"]').setInputFiles([...])` inside the Explorer iframe; no OS file chooser is used.
 
-**Coverage:** Integration tests T-C1.1, T-C1.2, T-C3.1, T-M8-Z1 cover allowlist, 415, 2xx, NO_INDEX_HTML.
+**Coverage:** T-M7-U1 (upload files success), T-M7-U2 (upload fail placeholder removed), T-M8-Z1 (upload zip success) run as E2E. Integration tests T-C1.1, T-C1.2, T-C3.1, T-M8-Z1 cover allowlist, 415, 2xx, NO_INDEX_HTML.
