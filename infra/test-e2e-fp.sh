@@ -4,7 +4,7 @@
 # FP2 → E2E not in DoD → exit 0, "E2E not required for FP2"
 # FP3 → e2e/fp3-explorer.spec.ts
 # Prerequisite: stack up (smoke + dev-server). Same setup as test-e2e.sh.
-# Usage: ./infra/test-e2e-fp.sh FP1 | FP2 | FP3
+# Usage: ./infra/test-e2e-fp.sh FP1 | FP2 | FP3 | FP4
 
 set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
@@ -13,13 +13,13 @@ COMPOSE_FILE="${COMPOSE_FILE:-infra/docker-compose.dev.yml}"
 
 FP="${1:-}"
 if [[ -z "$FP" ]]; then
-  echo "Usage: $0 FP1 | FP2 | FP3"
+  echo "Usage: $0 FP1 | FP2 | FP3 | FP4"
   exit 1
 fi
 
 case "$FP" in
-  FP2)
-    echo "E2E not required for FP2"
+  FP2|FP4)
+    echo "E2E not required for $FP"
     exit 0
     ;;
   FP1)
@@ -29,7 +29,7 @@ case "$FP" in
     SPEC="e2e/fp3-explorer.spec.ts"
     ;;
   *)
-    echo "Unknown FP: $FP. Use FP1, FP2, or FP3."
+    echo "Unknown FP: $FP. Use FP1, FP2, FP3, or FP4."
     exit 1
     ;;
 esac

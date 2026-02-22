@@ -94,10 +94,11 @@ services:
       - "5173:5173"
     volumes:
       - ../:/app
-      - /app/node_modules
+      - dev_server_node_modules:/app/node_modules
     environment:
       - NODE_ENV=development
       - VITE_API_PROXY_TARGET=http://gateway:3000
 
 volumes:
   minio_data: {}
+  dev_server_node_modules: {}

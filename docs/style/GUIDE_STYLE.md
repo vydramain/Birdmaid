@@ -777,13 +777,13 @@ node scripts/check-inline-styles.cjs __tests__/style-guardrails/canary-inline-st
 
 We do not copy Windows assets or source code. We implement our own tokens, mixins, and components based on visual analysis and open-source references.
 
-| Reference                                            | URL                                              | Purpose                                                          |
-| ---------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
-| **98.css**                                           | https://jdan.github.io/98.css/                   | **Mandatory** — Win98 design system, canonical reference for FP7 |
-| 98.css mapping                                      | [98.css](https://jdan.github.io/98.css/)         | FP7 design system doc, 98.css ↔ Birdmaid mapping                 |
-| GuidebookGallery Win95 GUI                           | https://guidebookgallery.org/guis/windows/win95  | Historical reference                                             |
-| GuidebookGallery Win95 Tutorial                      | https://guidebookgallery.org/tutorials/windows95 | Historical reference                                             |
-| GuidebookGallery Win95 Screenshots                   | https://guidebookgallery.org/screenshots/win95   | Historical reference                                             |
+| Reference                          | URL                                              | Purpose                                                          |
+| ---------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
+| **98.css**                         | https://jdan.github.io/98.css/                   | **Mandatory** — Win98 design system, canonical reference for FP7 |
+| 98.css mapping                     | [98.css](https://jdan.github.io/98.css/)         | FP7 design system doc, 98.css ↔ Birdmaid mapping                 |
+| GuidebookGallery Win95 GUI         | https://guidebookgallery.org/guis/windows/win95  | Historical reference                                             |
+| GuidebookGallery Win95 Tutorial    | https://guidebookgallery.org/tutorials/windows95 | Historical reference                                             |
+| GuidebookGallery Win95 Screenshots | https://guidebookgallery.org/screenshots/win95   | Historical reference                                             |
 
 **98.css (FP7):** Неприкословно обязателен для FP7. См. [98.css](https://jdan.github.io/98.css/) для маппинга компонентов и tokens.
 

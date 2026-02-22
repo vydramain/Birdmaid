@@ -5,6 +5,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { WindowManager } from "./core/WindowManager";
+import { getHandlerForMime, getMimeForPath } from "./lib/fp4/handler";
 import { analytics } from "./core/analytics";
 import { DesktopView } from "./ui/DesktopView";
 import { DesktopIcon } from "./ui/DesktopIcon";
@@ -78,6 +79,38 @@ export function Shell() {
     refresh();
   }, [wm, refresh]);
 
+  const openViewerFromPlaylist = useCallback(
+    (path: string, playlist: Array<{ path: string; url: string }>, title: string) => {
+      const mime = getMimeForPath(path);
+      if (!mime) return;
+      const handler = getHandlerForMime(mime);
+      if (!handler) return;
+      const initial = playlist.find((p) => p.path === path) ?? playlist[0];
+      if (!initial) return;
+      const appId = handler.appId === "image-viewer" ? "image-viewer" : "media-player";
+      const src = `/apps/${appId}/`;
+      wm.createWindow({
+        src,
+        title,
+        openFilePayload: {
+          initialPath: path,
+          initialUrl: initial.url,
+          playlist,
+        },
+      });
+      refresh();
+    },
+    [wm, refresh]
+  );
+
+  const handleShellOpenFile = useCallback(
+    (payload: { path: string; playlist: Array<{ path: string; url: string }> }) => {
+      const title = payload.path.split("/").pop() ?? "File";
+      openViewerFromPlaylist(payload.path, payload.playlist, title);
+    },
+    [openViewerFromPlaylist]
+  );
+
   const handleShellOpen = useCallback(
     async (payload: { kind: string; path: string; mime?: string; title?: string }) => {
       if (payload.kind === "app") {
@@ -110,7 +143,11 @@ export function Shell() {
         }
         return;
       }
-      if (payload.kind === "file" && payload.mime?.startsWith("image/")) {
+      if (payload.kind === "file") {
+        const mime = payload.mime ?? getMimeForPath(payload.path);
+        if (!mime) return;
+        const handler = getHandlerForMime(mime);
+        if (!handler) return;
         try {
           const res = await fetch("/api/fs/open-url", {
             method: "POST",
@@ -120,18 +157,16 @@ export function Shell() {
           if (!res.ok) return;
           const data = await res.json();
           const url = data.url;
-          if (typeof url === "string") {
-            const viewerSrc = `/viewers/image.html?url=${encodeURIComponent(url)}`;
-            const title = payload.title ?? payload.path.split("/").pop() ?? "Image";
-            wm.createWindow({ src: viewerSrc, title });
-            refresh();
-          }
+          if (typeof url !== "string") return;
+          const playlist = [{ path: payload.path, url }];
+          const title = payload.title ?? payload.path.split("/").pop() ?? "File";
+          openViewerFromPlaylist(payload.path, playlist, title);
         } catch {
           /* ignore */
         }
       }
     },
-    [wm, refresh]
+    [wm, refresh, openViewerFromPlaylist]
   );
 
   const closeWindow = useCallback(
@@ -375,6 +410,10 @@ export function Shell() {
                   onTitleUpdate={handleTitleUpdate}
                   isExplorer={w.src.includes("/apps/explorer")}
                   onShellOpen={w.src.includes("/apps/explorer") ? handleShellOpen : undefined}
+                  onShellOpenFile={
+                    w.src.includes("/apps/explorer") ? handleShellOpenFile : undefined
+                  }
+                  openFilePayload={w.openFilePayload}
                 />
               ) : null}
             </WindowChromeView>

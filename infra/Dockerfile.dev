@@ -1,10 +1,10 @@
-# Dev server for Shell (FP1)
-# Assumes pnpm + Vite. Adjust if project uses npm/yarn.
+# Dev server for Shell (FP1+FP4)
+# Self-contained: install deps at runtime so node_modules in anonymous volume
+# matches host package.json; no reliance on host node_modules.
 FROM node:22-alpine
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile || pnpm install
 COPY . .
 EXPOSE 5173
-CMD ["pnpm", "dev"]
+CMD ["sh", "-c", "pnpm install --frozen-lockfile || pnpm install && pnpm dev"]

@@ -14,12 +14,19 @@ export interface WindowBounds {
   height: number;
 }
 
+export interface OpenFilePayload {
+  initialPath: string;
+  initialUrl: string;
+  playlist: Array<{ path: string; url: string }>;
+}
+
 export interface WindowRecord {
   id: string;
   title: string;
   state: WindowState;
   bounds: WindowBounds;
   src?: string;
+  openFilePayload?: OpenFilePayload;
 }
 
 const DEFAULT_WIDTH = 400;
@@ -48,7 +55,12 @@ export class WindowManager {
   private activeId: string | null = null;
   private prevBounds: Map<string, WindowBounds> = new Map();
 
-  createWindow(opts: { id?: string; src?: string; title?: string }): WindowRecord {
+  createWindow(opts: {
+    id?: string;
+    src?: string;
+    title?: string;
+    openFilePayload?: OpenFilePayload;
+  }): WindowRecord {
     const id = opts.id ?? genId();
     if (this.windows.has(id)) {
       throw new Error(`Window ${id} already exists`);
@@ -64,6 +76,7 @@ export class WindowManager {
         height: DEFAULT_HEIGHT,
       },
       src: opts.src,
+      openFilePayload: opts.openFilePayload,
     };
     this.windows.set(id, win);
     this.zOrder.push(id);

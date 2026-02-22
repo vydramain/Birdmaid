@@ -3,9 +3,16 @@
  * FP3 M1: roots A/C/D. M2: double click C: -> C:/, list + address bar.
  * FP3 M5: context menu (New Folder, Upload, Delete, Rename), write API with token.
  * FP3.1 A2/A4: fs-tile layout, shared icons.
+ * FP4 M3: list + open-url → playlist → SHELL_OPEN_FILE for image/audio/video.
  */
 
 import "../../shared/fs-tile.css";
+import { getMimeForPath } from "../../lib/fp4/handler";
+import {
+  getExtensionsForMedia,
+  filterMediaItems,
+  sortByLocaleCompare,
+} from "../../lib/fp4/playlist";
 
 let systemToken: string | null = null;
 
@@ -297,17 +304,79 @@ function mimeFromExt(name: string): string | undefined {
     ".jpeg": "image/jpeg",
     ".gif": "image/gif",
     ".webp": "image/webp",
+    ".mp3": "audio/mpeg",
+    ".mp4": "video/mp4",
+    ".webm": "video/webm",
   };
   return map[ext];
 }
 
+const PLAYLIST_LIMIT = 100;
+
+function mimeToMedia(mime: string): "image" | "audio" | "video" | null {
+  if (mime.startsWith("image/")) return "image";
+  if (mime === "audio/mpeg") return "audio";
+  if (mime.startsWith("video/")) return "video";
+  return null;
+}
+
+async function fetchOpenUrl(path: string): Promise<string | null> {
+  const url = API_BASE ? `${API_BASE}/api/fs/open-url` : "/api/fs/open-url";
+  const res = await fetchWithToken(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path }),
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { url?: string };
+  return typeof data.url === "string" ? data.url : null;
+}
+
+async function buildPlaylistAndOpen(clickedPath: string): Promise<void> {
+  const mime = getMimeForPath(clickedPath);
+  if (!mime) {
+    if (typeof console !== "undefined" && console.warn)
+      console.warn("[Explorer] Unsupported file type, no handler:", clickedPath);
+    return;
+  }
+  const media = mimeToMedia(mime);
+  if (!media) return;
+  const dirPath = dirname(clickedPath);
+  let items: FsItem[];
+  try {
+    items = await fetchList(dirPath);
+  } catch {
+    if (typeof console !== "undefined" && console.warn)
+      console.warn("[Explorer] List failed for playlist:", dirPath);
+    return;
+  }
+  const ext = getExtensionsForMedia(media);
+  const playlistItems = filterMediaItems(items, ext);
+  const sorted = sortByLocaleCompare(playlistItems);
+  const limited = sorted.slice(0, PLAYLIST_LIMIT);
+  const playlist: Array<{ path: string; url: string }> = [];
+  for (const p of limited) {
+    const url = await fetchOpenUrl(p.path);
+    if (url) playlist.push({ path: p.path, url });
+  }
+  if (playlist.length === 0) {
+    if (typeof console !== "undefined" && console.warn)
+      console.warn("[Explorer] No signed URLs for playlist:", clickedPath);
+    return;
+  }
+  send("SHELL_OPEN_FILE", { path: clickedPath, playlist });
+}
+
 async function onItemDblClick(item: FsItem): Promise<void> {
   if (item.kind === "file") {
-    const mime = mimeFromExt(item.name);
-    if (mime?.startsWith("image/")) {
-      send("SHELL_OPEN", { kind: "file", path: item.path, mime, title: item.name });
+    const mime = getMimeForPath(item.path);
+    const media = mime ? mimeToMedia(mime) : null;
+    if (media) {
+      await buildPlaylistAndOpen(item.path);
       return;
     }
+    if (typeof console !== "undefined" && console.warn)
+      console.warn("[Explorer] Unsupported file type, no handler:", item.path);
     return;
   }
   const apiPath = item.path.endsWith("/") ? item.path : item.path + "/";
@@ -322,7 +391,6 @@ async function onItemDblClick(item: FsItem): Promise<void> {
 }
 
 // State for context menu; used for positioning and target (item vs blank). Read when extending menu behavior.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- state holder for context menu
 let contextMenuState: {
   x: number;
   y: number;
@@ -331,6 +399,7 @@ let contextMenuState: {
 } | null = null;
 
 function hideContextMenu(): void {
+  void contextMenuState; // read for TS noUnusedLocals (state holder for context menu)
   const menu = document.getElementById("explorer-context-menu");
   if (menu) menu.remove();
   contextMenuState = null;
@@ -517,7 +586,6 @@ async function onNewFolder(): Promise<void> {
   if (!result.ok) {
     div.remove();
     currentListItems.pop();
-    // eslint-disable-next-line no-console -- FP3.1 M5: log error only
     console.error("[Explorer] create-folder failed");
     return;
   }
@@ -635,13 +703,11 @@ async function onUploadFileChange(): Promise<void> {
       } else {
         div.remove();
         currentListItems.splice(currentListItems.indexOf(placeholder), 1);
-        // eslint-disable-next-line no-console -- FP3.1 M7: log only
         console.error("[Explorer] upload failed:", res.status, await res.text());
       }
     } catch (e) {
       div.remove();
       currentListItems.splice(currentListItems.indexOf(placeholder), 1);
-      // eslint-disable-next-line no-console -- FP3.1 M7: log only
       console.error("[Explorer] upload error:", e);
     }
     reindexListTiles();
@@ -718,13 +784,11 @@ async function onUploadZipChange(): Promise<void> {
     } else {
       div.remove();
       currentListItems.splice(currentListItems.indexOf(placeholder), 1);
-      // eslint-disable-next-line no-console -- FP3.1 M8: log only
       console.error("[Explorer] upload-zip-app failed:", res.status, await res.text());
     }
   } catch (e) {
     div.remove();
     currentListItems.splice(currentListItems.indexOf(placeholder), 1);
-    // eslint-disable-next-line no-console -- FP3.1 M8: log only
     console.error("[Explorer] upload-zip-app error:", e);
   }
   reindexListTiles();
@@ -775,7 +839,6 @@ async function onDelete(item: FsItem): Promise<void> {
       restored.className = "fs-tile-label";
       restored.textContent = oldName;
       spinner.replaceWith(restored);
-      // eslint-disable-next-line no-console -- FP3.1 M6: log error only
       console.error("[Explorer] delete failed:", res.status, await res.text());
     }
   } catch (e) {
@@ -785,7 +848,6 @@ async function onDelete(item: FsItem): Promise<void> {
     restored.className = "fs-tile-label";
     restored.textContent = oldName;
     spinner.replaceWith(restored);
-    // eslint-disable-next-line no-console -- FP3.1 M6: log error only
     console.error("[Explorer] delete error:", e);
   }
 }
@@ -903,7 +965,6 @@ async function commitRename(
     } else {
       labelEl.textContent = oldName;
       tile.appendChild(labelEl);
-      // eslint-disable-next-line no-console -- FP3.1 B1.3: log error only
       console.error("[Explorer] rename failed:", res.status, await res.text());
     }
   } catch (e) {
@@ -912,7 +973,6 @@ async function commitRename(
     tile.style.pointerEvents = "";
     labelEl.textContent = oldName;
     tile.appendChild(labelEl);
-    // eslint-disable-next-line no-console -- FP3.1 B1.3: log error only
     console.error("[Explorer] rename error:", e);
   }
 }

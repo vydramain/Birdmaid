@@ -31,6 +31,14 @@ See [minio/README.md](minio/README.md).
 
 ---
 
+## Dev-server: self-contained deps
+
+`dev-server` runs `pnpm install` at container start so `node_modules` in the anonymous volume matches `package.json`. No reliance on host `node_modules`.
+
+If you see "Failed to resolve import" (e.g. `mime`), run `up --build`. Deps install at container start. If the volume is stale: `down` then `up --build` again.
+
+---
+
 ## Logs
 
 ```bash

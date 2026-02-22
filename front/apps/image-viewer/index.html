@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Picture Viewer</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, sans-serif;
+        font-size: 0.75rem;
+        background: #c0c0c0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .viewer-root {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .viewer-content {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #808080;
+        min-height: 0;
+      }
+      .viewer-content img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+      .viewer-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        background: #c0c0c0;
+        border-top: 1px solid #808080;
+      }
+      .viewer-btn {
+        padding: 0.25rem 0.5rem;
+        min-width: 1.5rem;
+        border: 1px solid;
+        border-color: #fff #404040 #404040 #fff;
+        background: #c0c0c0;
+        cursor: pointer;
+        font-size: 0.75rem;
+      }
+      .viewer-btn:disabled {
+        color: #808080;
+        cursor: default;
+        border-color: #808080;
+      }
+      .viewer-btn:not(:disabled):active {
+        border-color: #404040 #fff #fff #404040;
+      }
+      .viewer-status {
+        flex: 1;
+        padding: 0 0.5rem;
+        color: #000;
+      }
+      .viewer-error {
+        color: #c00;
+        padding: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="viewer-root" class="viewer-root">
+      <div class="viewer-content">
+        <img id="viewer-img" alt="" style="display: none" />
+        <div id="viewer-loading" style="color: #fff">Loading...</div>
+        <div id="viewer-error" class="viewer-error" style="display: none"></div>
+      </div>
+      <div class="viewer-controls">
+        <button type="button" class="viewer-btn" id="btn-prev" disabled>◀</button>
+        <button type="button" class="viewer-btn" id="btn-next" disabled>▶</button>
+        <span class="viewer-status" id="viewer-status"></span>
+      </div>
+    </div>
+    <!-- M1: Early APP_READY before module load to avoid handshake timeout -->
+    <script>
+      (function () {
+        if (window.parent === window) return;
+        try {
+          window.parent.postMessage(
+            { type: "APP_READY", timestamp: Date.now() },
+            window.location.origin
+          );
+        } catch (_) {}
+        window.__fp4PendingOpenFile = null;
+        window.addEventListener("message", function (e) {
+          var d = e.data;
+          if (d && d.type === "OPEN_FILE" && d.payload) {
+            window.__fp4PendingOpenFile = d.payload;
+          }
+        });
+      })();
+    </script>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

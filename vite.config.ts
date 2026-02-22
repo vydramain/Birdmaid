@@ -24,6 +24,20 @@ export default defineConfig({
               req.url = req.url.replace("/apps/explorer/", "/front/apps/explorer/");
             }
           }
+          if (req.url?.startsWith("/apps/image-viewer")) {
+            if (!req.url.includes(".") || req.url === "/apps/image-viewer/") {
+              req.url = "/front/apps/image-viewer/index.html";
+            } else {
+              req.url = req.url.replace("/apps/image-viewer/", "/front/apps/image-viewer/");
+            }
+          }
+          if (req.url?.startsWith("/apps/media-player")) {
+            if (!req.url.includes(".") || req.url === "/apps/media-player/") {
+              req.url = "/front/apps/media-player/index.html";
+            } else {
+              req.url = req.url.replace("/apps/media-player/", "/front/apps/media-player/");
+            }
+          }
           if (req.url?.startsWith("/viewers/")) {
             const m = req.url.match(/^\/viewers\/([^?]+)(\?.*)?$/);
             if (m) req.url = "/front/viewers/" + m[1] + (m[2] ?? "");
@@ -58,6 +72,8 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         explorer: resolve(__dirname, "front/apps/explorer/index.html"),
+        "image-viewer": resolve(__dirname, "front/apps/image-viewer/index.html"),
+        "media-player": resolve(__dirname, "front/apps/media-player/index.html"),
         "viewers/image": resolve(__dirname, "front/viewers/image.html"),
       },
     },

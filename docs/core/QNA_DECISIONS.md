@@ -6,11 +6,11 @@
 
 ## Where to find decisions
 
-| Area | FP | Section |
-|------|-----|---------|
+| Area                                   | FP  | Section              |
+| -------------------------------------- | --- | -------------------- |
 | Shell, postMessage, sandbox, handshake | FP1 | Questions, Decisions |
-| Gateway, signed URL, path scheme | FP2 | Questions, Decisions |
-| Explorer, permissions, FS write | FP3 | Questions, Decisions |
+| Gateway, signed URL, path scheme       | FP2 | Questions, Decisions |
+| Explorer, permissions, FS write        | FP3 | Questions, Decisions |
 
 ---
 

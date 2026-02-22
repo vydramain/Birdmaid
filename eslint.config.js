@@ -39,5 +39,9 @@ export default tseslint.config(
   },
   {
     ignores: ["node_modules", "dist", "coverage", "playwright-report", "test-results"],
+  },
+  {
+    files: ["front/apps/explorer/main.ts"],
+    rules: { "no-console": "off" }, // FP3/FP4: Explorer logs errors + unsupported types
   }
 );

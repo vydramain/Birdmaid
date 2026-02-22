@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Canonical gate: smoke + lint + format:check + scoped unit/api/e2e per FP.
 # Prerequisite: docker compose -f infra/docker-compose.dev.yml up -d.
-# Usage: ./infra/gate.sh [FP1|FP2|FP3]
+# Usage: ./infra/gate.sh [FP1|FP2|FP3|FP4]
 #   FP1: smoke + lint + unit + test-e2e-fp FP1
 #   FP2: smoke + lint + test-api-fp FP2 + test-e2e-fp FP2 (E2E not in DoD → skip)
 #   FP3: smoke + lint + test-api-fp FP3 + test-e2e-fp FP3
+#   FP4: smoke + lint + unit + test-api-fp FP4 (E2E OUT of scope)
 #   (default): smoke + lint + test-api full + test-e2e-fp FP1 + FP2 + FP3
 # Rule: Any non-zero exit → REJECT. No partial PASS.
 
@@ -46,6 +47,16 @@ if [[ "$FP" == "FP3" ]]; then
   "$SCRIPT_DIR/test-api-fp.sh" FP3
   echo "==> 4. Test E2E (FP3 scoped)"
   "$SCRIPT_DIR/test-e2e-fp.sh" FP3
+  echo ""
+  echo "GATE OK"
+  exit 0
+fi
+
+if [[ "$FP" == "FP4" ]]; then
+  echo "==> 3. Test unit (FP4)"
+  "$SCRIPT_DIR/test-unit.sh"
+  echo "==> 4. Test API (FP4 scoped)"
+  "$SCRIPT_DIR/test-api-fp.sh" FP4
   echo ""
   echo "GATE OK"
   exit 0

@@ -17,14 +17,14 @@
 
 **PASS only when ALL conditions met. Otherwise → REJECT.**
 
-| Condition | Command / Check |
-|-----------|-----------------|
-| Clean-state | `git status --porcelain` empty |
-| Stack | `./infra/smoke.sh` → PLATFORM OK |
-| Lint/format | `./infra/test-lint.sh` exit 0 |
-| API tests | `./infra/test-api-fp.sh FP<N>` exit 0 (if in DoD) |
-| E2E tests | `./infra/test-e2e-fp.sh FP<N>` exit 0 (if in DoD) |
-| AC/DoD | All items in FP file have evidence |
+| Condition   | Command / Check                                   |
+| ----------- | ------------------------------------------------- |
+| Clean-state | `git status --porcelain` empty                    |
+| Stack       | `./infra/smoke.sh` → PLATFORM OK                  |
+| Lint/format | `./infra/test-lint.sh` exit 0                     |
+| API tests   | `./infra/test-api-fp.sh FP<N>` exit 0 (if in DoD) |
+| E2E tests   | `./infra/test-e2e-fp.sh FP<N>` exit 0 (if in DoD) |
+| AC/DoD      | All items in FP file have evidence                |
 
 **Prohibited:** Partial PASS, "PASS (but…)", known failing, skipped FP tests.
 

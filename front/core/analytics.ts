@@ -29,7 +29,9 @@ function emit(event: ShellEvent): void {
 export const analytics = {
   emit,
   getBuffer: (): readonly ShellEvent[] => buffer,
-  clearBuffer: (): void => buffer.splice(0, buffer.length),
+  clearBuffer: (): void => {
+    buffer.splice(0, buffer.length);
+  },
 
   window_open: (windowId: string) => emit({ type: "window_open", windowId }),
   window_close: (windowId: string) => emit({ type: "window_close", windowId }),

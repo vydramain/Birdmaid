@@ -3,7 +3,7 @@
 **Status:** plan  
 **Created:** 2025-02-20  
 **Updated:** 2025-02-20 (pre-design patch)  
-**Archived snapshot:** [archive/FP3/](../../archive/FP3/README.md) (2025-02-22)
+**Archived snapshot:** [archive/FP4/](../../archive/FP4/README.md) (2025-02-22)
 
 > **Context:** Shell (FP1) и Gateway FS API (FP2) готовы. FP3 добавляет Explorer как системное приложение в iframe, навигацию по виртуальным дискам, CRUD в user-space, запуск viewer'ов и user apps.
 
@@ -762,13 +762,13 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 
 ### FP3 Patchset Design Package Index
 
-| Doc                                            | Purpose                                                           |
-| ---------------------------------------------- | ----------------------------------------------------------------- |
-| [API.yaml](../core/API.yaml)                    | Upload contract, allowlist, error codes (FP3 merged)             |
-| [FP3_TESTS](../tests/FP3_TESTS.md)             | AC→tests mapping, patchset delta (T-A1.x, T-B1.x, T-C1.x, T-D1.1) |
-| FP3 § Security DoD | Sandbox, token, CORS, path policy (merged)                        |
-| FP3 § Patchset | Design decisions (merged)                                        |
-| [UX_MAP](../core/UX_MAP.md)                    | CTA (nav_back), flows ref                                         |
+| Doc                                | Purpose                                                           |
+| ---------------------------------- | ----------------------------------------------------------------- |
+| [API.yaml](../core/API.yaml)       | Upload contract, allowlist, error codes (FP3 merged)              |
+| [FP3_TESTS](../tests/FP3_TESTS.md) | AC→tests mapping, patchset delta (T-A1.x, T-B1.x, T-C1.x, T-D1.1) |
+| FP3 § Security DoD                 | Sandbox, token, CORS, path policy (merged)                        |
+| FP3 § Patchset                     | Design decisions (merged)                                         |
+| [UX_MAP](../core/UX_MAP.md)        | CTA (nav_back), flows ref                                         |
 
 ### FP3 Patchset DoD (Design-stage)
 
@@ -806,44 +806,44 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 
 ### Problem Statement (10 issues)
 
-| # | Issue | Fix |
-|---|-------|-----|
-| 1 | Roots: tile "Computer" в корне | Только A:, C:, D:; без Computer tile |
-| 2 | Scroll скрывает toolbar | Sticky toolbar; scroll только у tiles |
-| 3 | Back = текст | Back = иконка ← |
-| 4 | App-dir = folder icon | App icon (fs-icon-app) |
-| 5 | Первый open после zip → 404 | Retry до 200 |
-| 6 | Multi-explorer: path сбрасывается | State persist при focus/blur |
-| 7 | Delete не отправляет запрос | Delete → fetch DELETE; spinner; tile gone |
-| 8 | Rename toPath wrong (nested) | toPath = dirname(fromPath) + newName |
-| 9 | Roots: toolbar показан | Toolbar скрыт в roots |
-| 10 | Maximize не работает | bounds = viewport; unmaximize → restore |
+| #   | Issue                             | Fix                                       |
+| --- | --------------------------------- | ----------------------------------------- |
+| 1   | Roots: tile "Computer" в корне    | Только A:, C:, D:; без Computer tile      |
+| 2   | Scroll скрывает toolbar           | Sticky toolbar; scroll только у tiles     |
+| 3   | Back = текст                      | Back = иконка ←                           |
+| 4   | App-dir = folder icon             | App icon (fs-icon-app)                    |
+| 5   | Первый open после zip → 404       | Retry до 200                              |
+| 6   | Multi-explorer: path сбрасывается | State persist при focus/blur              |
+| 7   | Delete не отправляет запрос       | Delete → fetch DELETE; spinner; tile gone |
+| 8   | Rename toPath wrong (nested)      | toPath = dirname(fromPath) + newName      |
+| 9   | Roots: toolbar показан            | Toolbar скрыт в roots                     |
+| 10  | Maximize не работает              | bounds = viewport; unmaximize → restore   |
 
 ### FP3.2 Acceptance Criteria (A1..A10)
 
-| AC | Subsystem | Критерий |
-|----|-----------|----------|
-| A1 | Explorer | Roots: только A:, C:, D:; нет Computer tile |
-| A2 | Explorer | Toolbar sticky; scroll только у списка |
-| A3 | Explorer | Back = иконка ← |
-| A4 | App-discovery | Папки с index.html → app icon |
-| A5 | App open | Первый open после zip → 200 (retry) |
-| A6 | Explorer | Multi-explorer: path сохраняется при focus |
-| A7 | FS write | Delete: запрос отправляется, item исчезает |
-| A8 | FS write | Rename: toPath = parent + newBasename |
-| A9 | Explorer | Roots: нет toolbar |
-| A10 | Shell | Maximize → viewport; unmaximize → restore |
+| AC  | Subsystem     | Критерий                                    |
+| --- | ------------- | ------------------------------------------- |
+| A1  | Explorer      | Roots: только A:, C:, D:; нет Computer tile |
+| A2  | Explorer      | Toolbar sticky; scroll только у списка      |
+| A3  | Explorer      | Back = иконка ←                             |
+| A4  | App-discovery | Папки с index.html → app icon               |
+| A5  | App open      | Первый open после zip → 200 (retry)         |
+| A6  | Explorer      | Multi-explorer: path сохраняется при focus  |
+| A7  | FS write      | Delete: запрос отправляется, item исчезает  |
+| A8  | FS write      | Rename: toPath = parent + newBasename       |
+| A9  | Explorer      | Roots: нет toolbar                          |
+| A10 | Shell         | Maximize → viewport; unmaximize → restore   |
 
 ### FP3.2 Evidence
 
-| Item | Location |
-|------|----------|
-| Roots/toolbar | `front/apps/explorer/main.ts` |
-| Delete/Rename | `front/apps/explorer/main.ts` |
-| WindowManager maximize | `front/core/WindowManager.ts` |
-| Shell maximize | `front/Shell.tsx` |
-| App icon | `front/shared/fs-tile.css` `.fs-icon-app` |
-| Retry | `front/Shell.tsx`, `back/src/fs.ts` |
+| Item                   | Location                                  |
+| ---------------------- | ----------------------------------------- |
+| Roots/toolbar          | `front/apps/explorer/main.ts`             |
+| Delete/Rename          | `front/apps/explorer/main.ts`             |
+| WindowManager maximize | `front/core/WindowManager.ts`             |
+| Shell maximize         | `front/Shell.tsx`                         |
+| App icon               | `front/shared/fs-tile.css` `.fs-icon-app` |
+| Retry                  | `front/Shell.tsx`, `back/src/fs.ts`       |
 
 Tests: см. [FP3_TESTS.md](../tests/FP3_TESTS.md) § FP3.2.
 
@@ -857,7 +857,7 @@ Tests: см. [FP3_TESTS.md](../tests/FP3_TESTS.md) § FP3.2.
 - [FP3_TESTS](../tests/FP3_TESTS.md) — тест-план, patchset delta
 - FP3 § Patchset — design decisions
 - [FP1 § Protocol](FP1.md) (SHELL_OPEN)
-- [THEMING_v0](../core/THEMING_v0.md)
+- [THEMING](../core/THEMING.md)
 - FP1 § Customization (UI slots)
 - [ARCHITECTURE](../dev/ARCHITECTURE.md) (FS path scheme)
 - [API.yaml](../core/API.yaml)

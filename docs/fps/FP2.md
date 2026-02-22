@@ -313,15 +313,15 @@ sequenceDiagram
 
 ## Design Deliverables (mode=design)
 
-| Артефакт     | Путь                          | Описание                                     |
-| ------------ | ----------------------------- | -------------------------------------------- |
-| API contract | docs/core/API.yaml            | Endpoints, schemas, error model              |
-| FS contract  | docs/core/API.yaml, docs/dev/ARCHITECTURE.md | Path scheme, rules, S3 mapping               |
-| CORS         | docs/dev/ARCHITECTURE.md § CORS              | MinIO CORS для signed URLs                   |
-| Tests plan   | docs/tests/FP2_TESTS.md       | AC → test mapping                            |
-| Dev domain   | docs/dev/ARCHITECTURE.md § Dev Domain, infra/README | Hosts, smoke, health checks     |
-| MinIO infra  | infra/minio/                  | cors.json, init.sh, fixtures, README         |
-| Compose      | infra/docker-compose.dev.yml  | Canonical compose (minio + gateway + routes) |
+| Артефакт     | Путь                                                | Описание                                     |
+| ------------ | --------------------------------------------------- | -------------------------------------------- |
+| API contract | docs/core/API.yaml                                  | Endpoints, schemas, error model              |
+| FS contract  | docs/core/API.yaml, docs/dev/ARCHITECTURE.md        | Path scheme, rules, S3 mapping               |
+| CORS         | docs/dev/ARCHITECTURE.md § CORS                     | MinIO CORS для signed URLs                   |
+| Tests plan   | docs/tests/FP2_TESTS.md                             | AC → test mapping                            |
+| Dev domain   | docs/dev/ARCHITECTURE.md § Dev Domain, infra/README | Hosts, smoke, health checks                  |
+| MinIO infra  | infra/minio/                                        | cors.json, init.sh, fixtures, README         |
+| Compose      | infra/docker-compose.dev.yml                        | Canonical compose (minio + gateway + routes) |
 
 **Runtime:** Реализация gateway (Node + Fastify + AWS SDK) — в **mode=build**, не в design. Design = contracts + infra plan + tests plan.
 
@@ -413,13 +413,13 @@ sequenceDiagram
 
 ## Release Gate
 
-| Check                     | Result                                                             |
-| ------------------------- | ------------------------------------------------------------------ |
-| Security: CORS allowlist  | PASS — gateway + MinIO cors.json (infra/minio/cors.json) |
-| Security: path validation | PASS — тесты bad path 400, bad root 403                            |
-| Security: secrets         | PASS — MinIO credentials только в compose/gateway env, не в front  |
-| DoD checklist             | PASS — все пункты выполнены                                        |
-| Evidence                  | PASS — команды, fixtures, status                                   |
+| Check                     | Result                                                            |
+| ------------------------- | ----------------------------------------------------------------- |
+| Security: CORS allowlist  | PASS — gateway + MinIO cors.json (infra/minio/cors.json)          |
+| Security: path validation | PASS — тесты bad path 400, bad root 403                           |
+| Security: secrets         | PASS — MinIO credentials только в compose/gateway env, не в front |
+| DoD checklist             | PASS — все пункты выполнены                                       |
+| Evidence                  | PASS — команды, fixtures, status                                  |
 
 **Gate decision: PASS**
 
@@ -468,7 +468,7 @@ sequenceDiagram
 
 **D) Archive link:**
 
-- [archive/FP2/README.md](../../archive/FP2/README.md) (описание состава)
+- [archive/FP4/README.md](../../archive/FP4/README.md) (описание состава)
 - archive/FP2/transcripts/\* (design/build transcripts)
 
 **E) Gate Commands (canonical):**

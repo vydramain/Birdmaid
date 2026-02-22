@@ -42,12 +42,12 @@
 
 ### Dev Domain (Entrypoints)
 
-| Service | Domain | Port |
-|---------|--------|------|
-| Front | shell.local, localhost:5173 | 80, 5173 |
-| Gateway | api.shell.local | 80 |
-| MinIO | s3.shell.local | 80 |
-| Traefik | :80, :8080 | 80, 8080 |
+| Service | Domain                      | Port     |
+| ------- | --------------------------- | -------- |
+| Front   | shell.local, localhost:5173 | 80, 5173 |
+| Gateway | api.shell.local             | 80       |
+| MinIO   | s3.shell.local              | 80       |
+| Traefik | :80, :8080                  | 80, 8080 |
 
 **Smoke:** `./infra/smoke.sh` → PLATFORM OK. **Hosts:** Add `127.0.0.1 shell.local api.shell.local s3.shell.local` to /etc/hosts. See [infra/README.md](../../infra/README.md).
 

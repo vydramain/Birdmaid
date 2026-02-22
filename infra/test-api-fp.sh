@@ -3,14 +3,14 @@
 # FP2: back/__tests__/fp2/ only (so FP2 gate can PASS independently of FP3).
 # FP3: back/__tests__/fp2/ + back/__tests__/fp3/ (FP3 extends FP2).
 # Prerequisite: docker compose -f infra/docker-compose.dev.yml up -d (stack must be running).
-# Usage: ./infra/test-api-fp.sh FP2 | ./infra/test-api-fp.sh FP3
+# Usage: ./infra/test-api-fp.sh FP2 | ./infra/test-api-fp.sh FP3 | ./infra/test-api-fp.sh FP4
 
 set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
 FP="${1:-}"
 if [[ -z "$FP" ]]; then
-  echo "Usage: $0 FP2 | FP3"
+  echo "Usage: $0 FP2 | FP3 | FP4"
   exit 1
 fi
 
@@ -21,8 +21,11 @@ case "$FP" in
   FP3)
     PATHS="back/__tests__/fp2/ back/__tests__/fp3/"
     ;;
+  FP4)
+    PATHS="back/__tests__/fp4/"
+    ;;
   *)
-    echo "Unknown FP: $FP. Use FP2 or FP3."
+    echo "Unknown FP: $FP. Use FP2, FP3, or FP4."
     exit 1
     ;;
 esac

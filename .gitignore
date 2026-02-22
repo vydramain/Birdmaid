@@ -78,3 +78,6 @@ artifacts/
 *.bak
 *-COPY-*
 *-backup-*
+
+## HAR / network captures (FP4 debug artifacts)
+*.har

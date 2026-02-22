@@ -16,6 +16,12 @@ interface ShellOpenPayload {
   title?: string;
 }
 
+interface OpenFilePayload {
+  initialPath: string;
+  initialUrl: string;
+  playlist: Array<{ path: string; url: string }>;
+}
+
 interface AppHostProps {
   windowId: string;
   src: string;
@@ -27,6 +33,13 @@ interface AppHostProps {
   isExplorer?: boolean;
   /** FP3: Called when Explorer sends SHELL_OPEN (only when isExplorer) */
   onShellOpen?: (payload: ShellOpenPayload) => void;
+  /** FP4: Viewer OPEN_FILE payload. When set, send OPEN_FILE on APP_READY instead of SHELL_CAPS */
+  openFilePayload?: OpenFilePayload;
+  /** FP4: Called when Explorer sends SHELL_OPEN_FILE (only when isExplorer) */
+  onShellOpenFile?: (payload: {
+    path: string;
+    playlist: Array<{ path: string; url: string }>;
+  }) => void;
 }
 
 export function AppHost({
@@ -38,6 +51,8 @@ export function AppHost({
   contentWindowRef,
   isExplorer = false,
   onShellOpen,
+  openFilePayload,
+  onShellOpenFile,
 }: AppHostProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [placeholder, setPlaceholder] = useState<string | null>("Loading...");
@@ -106,8 +121,16 @@ export function AppHost({
         setPlaceholder(null);
         readyRef.current = { source, origin };
         analytics.app_ready(windowId);
-        const caps = createShellCaps(windowId, scale, theme, isExplorer);
-        sendToSource(source, origin, caps);
+        if (openFilePayload) {
+          sendToSource(source, origin, {
+            type: "OPEN_FILE",
+            payload: openFilePayload as unknown as Record<string, unknown>,
+            timestamp: Date.now(),
+          });
+        } else {
+          const caps = createShellCaps(windowId, scale, theme, isExplorer);
+          sendToSource(source, origin, caps);
+        }
         (window as unknown as { __shellCapsSent?: boolean }).__shellCapsSent = true;
       } else if (data.type === "WINDOW_TITLE") {
         const title = data.payload?.title;
@@ -115,13 +138,31 @@ export function AppHost({
           onTitleUpdate(knownWindowId, title);
         }
       } else if (data.type === "SHELL_OPEN" && isExplorer && onShellOpen) {
-        const payload = data.payload as ShellOpenPayload;
+        const payload = data.payload as unknown as ShellOpenPayload;
         if (payload && typeof payload.kind === "string" && typeof payload.path === "string") {
           onShellOpen(payload);
         }
+      } else if (data.type === "SHELL_OPEN_FILE" && isExplorer && onShellOpenFile) {
+        const payload = data.payload as {
+          path?: string;
+          playlist?: Array<{ path: string; url: string }>;
+        };
+        if (payload && typeof payload.path === "string" && Array.isArray(payload.playlist)) {
+          onShellOpenFile({ path: payload.path, playlist: payload.playlist });
+        }
       }
     },
-    [windowId, scale, theme, isExplorer, onTitleUpdate, onShellOpen, sendToSource]
+    [
+      windowId,
+      scale,
+      theme,
+      isExplorer,
+      onTitleUpdate,
+      onShellOpen,
+      onShellOpenFile,
+      openFilePayload,
+      sendToSource,
+    ]
   );
 
   useEffect(() => {
