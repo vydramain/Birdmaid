@@ -334,7 +334,7 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md) (ThemeScaleProvider =
 | -------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
 | Protocol       | FP1 § Protocol (this doc)                                                                  | Message types, handshake, origin rules, FP3 SHELL_OPEN extension            |
 | Sandbox        | FP1 § Protocol, FP3 § Security                                                             | allow-scripts (testapp); Explorer allow-same-origin; Viewer allow-scripts   |
-| Theming v0     | [docs/core/THEMING.md](../core/THEMING.md)                                           | Token schema, scale, theme packs, no magic geometry, test asserts           |
+| Theming v0     | [docs/core/THEMING.md](../core/THEMING.md)                                                 | Token schema, scale, theme packs, no magic geometry, test asserts           |
 | UI Slots       | FP1 § Customization & Design System                                                        | DesktopView, WindowChromeView, TaskbarView, TaskbarItemView; props contract |
 | Arch diagrams  | [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md)                                     | Component + sequence diagrams                                               |
 | Dev domain     | [ARCHITECTURE](../dev/ARCHITECTURE.md) § Dev Domain, [infra/README](../../infra/README.md) | shell.local, /etc/hosts, ports, smoke                                       |
@@ -598,7 +598,7 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md) (ThemeScaleProvider =
 | Doc           | Path                           |
 | ------------- | ------------------------------ |
 | Protocol      | FP1 § Protocol (this doc)      |
-| THEMING v0    | `docs/core/THEMING.md`        |
+| THEMING v0    | `docs/core/THEMING.md`         |
 | UI Slots      | FP1 § Customization            |
 | Sandbox       | FP1 § Protocol, FP3 § Security |
 | ARCH_DIAGRAMS | `docs/core/ARCH_DIAGRAMS.md`   |

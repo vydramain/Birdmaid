@@ -226,18 +226,18 @@ No code changes required. Routing already correct; tests verify contract.
 
 ### 9.1 Edits Applied
 
-| Area              | Files                                                                 | Change                                                                 |
-| ----------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| PROTOCOL_v0       | `docs/core/PROTOCOL_v0.md`                                            | Added: "CANON UPDATE; must be merged into canonical after build"       |
-| Temp docs         | `docs/dev/_tmp/M1_FIX_NOTES.md`                                       | Already TEMP (merge/delete on archive FP4)                             |
-| .gitignore        | `.gitignore`                                                          | Added `*.har` (HAR captures)                                            |
-| Doc links         | `docs/README.md`, `docs/audit/FP4_AUDIT_REPORT.md`, `docs/fps/FP1.md`, `docs/fps/FP2.md`, `docs/fps/FP3.md` | Fixed broken links (archive paths, THEMING_v0→THEMING) |
+| Area        | Files                                                                                                       | Change                                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| PROTOCOL_v0 | `docs/core/PROTOCOL_v0.md`                                                                                  | Added: "CANON UPDATE; must be merged into canonical after build" |
+| Temp docs   | `docs/dev/_tmp/M1_FIX_NOTES.md`                                                                             | Already TEMP (merge/delete on archive FP4)                       |
+| .gitignore  | `.gitignore`                                                                                                | Added `*.har` (HAR captures)                                     |
+| Doc links   | `docs/README.md`, `docs/audit/FP4_AUDIT_REPORT.md`, `docs/fps/FP1.md`, `docs/fps/FP2.md`, `docs/fps/FP3.md` | Fixed broken links (archive paths, THEMING_v0→THEMING)           |
 
 ### 9.2 Verification (post-M4)
 
-| Command                           | Exit |
-| --------------------------------- | ---- |
-| `git status --porcelain`           | 0 (empty after commit) |
-| `node tools/check-doc-links.cjs docs/` | 0    |
-| `pnpm lint`                       | 0    |
-| `pnpm format:check`               | 0    |
+| Command                                | Exit                   |
+| -------------------------------------- | ---------------------- |
+| `git status --porcelain`               | 0 (empty after commit) |
+| `node tools/check-doc-links.cjs docs/` | 0                      |
+| `pnpm lint`                            | 0                      |
+| `pnpm format:check`                    | 0                      |
