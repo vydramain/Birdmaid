@@ -161,8 +161,9 @@ export function AppHost({
   }, [windowId, src, contentWindowRef]);
 
   return (
-    <div className="app-host-root">
+    <div className="app-host-root" data-window-id={windowId}>
       <iframe
+        key={windowId}
         ref={iframeRef}
         src={src}
         title={windowId}

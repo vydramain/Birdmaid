@@ -12,6 +12,8 @@ export function TaskbarItemView({ item, onClick }: TaskbarItemViewProps) {
     <button
       type="button"
       className="wm-taskbar-item"
+      data-testid={`taskbar-item-${item.windowId}`}
+      data-window-id={item.windowId}
       data-active={item.isActive ? "true" : undefined}
       onClick={onClick}
     >

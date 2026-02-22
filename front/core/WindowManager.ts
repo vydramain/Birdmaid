@@ -35,10 +35,18 @@ function genId(): string {
   return `win-${nextId++}`;
 }
 
+export interface Viewport {
+  width: number;
+  height: number;
+  x?: number;
+  y?: number;
+}
+
 export class WindowManager {
   private windows: Map<string, WindowRecord> = new Map();
   private zOrder: string[] = [];
   private activeId: string | null = null;
+  private prevBounds: Map<string, WindowBounds> = new Map();
 
   createWindow(opts: { id?: string; src?: string; title?: string }): WindowRecord {
     const id = opts.id ?? genId();
@@ -67,6 +75,7 @@ export class WindowManager {
     if (!this.windows.has(id)) return;
     analytics.window_close(id);
     this.windows.delete(id);
+    this.prevBounds.delete(id);
     this.zOrder = this.zOrder.filter((x) => x !== id);
     if (this.activeId === id) this.activeId = null;
   }
@@ -78,9 +87,16 @@ export class WindowManager {
     analytics.window_minimize(id);
   }
 
-  maximize(id: string): void {
+  maximize(id: string, viewport: Viewport): void {
     const w = this.windows.get(id);
     if (!w || w.state === "maximized") return;
+    this.prevBounds.set(id, { ...w.bounds });
+    w.bounds = {
+      x: viewport.x ?? 0,
+      y: viewport.y ?? 0,
+      width: viewport.width,
+      height: viewport.height,
+    };
     w.state = "maximized";
     analytics.window_maximize(id);
   }
@@ -98,6 +114,11 @@ export class WindowManager {
     const w = this.windows.get(id);
     if (!w) return;
     if (w.state === "maximized") {
+      const prev = this.prevBounds.get(id);
+      if (prev) {
+        w.bounds = { ...prev };
+        this.prevBounds.delete(id);
+      }
       w.state = "normal";
       analytics.window_unmaximize(id);
     }
@@ -133,6 +154,7 @@ export class WindowManager {
   updateBounds(id: string, bounds: Partial<WindowBounds>): void {
     const w = this.windows.get(id);
     if (!w) return;
+    if (w.state === "maximized") return;
     if (bounds.x !== undefined) w.bounds.x = bounds.x;
     if (bounds.y !== undefined) w.bounds.y = bounds.y;
     if (bounds.width !== undefined) w.bounds.width = Math.max(MIN_WIDTH, bounds.width);

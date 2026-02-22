@@ -82,22 +82,31 @@ export function Shell() {
     async (payload: { kind: string; path: string; mime?: string; title?: string }) => {
       if (payload.kind === "app") {
         const indexPath = payload.path.replace(/\/$/, "") + "/index.html";
-        try {
-          const res = await fetch("/api/fs/open-url", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ path: indexPath }),
-          });
-          if (!res.ok) return;
-          const data = await res.json();
-          const url = data.url;
-          if (typeof url === "string") {
-            const title = payload.title ?? indexPath.split("/").slice(-2, -1)[0] ?? "App";
-            wm.createWindow({ src: url, title });
-            refresh();
+        const maxAttempts = 3;
+        const delayMs = 300;
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          try {
+            const res = await fetch("/api/fs/open-url", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ path: indexPath }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const url = data.url;
+              if (typeof url === "string") {
+                const title = payload.title ?? indexPath.split("/").slice(-2, -1)[0] ?? "App";
+                wm.createWindow({ src: url, title });
+                refresh();
+              }
+              return;
+            }
+            if (res.status !== 404 || attempt === maxAttempts - 1) return;
+            await new Promise((r) => setTimeout(r, delayMs));
+          } catch {
+            if (attempt === maxAttempts - 1) return;
+            await new Promise((r) => setTimeout(r, delayMs));
           }
-        } catch {
-          /* ignore */
         }
         return;
       }
@@ -180,7 +189,18 @@ export function Shell() {
         refresh();
       },
       onMaximize: () => {
-        wm.maximize(id);
+        const w = wm.getWindow(id);
+        if (!w) return;
+        if (w.state === "maximized") {
+          wm.unmaximize(id);
+        } else {
+          wm.maximize(id, {
+            x: 0,
+            y: 0,
+            width: window.innerWidth,
+            height: window.innerHeight,
+          });
+        }
         refresh();
       },
       onClose: () => closeWindow(id),
@@ -190,7 +210,7 @@ export function Shell() {
       },
       onDragStart: (e) => {
         const w = wm.getWindow(id);
-        if (!w) return;
+        if (!w || w.state === "maximized") return;
         dragStateRef.current = {
           id,
           startX: e.clientX,
@@ -200,7 +220,7 @@ export function Shell() {
       },
       onResizeStart: (edge, e) => {
         const w = wm.getWindow(id);
-        if (!w) return;
+        if (!w || w.state === "maximized") return;
         e.preventDefault();
         resizeStateRef.current = {
           id,
@@ -345,7 +365,11 @@ export function Shell() {
               {w.src ? (
                 <AppHost
                   windowId={id}
-                  src={w.src}
+                  src={
+                    w.src.includes("/apps/explorer")
+                      ? `${w.src}?w=${encodeURIComponent(id)}`
+                      : w.src
+                  }
                   scale={scale}
                   theme={themeId}
                   onTitleUpdate={handleTitleUpdate}

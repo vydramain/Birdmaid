@@ -20,6 +20,7 @@ export function WindowChromeView({
   zIndex = 100,
 }: WindowChromeViewProps) {
   const isMinimized = win.state === "minimized";
+  const isMaximized = win.state === "maximized";
 
   return (
     <div
@@ -27,6 +28,7 @@ export function WindowChromeView({
       className="wm-window"
       data-active={isActive ? "true" : undefined}
       data-minimized={isMinimized ? "true" : undefined}
+      data-maximized={isMaximized ? "true" : undefined}
       // inline-style: allowed (reason: drag/resize; why: bounds from WindowManager state; revisit: FP7)
       // FP3.1 M9: display:none when minimized keeps iframe mounted, preserves Explorer path
       style={{
@@ -99,6 +101,7 @@ export function WindowChromeView({
           key={edge}
           className="wm-resize-edge"
           data-resize-edge={edge}
+          style={isMaximized ? { pointerEvents: "none" } : undefined}
           onMouseDown={(e) => {
             e.stopPropagation();
             actions.onResizeStart(edge, e);
