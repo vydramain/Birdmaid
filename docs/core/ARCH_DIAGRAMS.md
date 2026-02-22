@@ -1,11 +1,11 @@
-# Architecture Diagrams — Shell MVP (FP1)
+# Architecture Diagrams
 
-**Purpose:** Component and sequence diagrams for build.  
-**Scope:** FP1 only.
+**Purpose:** Component and sequence diagrams for build. Single source for Shell, Explorer, Gateway interaction.  
+**Scope:** FP1 (Shell), FP2 (Gateway), FP3 (Explorer). Keep in sync with actual code.
 
 ---
 
-## 1. Component diagram
+## 1. Shell Component diagram (FP1)
 
 ```mermaid
 flowchart TB
@@ -14,11 +14,10 @@ flowchart TB
         Desktop[Desktop]
         Taskbar[Taskbar]
         AppHost[AppHost]
-        ThemeProvider[ThemeProvider]
-        ScaleProvider[ScaleProvider]
+        ThemeScaleProvider[ThemeScaleProvider]
     end
 
-    subgraph UIAdapter
+    subgraph UI
         DesktopView[DesktopView]
         WindowChromeView[WindowChromeView]
         TaskbarView[TaskbarView]
@@ -33,20 +32,19 @@ flowchart TB
     TaskbarView --> TaskbarItemView
     Desktop --> DesktopView
     AppHost --> WindowChromeView
-    ThemeProvider --> DesktopView
-    ThemeProvider --> WindowChromeView
-    ThemeProvider --> TaskbarView
-    ScaleProvider --> ThemeProvider
+    ThemeScaleProvider --> DesktopView
+    ThemeScaleProvider --> WindowChromeView
+    ThemeScaleProvider --> TaskbarView
 ```
 
 **ASCII alternative:**
 
 ```
-+------------------+     +------------------+
-|  ThemeProvider   |     |  ScaleProvider   |
-+--------+---------+     +--------+---------+
-         |                        |
-         v                        v
++---------------------+
+| ThemeScaleProvider  |
++--------+------------+
+         |
+         v
 +------------------+     +------------------+
 |     Desktop      |<----|   WindowManager  |
 +--------+---------+     +--------+---------+
@@ -184,8 +182,25 @@ sequenceDiagram
 
 ---
 
+## 6. FP3 Explorer ↔ Gateway
+
+```mermaid
+flowchart LR
+    Explorer[Explorer iframe]
+    Shell[Shell]
+    Gateway[Gateway]
+    MinIO[MinIO/S3]
+
+    Explorer -->|fetch + X-System-Token| Gateway
+    Explorer -->|SHELL_OPEN| Shell
+    Shell -->|open-url| Gateway
+    Gateway -->|presigned URL| MinIO
+```
+
+**CORS:** Gateway allowlist: shell.local, api.shell.local, localhost:5173. MinIO CORS: allowlist for signed URL GET. See `infra/minio/cors.json`.
+
 ## References
 
 - FP1: [docs/fps/FP1.md](../fps/FP1.md)
-- PROTOCOL_v0: [docs/core/PROTOCOL_v0.md](./PROTOCOL_v0.md)
-- UI_ADAPTER_v0: [docs/core/UI_ADAPTER_v0.md](./UI_ADAPTER_v0.md)
+- FP3: [docs/fps/FP3.md](../fps/FP3.md)
+- Protocol: [docs/fps/FP1.md](../fps/FP1.md) § Protocol

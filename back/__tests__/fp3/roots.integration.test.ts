@@ -3,7 +3,7 @@
  * APPS (FP2) is deprecated for FP3; gateway MUST NOT return APPS.
  *
  * Prerequisite: docker compose -f infra/docker-compose.dev.yml up -d
- * /etc/hosts: 127.0.0.1 api.shell.local (see docs/dev/DEV_DOMAIN.md)
+ * /etc/hosts: 127.0.0.1 api.shell.local (see docs/dev/ARCHITECTURE.md § Dev Domain)
  */
 
 const API_BASE = "http://api.shell.local";

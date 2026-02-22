@@ -1,5 +1,5 @@
 /**
- * UI Adapter types — UI_ADAPTER_v0, THEMING_v0.
+ * UI Adapter types — FP1 § Customization, THEMING.
  */
 
 export interface ThemeTokenSet {

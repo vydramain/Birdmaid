@@ -1,5 +1,5 @@
 /**
- * Path validation and canonicalization per FS_CONTRACT_v0.
+ * Path validation and canonicalization per docs/dev/ARCHITECTURE.md (FS Path Scheme).
  * Order: decode → reject forbidden → normalize → length → root isolation.
  */
 

@@ -1,5 +1,5 @@
 /**
- * AppHost — iframe mount/unmount, postMessage bridge per PROTOCOL_v0.
+ * AppHost — iframe mount/unmount, postMessage bridge per FP1 § Protocol.
  * Origin allowlist, event.source routing, targetOrigin=event.origin, handshake timeout 2000ms.
  */
 

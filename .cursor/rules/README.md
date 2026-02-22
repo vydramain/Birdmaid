@@ -17,6 +17,7 @@
 ## Связь с другими документами
 
 - **AGENTS.md** — главный документ с правилами workflow
-- **docs/dev/** — GUARDRAILS.md, COMMITS.md, CODE_REVIEW.md, ARCHITECTURE.md, SECURITY.md, TWELVE_FACTOR.md
+- **docs/dev/** — GUARDRAILS.md, COMMITS.md, CODE_REVIEW.md, ARCHITECTURE.md
+- **docs/style/REPO_RULES.md** — repo rules, gate, Twelve-Factor
 - **ai/roles/** — workflow-роли, которые следуют этим правилам
 - **ai/agents/** — агенты-специалисты, которые могут использоваться в workflow

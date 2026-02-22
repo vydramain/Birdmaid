@@ -13,8 +13,8 @@ Skills for Codex agents. All Codex agents MUST follow the same guardrails as Cur
 - **docs/dev/COMMITS.md** — Conventional Commits
 - **docs/dev/CODE_REVIEW.md** — критерии code review
 - **docs/dev/ARCHITECTURE.md** — слои front/back
-- **docs/dev/SECURITY.md** — secrets, deps
-- **docs/dev/TWELVE_FACTOR.md** — 12-factor для back/infra
+- **docs/style/REPO_RULES.md** § Security — secrets, deps
+- **docs/style/REPO_RULES.md** — repo rules, Twelve-Factor
 
 ## Output Contract (matches Cursor)
 

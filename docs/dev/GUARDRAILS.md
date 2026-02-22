@@ -76,7 +76,7 @@ Runs on staged files only. Blocks commit if:
 - **CSS/SCSS:** Stylelint (no `!important`, no `px`), Prettier
 - **Assets (front/public/):** `scripts/check-asset-provenance.cjs` (placeholder)
 
-See [GUIDE_STYLE.md](../../GUIDE_STYLE.md) for inline-style policy, unit policy, canary checks.
+See [docs/style/GUIDE_STYLE.md](../style/GUIDE_STYLE.md) for inline-style policy, unit policy, canary checks.
 
 ### Gate (manual / CI)
 
@@ -139,17 +139,17 @@ For reproducible `pnpm test:api` in container:
 corepack enable pnpm && pnpm install && pnpm test:api
 ```
 
-Node 22+, pnpm via corepack. If optional deps (e.g. rollup) fail, see [REPO_HYGIENE_PLAN.md](REPO_HYGIENE_PLAN.md) W2.4.
+Node 22+, pnpm via corepack. If optional deps (e.g. rollup) fail, add `pnpm approve-builds` step in CI.
 
 ### Troubleshooting pnpm EACCES
 
 If `pnpm install` fails on host with EACCES (permission denied on node_modules or store):
 
-1. **Repo-local store:** `.npmrc` has `store-dir=.pnpm-store`. After adding this, remove old store and reinstall:
+1. **Repo-local store:** Use env var (do NOT use `pnpm config set store-dir` — that writes to ~/.npmrc, npm will warn globally):
 
    ```bash
    rm -rf node_modules .pnpm-store
-   pnpm install
+   PNPM_CONFIG_STORE_DIR=.pnpm-store pnpm install
    ```
 
    Ensure `.pnpm-store/` is in .gitignore (already done).
@@ -194,6 +194,6 @@ Pre-commit requires deps installed on host (`pnpm lint:staged`). If host `pnpm i
 - **FP contract:** `docs/fps/FP<N>.md` (current Feature Pack; see [FP_EXAMPLE.md](../fps/FP_EXAMPLE.md))
 - **Cursor rules:** [.cursor/rules/agents.md](../../.cursor/rules/agents.md)
 - **Codex skills:** [.codex/skills/README.md](../../.codex/skills/README.md)
-- **Process:** [CODE_REVIEW.md](CODE_REVIEW.md), [TWELVE_FACTOR.md](TWELVE_FACTOR.md), [COMMITS.md](COMMITS.md)
+- **Process:** [CODE_REVIEW.md](CODE_REVIEW.md), [REPO_RULES.md](../style/REPO_RULES.md), [COMMITS.md](COMMITS.md)
 - **Architecture:** [ARCHITECTURE.md](ARCHITECTURE.md)
-- **Security:** [SECURITY.md](SECURITY.md)
+- **Security:** [REPO_RULES.md](../style/REPO_RULES.md) § Security

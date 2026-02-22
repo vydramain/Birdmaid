@@ -88,6 +88,6 @@ OUTPUT: <формат артефакта>
 - **docs/dev/GUARDRAILS.md** — canonical rules
 - **docs/dev/COMMITS.md** — Conventional Commits
 - **docs/dev/ARCHITECTURE.md** — слои front/back
-- **docs/dev/CODE_REVIEW.md**, **SECURITY.md**, **TWELVE_FACTOR.md**
+- **docs/dev/CODE_REVIEW.md**, **docs/style/REPO_RULES.md**
 
 См. также: [ai/roles/README.md](../roles/README.md) для workflow-этапов

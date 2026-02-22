@@ -158,7 +158,7 @@
 ### Документация
 
 - [x] docs/core/API.yaml актуален: roots, list, stat, open-url, error schema
-- [x] docs/dev/DEV_DOMAIN.md: домены api.shell.local, s3.shell.local, команды
+- [x] ARCHITECTURE § Dev Domain, infra/README: домены api.shell.local, s3.shell.local
 
 ### Инфра
 
@@ -316,10 +316,10 @@ sequenceDiagram
 | Артефакт     | Путь                          | Описание                                     |
 | ------------ | ----------------------------- | -------------------------------------------- |
 | API contract | docs/core/API.yaml            | Endpoints, schemas, error model              |
-| FS contract  | docs/core/FS_CONTRACT_v0.md   | Path scheme, rules, examples                 |
-| CORS         | docs/core/CORS_SIGNED_URLS.md | MinIO CORS для signed URLs                   |
+| FS contract  | docs/core/API.yaml, docs/dev/ARCHITECTURE.md | Path scheme, rules, S3 mapping               |
+| CORS         | docs/dev/ARCHITECTURE.md § CORS              | MinIO CORS для signed URLs                   |
 | Tests plan   | docs/tests/FP2_TESTS.md       | AC → test mapping                            |
-| Dev domain   | docs/dev/DEV_DOMAIN.md        | Hosts, commands, health checks               |
+| Dev domain   | docs/dev/ARCHITECTURE.md § Dev Domain, infra/README | Hosts, smoke, health checks     |
 | MinIO infra  | infra/minio/                  | cors.json, init.sh, fixtures, README         |
 | Compose      | infra/docker-compose.dev.yml  | Canonical compose (minio + gateway + routes) |
 
@@ -415,7 +415,7 @@ sequenceDiagram
 
 | Check                     | Result                                                             |
 | ------------------------- | ------------------------------------------------------------------ |
-| Security: CORS allowlist  | PASS — gateway + MinIO cors.json соответствуют CORS_SIGNED_URLS.md |
+| Security: CORS allowlist  | PASS — gateway + MinIO cors.json (infra/minio/cors.json) |
 | Security: path validation | PASS — тесты bad path 400, bad root 403                            |
 | Security: secrets         | PASS — MinIO credentials только в compose/gateway env, не в front  |
 | DoD checklist             | PASS — все пункты выполнены                                        |
@@ -461,10 +461,9 @@ sequenceDiagram
 **C) Spec/design artifacts (paths):**
 
 - docs/core/API.yaml
-- docs/core/FS_CONTRACT_v0.md
-- docs/core/CORS_SIGNED_URLS.md
+- docs/core/API.yaml, docs/dev/ARCHITECTURE.md (FS path scheme, CORS)
 - docs/tests/FP2_TESTS.md
-- docs/dev/DEV_DOMAIN.md
+- docs/dev/ARCHITECTURE.md § Dev Domain, infra/README.md
 - docs/audit/FP2_AUDIT_REPORT.md
 
 **D) Archive link:**

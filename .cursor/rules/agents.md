@@ -13,8 +13,8 @@
 - `docs/dev/COMMITS.md` — Conventional Commits (commitlint в pre-commit)
 - `docs/dev/CODE_REVIEW.md` — критерии code review
 - `docs/dev/ARCHITECTURE.md` — слои front/back, Clean Architecture
-- `docs/dev/SECURITY.md` — secrets, deps, Node.js security
-- `docs/dev/TWELVE_FACTOR.md` — конфиг через env, 12-factor для back/infra
+- `docs/style/REPO_RULES.md` § Security — secrets, deps
+- `docs/style/REPO_RULES.md` — repo rules, Twelve-Factor, gate
 
 **Engineer/Developer Hard Rules (no exceptions):**
 - No lazy allow-tags: allow-tag v2 requires `reason`, `why`, `revisit`
@@ -127,6 +127,6 @@ FP=FP6 mode=release # Релиз
 
 - **Feature Pack:** `docs/fps/FP<N>.md` — единый файл со всей информацией о FP
 - **Общие документы:** `docs/core/` — REQUIREMENTS.md, API.yaml, MODEL.sql, UX_MAP.md
-- **Процесс:** `docs/dev/` — GUARDRAILS.md, COMMITS.md, CODE_REVIEW.md, ARCHITECTURE.md, SECURITY.md, TWELVE_FACTOR.md
+- **Процесс:** `docs/dev/` — GUARDRAILS.md, COMMITS.md, CODE_REVIEW.md, ARCHITECTURE.md; `docs/style/REPO_RULES.md`
 - **Агенты:** `ai/agents/` — промпты агентов
 - **Workflow:** `ai/roles/` — этапы работы (plan, design, build, release)

@@ -1,6 +1,6 @@
-# Code Review Guidelines
+# Code Review — Manifest
 
-**Purpose:** Прикладные правила code review по мотивам [Google Engineering Practices](https://google.github.io/eng-practices/). Снижают хаос, ускоряют ревью.
+**Purpose:** How to conduct code review. Rules from [Google Engineering Practices](https://google.github.io/eng-practices/). Keep checklist current.
 
 ---
 

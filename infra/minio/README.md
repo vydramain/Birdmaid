@@ -79,5 +79,5 @@ _(Adjust network name to match docker-compose.)_
 ## 5. References
 
 - FP2: [docs/fps/FP2.md](../../docs/fps/FP2.md)
-- CORS: [docs/core/CORS_SIGNED_URLS.md](../../docs/core/CORS_SIGNED_URLS.md)
-- FS Contract: [docs/core/FS_CONTRACT_v0.md](../../docs/core/FS_CONTRACT_v0.md)
+- CORS: [docs/dev/ARCHITECTURE.md](../../docs/dev/ARCHITECTURE.md) § CORS
+- FS Contract: [docs/core/API.yaml](../../docs/core/API.yaml), [docs/dev/ARCHITECTURE.md](../../docs/dev/ARCHITECTURE.md)

@@ -7,6 +7,6 @@ Root `evidence/` was used for live demo notes. As part of repo cleanup:
 - **FP1 demo-notes** → [archive/FP1/evidence/demo-notes.md](../archive/FP1/evidence/demo-notes.md) (canonical)
 - **FP2 evidence** → `docs/audit/FP2_AUDIT_REPORT.md`
 
-**Rationale:** Single canonical location per FP; root = entrypoints only. See [docs/dev/REPO_HYGIENE_PLAN.md](../docs/dev/REPO_HYGIENE_PLAN.md).
+**Rationale:** Single canonical location per FP; root = entrypoints only. See [docs/style/REPO_RULES.md](../docs/style/REPO_RULES.md).
 
 For new evidence, use `archive/FP<N>/evidence/` or `docs/audit/` as appropriate.

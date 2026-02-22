@@ -17,7 +17,6 @@ This document describes the **agent-only template** structure. No product fronte
 ├── .gitignore
 ├── AGENTS.md                       # Main workflow rules (6 agents, 4 stages)
 ├── README.md                       # How to use this template
-├── STRUCTURE.md                    # This file
 ├── LICENSE                         # Optional
 │
 ├── ai/
@@ -58,13 +57,10 @@ This document describes the **agent-only template** structure. No product fronte
 │   ├── README.md
 │   ├── agents/WORKFLOW.md
 │   ├── dev/
-│   │   ├── GUARDRAILS.md
-│   │   └── AGENT_CONTRACT_SUMMARY.md
+│   │   └── GUARDRAILS.md
 │   ├── fps/
 │   │   ├── README.md
-│   │   ├── TEMPLATE.md
-│   │   ├── FP_EXAMPLE.md
-│   │   └── RELEASE_GATE_TEMPLATE.md
+│   │   └── FP_EXAMPLE.md
 │   ├── core/                       # Core contracts (fill for your project)
 │   │   ├── REQUIREMENTS.md
 │   │   ├── WORKPLAN.yaml
@@ -74,7 +70,11 @@ This document describes the **agent-only template** structure. No product fronte
 │   │   ├── TESTS.md
 │   │   └── QNA_DECISIONS.md
 │   └── style/
-│       └── STYLE_GUIDE.md
+│       ├── STRUCTURE.md            # Repo structure (this file)
+│       ├── STYLE_GUIDE.md
+│       ├── GUIDE_STYLE.md          # Win95 style, inline-style policy
+│       ├── CLEAN_ARCH.md           # Clean Architecture guide
+│       └── REPO_RULES.md           # Gate, Twelve-Factor, security
 │
 └── tools/
     ├── README.md
@@ -85,26 +85,26 @@ This document describes the **agent-only template** structure. No product fronte
 
 ### Agents & Roles
 
-- **Agents:** [ai/agents/README.md](./ai/agents/README.md) — call via `@Product Lead`, `@Designer`, etc.
-- **Workflow:** [ai/roles/README.md](./ai/roles/README.md) — use `FP=FP1 mode=plan` (or design, build, release)
-- **Audit:** [ai/roles/audit/](./ai/roles/audit/) — analyst, inspector, supervisor
+- **Agents:** [ai/agents/README.md](../../ai/agents/README.md) — call via `@Product Lead`, `@Designer`, etc.
+- **Workflow:** [ai/roles/README.md](../../ai/roles/README.md) — use `FP=FP1 mode=plan` (or design, build, release)
+- **Audit:** [ai/roles/audit/](../../ai/roles/audit/) — analyst, inspector, supervisor
 
 ### Docs & Guardrails
 
-- **Workflow:** [docs/agents/WORKFLOW.md](./docs/agents/WORKFLOW.md)
-- **Guardrails:** [docs/dev/GUARDRAILS.md](./docs/dev/GUARDRAILS.md)
-- **Style:** [docs/style/STYLE_GUIDE.md](./docs/style/STYLE_GUIDE.md)
-- **Core contracts:** [docs/core/](./docs/core/)
-- **FP example:** [docs/fps/FP_EXAMPLE.md](./docs/fps/FP_EXAMPLE.md)
+- **Workflow:** [docs/agents/WORKFLOW.md](../agents/WORKFLOW.md)
+- **Guardrails:** [docs/dev/GUARDRAILS.md](../dev/GUARDRAILS.md)
+- **Style:** [STYLE_GUIDE.md](STYLE_GUIDE.md)
+- **Core contracts:** [docs/core/](../core/)
+- **FP example:** [docs/fps/FP_EXAMPLE.md](../fps/FP_EXAMPLE.md)
 
 ### Cursor & Skills
 
-- **Cursor rules:** [.cursor/rules/README.md](./.cursor/rules/README.md)
-- **Codex skills:** [.codex/skills/README.md](./.codex/skills/README.md)
+- **Cursor rules:** [.cursor/rules/README.md](../../.cursor/rules/README.md)
+- **Codex skills:** [.codex/skills/README.md](../../.codex/skills/README.md)
 
 ### Tooling
 
-- **Tools:** [tools/README.md](./tools/README.md) — e.g. `node tools/check-doc-links.cjs docs/`
+- **Tools:** [tools/README.md](../../tools/README.md) — e.g. `node tools/check-doc-links.cjs docs/`
 
 ## Entry Points
 

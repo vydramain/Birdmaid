@@ -112,4 +112,4 @@ Runs API integration tests in container. **Scoped:** FP2 gate uses `test-api-fp.
 | `test-unit.sh`           | Unit tests (container)            |
 | `gate.sh`                | Full gate sequence per FP         |
 
-**Prerequisite:** `/etc/hosts` with shell.local, api.shell.local, s3.shell.local. See [docs/dev/DEV_DOMAIN.md](../docs/dev/DEV_DOMAIN.md).
+**Prerequisite:** `/etc/hosts` with shell.local, api.shell.local, s3.shell.local. See [docs/dev/ARCHITECTURE.md](../docs/dev/ARCHITECTURE.md) § Dev Domain.

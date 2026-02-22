@@ -1,8 +1,8 @@
 # FP3 Tests Plan — Explorer + Shell Integration
 
-**Purpose:** AC → test mapping for FP3 (Explorer system app, write endpoints, security).  
-**Method:** Unit (gateway permissions), integration (API write ops), E2E (Playwright).  
-**Convention:** Один файл — много итераций. FP3 patchset delta — секция 6. Source of truth: docs/fps/FP3.md.
+**Purpose:** AC → test mapping for FP3 + FP3.2 (Explorer, write endpoints, security, Explorer UX, Shell maximize).  
+**Method:** Unit, integration (API), E2E (Playwright).  
+**Convention:** Один файл — много итераций. FP3 patchset §6; FP3.2 §9. Source of truth: docs/fps/FP3.md.
 
 ---
 
@@ -78,7 +78,7 @@
 
 **Commands:** `pnpm test:e2e` (or `npx playwright test e2e/fp3-explorer.spec.ts`)
 
-**M3 T-M3.3 note:** E2E verifies new window + iframe with signed URL. Full AC (iframe content loads) requires `127.0.0.1 s3.shell.local` in /etc/hosts (see docs/dev/DEV_DOMAIN.md).
+**M3 T-M3.3 note:** E2E verifies new window + iframe with signed URL. Full AC (iframe content loads) requires `127.0.0.1 s3.shell.local` in /etc/hosts (see docs/dev/ARCHITECTURE.md § Dev Domain).
 
 **M4 T-M4.1 note:** Requires `sample-image.png` in My Documents fixture. Run `docker compose -f infra/docker-compose.dev.yml run --rm minio-init` after adding fixtures.
 
@@ -181,3 +181,45 @@
 **E2E upload uses `setInputFiles` on hidden inputs** — Explorer exposes persistent `input[type=file]` elements (`data-testid="upload-file-input"`, `data-testid="upload-zip-input"`) for Playwright. Tests call `frame.locator('[data-testid="upload-file-input"]').setInputFiles([...])` inside the Explorer iframe; no OS file chooser is used.
 
 **Coverage:** T-M7-U1 (upload files success), T-M7-U2 (upload fail placeholder removed), T-M8-Z1 (upload zip success) run as E2E. Integration tests T-C1.1, T-C1.2, T-C3.1, T-M8-Z1 cover allowlist, 415, 2xx, NO_INDEX_HTML.
+
+---
+
+## 9. FP3.2 AC → Test Mapping (Explorer UX & Shell Maximize)
+
+| AC | Test ID | Type | Description |
+|----|---------|------|-------------|
+| A1 | T-A1 | E2E | Roots: only A:, C:, D:; no "Computer" tile |
+| A2 | T-A2 | E2E | Toolbar sticky; scroll only on file list |
+| A3 | T-A3 | E2E | Back button = icon (arrow left), not text |
+| A4 | T-A4 | E2E | Folders with index.html → app icon |
+| A5 | T-A5 | Int | First open after zip upload → 200 (no 404 race) |
+| A6 | T-A6 | E2E | Multi-explorer: path persists on focus change |
+| A7 | T-A7 | Int | Delete: request sent, item removed |
+| A8 | T-A8 | Int | Rename: toPath = same parent, new basename |
+| A9 | T-A9 | E2E | Roots: no toolbar (address bar + back) |
+| A10 | T-A10 | Unit | WindowManager: maximize → viewport; unmaximize → restore |
+
+### FP3.2 E2E (e2e/fp3-explorer.spec.ts)
+
+| Scenario | Steps | AC |
+|----------|-------|-----|
+| T-A1 | Open My Computer, assert only A:, C:, D:; no Computer tile | A1 |
+| T-A2 | Navigate to dir, scroll, assert toolbar visible | A2 |
+| T-A3 | Assert back = icon (←) | A3 |
+| T-A4 | Dir with index.html → app icon | A4 |
+| T-A6 | 2 Explorer, navigate, switch focus, paths unchanged | A6 |
+| T-A9 | Roots view: no address bar, no back | A9 |
+
+### FP3.2 Integration (back/__tests__/fp3/)
+
+| Scenario | Steps | AC |
+|----------|-------|-----|
+| T-A5 | Upload zip, POST open-url for index.html → 200 | A5 |
+| T-A7 | DELETE /api/fs/delete → 204; list → item gone | A7 |
+| T-A8 | PUT rename: toPath = parent/newName → 200 | A8 |
+
+### FP3.2 Unit (front/__tests__/fp1/WindowManager.test.ts)
+
+| Scenario | Steps | AC |
+|----------|-------|-----|
+| T-A10 | maximize(viewport) → bounds; unmaximize → restore | A10 |

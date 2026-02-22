@@ -1,6 +1,6 @@
-# UX Map
+# UX Map — Manifest
 
-**Purpose:** Map user actions (CTA) to endpoints, state, and pages. Single source for design and implementation. Synced with API.yaml and MODEL.sql by ux-map-sync skill.
+**Purpose:** How to implement and integrate UX flows. Map user actions (CTA) to endpoints, state, and pages. Synced with API.yaml by ux-map-sync skill. Keep current with FP specs.
 
 ## Overview
 
@@ -49,7 +49,7 @@
 
 ## FP3.2 UX Delta
 
-**Source:** docs/fps/FP3_2.md. Точные решения по 10 UX/logic дефектам.
+**Source:** docs/fps/FP3.md § FP3.2. Точные решения по 10 UX/logic дефектам.
 
 ### 1. My Computer Root View
 

@@ -78,4 +78,13 @@
 - [ ] Tests green
 - [ ] Docs updated
 
-Use [TEMPLATE.md](./TEMPLATE.md) for a blank structure.
+## Optional sections (add as needed)
+
+- **Metrics:** Success metrics, events
+- **Plan:** Milestones, tasks, status
+- **Risks:** Probability, impact, mitigation
+- **Dependencies:** External deps
+- **Artifacts:** Coverage, logs, evidence paths
+- **Reflection:** What went well, next focus
+
+**To create new FP:** Copy this file to `FP<N>.md` and fill. See [fps/README.md](README.md).

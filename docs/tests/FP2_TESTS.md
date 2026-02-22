@@ -127,4 +127,4 @@ Tests assume MinIO init has run (fixtures: DISK_C, APPS). Use `docker compose -f
 
 - FP2: [docs/fps/FP2.md](../fps/FP2.md)
 - API.yaml: [docs/core/API.yaml](../core/API.yaml)
-- FS Contract: [docs/core/FS_CONTRACT_v0.md](../core/FS_CONTRACT_v0.md)
+- FS Contract: [docs/core/API.yaml](../core/API.yaml), [docs/dev/ARCHITECTURE.md](../dev/ARCHITECTURE.md)

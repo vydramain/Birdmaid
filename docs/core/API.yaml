@@ -1,12 +1,13 @@
-# OpenAPI 3 — Core API contract (FP2)
+# OpenAPI 3 — Core API contract (FP2 + FP3)
 # Purpose: Canonical API contract for Gateway + FS endpoints.
 # Referenced by: agents (design, build), ux-map-sync, FP docs.
+# FP3: write endpoints (create-folder, upload-file, upload-zip-app, delete, rename); roots = DISK_A, DISK_C, DISK_D only.
 
 openapi: 3.0.3
 info:
   title: Birdmaid Gateway API
-  version: 0.2.0
-  description: Gateway API for FS contract (list, stat, open-url, roots). FP2 scope.
+  version: 0.3.0
+  description: Gateway API for FS contract (list, stat, open-url, roots, write ops). FP2+FP3 scope.
 
 servers:
   - url: http://api.shell.local
@@ -30,7 +31,7 @@ paths:
 
   /api/fs/roots:
     get:
-      summary: "List virtual roots (dev: DISK_C, APPS per infra/minio/fixtures)"
+      summary: "List virtual roots (FP3: DISK_A, DISK_C, DISK_D only; APPS deprecated)"
       operationId: getFsRoots
       tags: [fs]
       responses:
@@ -174,6 +175,152 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/fs/create-folder:
+    post:
+      summary: Create folder in writable path (FP3)
+      operationId: postFsCreateFolder
+      tags: [fs]
+      security:
+        - systemToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFolderRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FsItem"
+        "400":
+          description: BAD_PATH, BAD_REQUEST
+        "403":
+          description: PERMISSION_DENIED, POLICY_VIOLATION
+        "409":
+          description: NAME_CONFLICT (folder exists)
+
+  /api/fs/upload-file:
+    post:
+      summary: Multipart upload single file (FP3)
+      operationId: postFsUploadFile
+      tags: [fs]
+      security:
+        - systemToken: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [path, file]
+              properties:
+                path:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FsItem"
+        "400":
+          description: BAD_PATH, BAD_REQUEST
+        "403":
+          description: PERMISSION_DENIED, POLICY_VIOLATION
+        "409":
+          description: NAME_CONFLICT
+        "413":
+          description: PAYLOAD_TOO_LARGE
+        "415":
+          description: UNSUPPORTED_MEDIA (ext/mime not in allowlist)
+
+  /api/fs/upload-zip-app:
+    post:
+      summary: Multipart zip upload; gateway unpacks; validate index.html (FP3)
+      operationId: postFsUploadZipApp
+      tags: [fs]
+      security:
+        - systemToken: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [path, file]
+              properties:
+                path:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FsItem"
+        "400":
+          description: BAD_PATH, BAD_REQUEST, NO_INDEX_HTML
+        "403":
+          description: PERMISSION_DENIED
+        "413":
+          description: PAYLOAD_TOO_LARGE
+        "415":
+          description: UNSUPPORTED_MEDIA (not zip)
+
+  /api/fs/delete:
+    delete:
+      summary: Delete file or dir (FP3)
+      operationId: deleteFsItem
+      tags: [fs]
+      security:
+        - systemToken: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteRequest"
+      responses:
+        "204":
+          description: No content
+        "403":
+          description: PERMISSION_DENIED, POLICY_VIOLATION
+        "404":
+          description: NOT_FOUND
+
+  /api/fs/rename:
+    put:
+      summary: Rename (same-parent only) (FP3)
+      operationId: putFsRename
+      tags: [fs]
+      security:
+        - systemToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FsItem"
+        "403":
+          description: PERMISSION_DENIED, POLICY_VIOLATION, CROSS_PARENT
+        "404":
+          description: NOT_FOUND
+        "409":
+          description: NAME_CONFLICT
+
 components:
   schemas:
     HealthResponse:
@@ -287,7 +434,7 @@ components:
           properties:
             code:
               type: string
-              description: Machine-readable code (e.g. BAD_PATH, NOT_FOUND)
+              description: Machine-readable code (e.g. BAD_PATH, NOT_FOUND, POLICY_VIOLATION, PERMISSION_DENIED)
             message:
               type: string
               description: Human-readable message
@@ -296,7 +443,37 @@ components:
               additionalProperties: true
               description: Optional extra context
 
-  securitySchemes: {}
+    CreateFolderRequest:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          description: Parent dir path (trailing slash)
+
+    DeleteRequest:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+
+    RenameRequest:
+      type: object
+      required: [fromPath, toPath]
+      properties:
+        fromPath:
+          type: string
+        toPath:
+          type: string
+          description: Must be same parent; dirname(fromPath) === dirname(toPath)
+
+  securitySchemes:
+    systemToken:
+      type: apiKey
+      in: header
+      name: X-System-Token
+      description: Explorer system token (Write API only). Requires X-System-App explorer.
 
 # Path canonicalization rules (FP2)
 # - Leading slash required

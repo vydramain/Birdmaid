@@ -1,6 +1,6 @@
-# Conventional Commits
+# Commits — Manifest
 
-**Purpose:** Стандартизация сообщений коммитов. Машинно-обрабатываемые, автогенерация changelog/версий.
+**Purpose:** How to write commit messages. Conventional Commits. Keep in sync with commitlint.config.js.
 
 ---
 

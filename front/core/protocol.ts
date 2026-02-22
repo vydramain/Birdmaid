@@ -1,5 +1,5 @@
 /**
- * PROTOCOL_v0 — message types, allowlist, routing.
+ * Protocol — message types, allowlist, routing. See docs/fps/FP1.md § Protocol.
  */
 
 export const ALLOWED_ORIGINS = [

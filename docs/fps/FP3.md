@@ -2,7 +2,8 @@
 
 **Status:** plan  
 **Created:** 2025-02-20  
-**Updated:** 2025-02-20 (pre-design patch)
+**Updated:** 2025-02-20 (pre-design patch)  
+**Archived snapshot:** [archive/FP3/](../../archive/FP3/README.md) (2025-02-22)
 
 > **Context:** Shell (FP1) и Gateway FS API (FP2) готовы. FP3 добавляет Explorer как системное приложение в iframe, навигацию по виртуальным дискам, CRUD в user-space, запуск viewer'ов и user apps.
 
@@ -139,6 +140,10 @@ Gateway **MUST** enforce at API layer (not only UI):
 - **Path traversal:** Reject `..`, absolute URL, double slashes; normalize before check.
 - **Rename:** Gateway MUST validate `dirname(fromPath) === dirname(toPath)`; cross-parent → 403 REJECT.
 
+### Security DoD (FP3 + FP3.2)
+
+**Sandbox:** Explorer `allow-scripts allow-same-origin`; User app `allow-scripts`; Viewer `allow-scripts`. Token only in SHELL_CAPS to Explorer windows. Gateway Write API requires X-System-App + X-System-Token. CORS allowlist only. Path policy: writable only C:/My Documents/\*\*; rename same-parent only. FP3.2: no changes to security model.
+
 ### Path Policy Matrix
 
 | Path prefix                      | Read | Write   | Who                              |
@@ -193,6 +198,14 @@ Gateway **MUST** enforce at API layer (not only UI):
 - Writable path check: только C:/My Documents/\*\* (и allowlisted).
 - **Rename:** Gateway MUST validate `dirname(fromPath) === dirname(toPath)`; only basename changes. Cross-parent → 403 REJECT.
 - Zip: должен содержать index.html в корне или первой уровне.
+
+### FS Behavior (Rename, Delete, Zip)
+
+**Rename path rule:** `toPath = dirname(fromPath) + newName` (+ `/` for dir). Explorer: `parentPath = dirname(fromPath)`; `toPath = kind==="dir" ? parentPath + newName + "/" : parentPath + newName`. Cross-parent → 403.
+
+**Delete flow:** Right click → Delete → confirm → spinner instead of label → 204 → tile removed; 4xx/5xx → revert label, log only.
+
+**Zip upload open race:** First open after zip upload may 404 (S3 eventual consistency). Client retry 2–3× with backoff (200–500ms) or gateway retry on open-url.
 
 ---
 
@@ -325,7 +338,7 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 
 **Migration/fixtures:** Dev stack создаёт папки и файлы при init. Explorer: repo `front/apps/explorer/` → копируется в `infra/minio/fixtures/DISK_C/Program Files/Explorer/` при dev-init (D10).
 
-### Protocol Extensions (PROTOCOL_v0)
+### Protocol Extensions (FP1 § Protocol)
 
 **Explorer → Shell:**
 
@@ -560,9 +573,9 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 ### Documentation
 
 - `docs/fps/FP3.md` (этот документ).
-- Обновление `docs/core/PROTOCOL_v0.md` (SHELL_OPEN, EXPLORER_CAPS).
+- Protocol extensions (SHELL_OPEN) — docs/fps/FP1.md § Protocol.
 - Обновление `docs/core/API.yaml` (write endpoints).
-- Обновление `docs/dev/DEV_DOMAIN.md` при необходимости.
+- ARCHITECTURE § Dev Domain, infra/README — актуальны.
 
 ### Gate Commands
 
@@ -634,7 +647,7 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 **Status:** design  
 **Created:** 2025-02-21  
 **Context:** FP3 build частично реализован; выявлены gaps в UX, async-flows, upload. Delta без изменения глобального scope.  
-**Source of truth:** этот раздел; тесты — docs/tests/FP3_TESTS.md; design log — docs/dev/DESIGN_LOG.md.
+**Source of truth:** этот раздел; тесты — docs/tests/FP3_TESTS.md.
 
 ### FP3 Patchset Before→After (P0/P1)
 
@@ -751,20 +764,20 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 
 | Doc                                            | Purpose                                                           |
 | ---------------------------------------------- | ----------------------------------------------------------------- |
-| [API_FP3_DELTA](../core/API_FP3_DELTA.md)      | Upload contract, allowlist, error codes 400/403/413/415           |
+| [API.yaml](../core/API.yaml)                    | Upload contract, allowlist, error codes (FP3 merged)             |
 | [FP3_TESTS](../tests/FP3_TESTS.md)             | AC→tests mapping, patchset delta (T-A1.x, T-B1.x, T-C1.x, T-D1.1) |
-| [FP3_SECURITY_DOD](../dev/FP3_SECURITY_DOD.md) | Sandbox, token, CORS, path policy                                 |
-| [DESIGN_LOG](../dev/DESIGN_LOG.md)             | Contradictions scan, decisions                                    |
+| FP3 § Security DoD | Sandbox, token, CORS, path policy (merged)                        |
+| FP3 § Patchset | Design decisions (merged)                                        |
 | [UX_MAP](../core/UX_MAP.md)                    | CTA (nav_back), flows ref                                         |
 
 ### FP3 Patchset DoD (Design-stage)
 
 - [x] Requirements A1..D1 задокументированы
 - [x] UX spec в FP3.md (back, tile, blank, flows)
-- [x] API_FP3_DELTA.md: upload contract, error codes, no 500
-- [x] FP3_SECURITY_DOD.md: user apps deny, token Explorer-only
+- [x] API.yaml: upload contract, error codes (merged)
+- [x] Security DoD: user apps deny, token Explorer-only (FP3 § Security DoD)
 - [x] FP3_TESTS.md: patchset delta
-- [x] DESIGN_LOG.md: patchset секция, contradictions scan
+- [x] Patchset decisions in FP3
 - [x] UX_MAP.md: nav_back CTA
 
 ### FP3 Patchset DoD (Build-stage, reference)
@@ -781,11 +794,58 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 
 ## Pre-FP4 TODO
 
-- [ ] **Merge API_FP3_DELTA.md into docs/core/API.yaml** — Consolidate write endpoints, permission model, upload contract before FP4.
+- [x] API_FP3_DELTA merged into docs/core/API.yaml
 
 **Docs consolidation:** FP3 patchset (M5–M9) merged into FP3; no separate patchset entity. Audit: docs/audit/FP3_AUDIT_REPORT.md (M6 + M10).
 
-**Superseded by FP3.2:** Explorer UX & Shell Maximize Fixes — см. [FP3_2.md](FP3_2.md) (roots tile, sticky toolbar, back icon, app icon, 404 race, multi-explorer path, delete, rename path, roots toolbar, maximize).
+---
+
+## FP3.2 Explorer UX & Shell Maximize Fixes
+
+**Context:** Follow-up к FP3. Решает 10 выявленных UX/API/Shell issues.
+
+### Problem Statement (10 issues)
+
+| # | Issue | Fix |
+|---|-------|-----|
+| 1 | Roots: tile "Computer" в корне | Только A:, C:, D:; без Computer tile |
+| 2 | Scroll скрывает toolbar | Sticky toolbar; scroll только у tiles |
+| 3 | Back = текст | Back = иконка ← |
+| 4 | App-dir = folder icon | App icon (fs-icon-app) |
+| 5 | Первый open после zip → 404 | Retry до 200 |
+| 6 | Multi-explorer: path сбрасывается | State persist при focus/blur |
+| 7 | Delete не отправляет запрос | Delete → fetch DELETE; spinner; tile gone |
+| 8 | Rename toPath wrong (nested) | toPath = dirname(fromPath) + newName |
+| 9 | Roots: toolbar показан | Toolbar скрыт в roots |
+| 10 | Maximize не работает | bounds = viewport; unmaximize → restore |
+
+### FP3.2 Acceptance Criteria (A1..A10)
+
+| AC | Subsystem | Критерий |
+|----|-----------|----------|
+| A1 | Explorer | Roots: только A:, C:, D:; нет Computer tile |
+| A2 | Explorer | Toolbar sticky; scroll только у списка |
+| A3 | Explorer | Back = иконка ← |
+| A4 | App-discovery | Папки с index.html → app icon |
+| A5 | App open | Первый open после zip → 200 (retry) |
+| A6 | Explorer | Multi-explorer: path сохраняется при focus |
+| A7 | FS write | Delete: запрос отправляется, item исчезает |
+| A8 | FS write | Rename: toPath = parent + newBasename |
+| A9 | Explorer | Roots: нет toolbar |
+| A10 | Shell | Maximize → viewport; unmaximize → restore |
+
+### FP3.2 Evidence
+
+| Item | Location |
+|------|----------|
+| Roots/toolbar | `front/apps/explorer/main.ts` |
+| Delete/Rename | `front/apps/explorer/main.ts` |
+| WindowManager maximize | `front/core/WindowManager.ts` |
+| Shell maximize | `front/Shell.tsx` |
+| App icon | `front/shared/fs-tile.css` `.fs-icon-app` |
+| Retry | `front/Shell.tsx`, `back/src/fs.ts` |
+
+Tests: см. [FP3_TESTS.md](../tests/FP3_TESTS.md) § FP3.2.
 
 ---
 
@@ -793,16 +853,16 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 
 - [FP1: Shell MVP](FP1.md)
 - [FP2: Gateway + FS](FP2.md)
-- [API_FP3_DELTA](../core/API_FP3_DELTA.md) — upload contract, error codes
+- [API.yaml](../core/API.yaml) — upload contract, error codes (FP3)
 - [FP3_TESTS](../tests/FP3_TESTS.md) — тест-план, patchset delta
-- [DESIGN_LOG](../dev/DESIGN_LOG.md) — design log, FP3.0 + patchset
-- [PROTOCOL_v0](../core/PROTOCOL_v0.md)
+- FP3 § Patchset — design decisions
+- [FP1 § Protocol](FP1.md) (SHELL_OPEN)
 - [THEMING_v0](../core/THEMING_v0.md)
-- [UI_ADAPTER_v0](../core/UI_ADAPTER_v0.md)
-- [FS_CONTRACT_v0](../core/FS_CONTRACT_v0.md)
+- FP1 § Customization (UI slots)
+- [ARCHITECTURE](../dev/ARCHITECTURE.md) (FS path scheme)
 - [API.yaml](../core/API.yaml)
-- [CORS_SIGNED_URLS](../core/CORS_SIGNED_URLS.md)
-- [SANDBOX_MATRIX](../core/SANDBOX_MATRIX.md)
-- [DEV_DOMAIN](../dev/DEV_DOMAIN.md)
+- [ARCHITECTURE](../dev/ARCHITECTURE.md) (CORS)
+- FP3 § Security (sandbox matrix)
+- [ARCHITECTURE](../dev/ARCHITECTURE.md) § Dev Domain
 - [GUARDRAILS](../dev/GUARDRAILS.md)
 - [FP2_TESTS](../tests/FP2_TESTS.md)

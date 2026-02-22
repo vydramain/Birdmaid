@@ -5,7 +5,7 @@
 **Updated:** 2026-01-22  
 **Purpose:** Style guide for Win95 UI implementation in FP7  
 **Status:** Active (обязательное правило для FP7)  
-**Source:** [FP7.md](../fps/FP7.md) — Phase 9: Style Guardrails
+**Source:** FP7 (planned) — Phase 9: Style Guardrails
 
 > **⚠️ ВАЖНО:** Этот документ является обязательным правилом для FP7. Все разработчики должны следовать правилам, описанным в этом документе. Нарушения блокируются pre-commit hooks.
 
@@ -179,7 +179,7 @@ front/src/styles/
 
 ## Theme System
 
-Темы реализованы через CSS custom properties (CSS variables) и data-attribute на root элементе. Подробнее см. [THEME_CONTRACT.md](./THEME_CONTRACT.md).
+Темы реализованы через CSS custom properties (CSS variables) и data-attribute на root элементе. Подробнее см. [§ Theme System](#theme-system) ниже.
 
 ### Quick Start
 
@@ -780,19 +780,19 @@ We do not copy Windows assets or source code. We implement our own tokens, mixin
 | Reference                                            | URL                                              | Purpose                                                          |
 | ---------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
 | **98.css**                                           | https://jdan.github.io/98.css/                   | **Mandatory** — Win98 design system, canonical reference for FP7 |
-| [DESIGN_SYSTEM_98.css.md](./DESIGN_SYSTEM_98.css.md) | —                                                | FP7 design system doc, 98.css ↔ Birdmaid mapping                 |
+| 98.css mapping                                      | [98.css](https://jdan.github.io/98.css/)         | FP7 design system doc, 98.css ↔ Birdmaid mapping                 |
 | GuidebookGallery Win95 GUI                           | https://guidebookgallery.org/guis/windows/win95  | Historical reference                                             |
 | GuidebookGallery Win95 Tutorial                      | https://guidebookgallery.org/tutorials/windows95 | Historical reference                                             |
 | GuidebookGallery Win95 Screenshots                   | https://guidebookgallery.org/screenshots/win95   | Historical reference                                             |
 
-**98.css (FP7):** Неприкословно обязателен для FP7. См. [DESIGN_SYSTEM_98.css.md](./DESIGN_SYSTEM_98.css.md) для маппинга компонентов и tokens.
+**98.css (FP7):** Неприкословно обязателен для FP7. См. [98.css](https://jdan.github.io/98.css/) для маппинга компонентов и tokens.
 
 **Chicago95:** Mentioned as optional design inspiration (Chicago95-like palette). We do not bundle Chicago95; we implement our own tokens and mixins.
 
 ## Ссылки
 
-- **FP7.md:** [M6: Style System Refactor](../fps/FP7.md#m6-style-system-refactor) — Style System Refactor
-- **THEME_CONTRACT.md:** [Theme contract](./THEME_CONTRACT.md) — Theme system contract
+- **FP7:** Style System Refactor (planned)
+- **Theme contract:** [§ Theme System](#theme-system) — Theme system contract
 - **WIN95_TOKENS_RULES.md:** Token rules
 - **WIN95_UI_KIT.md:** Design requirements
 - **front/src/ui/win95/tokens.ts:** TypeScript tokens

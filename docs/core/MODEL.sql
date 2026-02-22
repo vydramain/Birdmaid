@@ -1,6 +1,7 @@
 -- Data model skeleton (DDL)
--- Purpose: Canonical schema for the project. Referenced by agents (design, build)
--- and ux-map-sync. Add your tables and migrations here.
+-- Purpose: Placeholder for future DB-backed features. NOT used by current Birdmaid:
+--   - FP1–FP3 use S3/MinIO for storage (no SQL).
+-- Referenced by: agents (plan, design), fp-bootstrap, ux-map-sync skills.
 
 -- Example placeholder table (replace or remove)
 CREATE TABLE IF NOT EXISTS users (

@@ -108,7 +108,7 @@ test.describe("FP3 Explorer — M3: App-dir run", () => {
     expect(src).toMatch(/index\.html|s3\.shell\.local|X-Amz-/);
     const appFrame = await appIframe.contentFrame();
     expect(appFrame).toBeTruthy();
-    // Full AC (iframe content) requires 127.0.0.1 s3.shell.local in /etc/hosts (DEV_DOMAIN.md)
+    // Full AC (iframe content) requires 127.0.0.1 s3.shell.local in /etc/hosts (ARCHITECTURE § Dev Domain)
   });
 });
 
@@ -143,7 +143,7 @@ test.describe("FP3 Explorer — M4: Image viewer", () => {
     expect(viewerFrame).toBeTruthy();
     const img = viewerFrame!.getByTestId("viewer-image");
     await expect(img).toHaveAttribute("src", /s3\.shell\.local|X-Amz-/);
-    // Image loads only if s3.shell.local resolves (docs/dev/DEV_DOMAIN.md)
+    // Image loads only if s3.shell.local resolves (ARCHITECTURE § Dev Domain)
   });
 });
 

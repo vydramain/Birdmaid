@@ -46,9 +46,9 @@
 
 ## Шаблон и пример
 
-- [TEMPLATE.md](./TEMPLATE.md) — пустая структура для нового FP
+- [FP_EXAMPLE.md](./FP_EXAMPLE.md) — шаблон для нового FP (copy to FP<N>.md)
 - [FP_EXAMPLE.md](./FP_EXAMPLE.md) — пример заполненного FP (reference)
-- [RELEASE_GATE_TEMPLATE.md](./RELEASE_GATE_TEMPLATE.md) — шаблон чеклиста release gate
+- [docs/style/REPO_RULES.md](../style/REPO_RULES.md) § Release Gate — release gate rules
 
 ## Связь с другими документами
 

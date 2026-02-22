@@ -134,6 +134,18 @@ Shell — браузерный "оконный менеджер" + "панель
 | switch_theme  | —        | ui.theme_changed | Shell | yes  | todo   |
 | switch_scale  | —        | ui.scale_changed | Shell | yes  | todo   |
 
+## Protocol (Shell ↔ App postMessage)
+
+**Message types:** APP_READY (App→Shell), SHELL_CAPS (Shell→App), WINDOW_TITLE (App→Shell), ERROR (App→Shell), PING/PONG (optional).
+
+**Handshake:** init → waiting_ready (timer 2000ms) → ready. APP_READY stops timer, Shell sends SHELL_CAPS. Timeout → "App not responding".
+
+**SHELL_CAPS payload:** `{ windowId, scale, theme }`. **WINDOW_TITLE payload:** `{ title }`.
+
+**Origin rules:** Shell validates `event.origin` allowlist (shell.local, localhost:5173). Use `event.origin` as targetOrigin; never `"*"`. Route by `event.source` (contentWindow mapping).
+
+**FP3 extension:** Explorer sends SHELL_OPEN `{ kind: "file"|"app", path, mime?, title? }`. Shell sends systemToken in SHELL_CAPS only to Explorer windows.
+
 ## Architecture
 
 ### Components
@@ -145,7 +157,7 @@ Shell — браузерный "оконный менеджер" + "панель
 
 ### Diagrams
 
-See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md):
+See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md) (ThemeScaleProvider = theme+scale):
 
 - Component diagram (WindowManager, Desktop, Taskbar, AppHost, Theme/Scale providers)
 - Sequence: createWindow → iframe mount → APP_READY → SHELL_CAPS → WINDOW_TITLE
@@ -320,12 +332,12 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md):
 
 | Artifact       | Path                                                               | Content                                                                                 |
 | -------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| Protocol v0    | [docs/core/PROTOCOL_v0.md](../core/PROTOCOL_v0.md)                 | Message types, payload schema, origin rules, handshake state machine, examples, metrics |
-| Sandbox matrix | [docs/core/SANDBOX_MATRIX.md](../core/SANDBOX_MATRIX.md)           | appType=fp1-testapp, sandbox attrs, allow list, FP5 extension note                      |
+| Protocol        | FP1 § Protocol (this doc)                                           | Message types, handshake, origin rules, FP3 SHELL_OPEN extension                         |
+| Sandbox        | FP1 § Protocol, FP3 § Security                                   | allow-scripts (testapp); Explorer allow-same-origin; Viewer allow-scripts                 |
 | Theming v0     | [docs/core/THEMING_v0.md](../core/THEMING_v0.md)                   | Token schema, scale, theme packs, no magic geometry, test asserts                       |
-| UI Adapter v0  | [docs/core/UI_ADAPTER_v0.md](../core/UI_ADAPTER_v0.md)             | Slot API, props contract, TypeScript types                                              |
+| UI Slots       | FP1 § Customization & Design System                               | DesktopView, WindowChromeView, TaskbarView, TaskbarItemView; props contract              |
 | Arch diagrams  | [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md)             | Component + sequence diagrams                                                           |
-| Dev domain     | [docs/dev/DEV_DOMAIN.md](../dev/DEV_DOMAIN.md)                     | shell.local, /etc/hosts, ports, commands, /health                                       |
+| Dev domain     | [ARCHITECTURE](../dev/ARCHITECTURE.md) § Dev Domain, [infra/README](../../infra/README.md) | shell.local, /etc/hosts, ports, smoke                                                   |
 | Docker Compose | [infra/docker-compose.dev.yml](../../infra/docker-compose.dev.yml) | Traefik + dev-server (ADR#8), canonical                                                 |
 
 **AC → planned tests:** see table below.
@@ -359,14 +371,14 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md):
 - `index.html` — SPA entry
 - `front/main.tsx`, `front/App.tsx`, `front/index.css` — Shell placeholder
 - `infra/docker-compose.dev.yml` — Traefik + dev-server (canonical)
-- `docs/dev/DEV_DOMAIN.md` — hosts, ports, commands, /health
+- docs/dev/ARCHITECTURE.md § Dev Domain, infra/README.md — hosts, ports, smoke
 
 **Commands:**
 
 - `pnpm dev` — dev server on :5173
 - `curl http://localhost:5173/health` → `{"status":"ok"}`
 - `docker compose -f infra/docker-compose.dev.yml up -d` — Traefik + dev-server (canonical)
-- `http://shell.local` — requires `127.0.0.1 shell.local` in /etc/hosts (see [DEV_DOMAIN.md](../dev/DEV_DOMAIN.md))
+- `http://shell.local` — requires `127.0.0.1 shell.local` in /etc/hosts (see ARCHITECTURE § Dev Domain)
 
 **Test commands (M2):**
 
@@ -376,7 +388,7 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md):
 
 - [x] shell.local открывается в браузере (после `127.0.0.1 shell.local` в /etc/hosts + `docker compose up`)
 - [x] GET http://shell.local/health → 200
-- [x] В репо есть compose + дока по запуску ([DEV_DOMAIN.md](../dev/DEV_DOMAIN.md))
+- [x] В репо есть compose + дока по запуску (ARCHITECTURE § Dev Domain, infra/README)
 
 ### M2 (TESTS-RED) — done
 
@@ -431,7 +443,7 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md):
 - [x] Окна реально создаются/закрываются/фокусируются
 - [x] Taskbar отображает окна и переключает состояния по UX rules
 - [x] iframe появляется и исчезает при open/close
-- [x] PROTOCOL_v0 соблюдён (allowlist, event.source, targetOrigin, timeout)
+- [x] Protocol соблюдён (allowlist, event.source, targetOrigin, timeout)
 - [x] Без магической геометрии: размеры из tokens (THEMING_v0)
 
 ### M4 (Theme/Scale) — done
@@ -463,7 +475,7 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md):
 - `front/Shell.tsx` — analytics.drag_end, analytics.resize_end (on mouseUp)
 - `front/core/AppHost.tsx` — analytics.app_ready, handshake_timeout, message_rejected
 
-**Events (PROTOCOL_v0 mapping):**
+**Events (Protocol mapping):**
 
 | Event             | Source                           | Payload         |
 | ----------------- | -------------------------------- | --------------- |
@@ -504,7 +516,7 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md):
 
 **Security checklist (@Compliance):**
 
-| Check                        | SANDBOX_MATRIX / PROTOCOL_v0                                                                | Implementation                                                           | Result |
+| Check                        | Protocol, sandbox matrix                                                                     | Implementation                                                           | Result |
 | ---------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------ |
 | iframe sandbox               | `allow-scripts` only; no allow-same-origin, allow-popups, allow-top-navigation, allow-forms | AppHost.tsx: `sandbox="allow-scripts"`                                   | PASS   |
 | postMessage targetOrigin     | Never use `"*"`                                                                             | AppHost: `win.postMessage(data, origin)` — uses event.origin             | PASS   |
@@ -541,7 +553,7 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md):
 **Reasons:**
 
 - All acceptance criteria (A–F) covered by green tests
-- Security: sandbox, postMessage, allowlist, routing, rejections соответствуют SANDBOX_MATRIX и PROTOCOL_v0
+- Security: sandbox, postMessage, allowlist, routing соответствуют Protocol (FP1 § Protocol)
 - UX: taskbar toggle, desktop click, titlebar clamp, theme/scale switch соответствуют FP1 decisions
 - No functional changes required; scope met
 
@@ -585,12 +597,12 @@ See [docs/core/ARCH_DIAGRAMS.md](../core/ARCH_DIAGRAMS.md):
 
 | Doc            | Path                          |
 | -------------- | ----------------------------- |
-| PROTOCOL v0    | `docs/core/PROTOCOL_v0.md`    |
+| Protocol       | FP1 § Protocol (this doc)    |
 | THEMING v0     | `docs/core/THEMING_v0.md`     |
-| UI_ADAPTER v0  | `docs/core/UI_ADAPTER_v0.md`  |
-| SANDBOX_MATRIX | `docs/core/SANDBOX_MATRIX.md` |
+| UI Slots       | FP1 § Customization             |
+| Sandbox        | FP1 § Protocol, FP3 § Security |
 | ARCH_DIAGRAMS  | `docs/core/ARCH_DIAGRAMS.md`  |
-| DEV_DOMAIN     | `docs/dev/DEV_DOMAIN.md`      |
+| Dev domain     | ARCHITECTURE § Dev Domain    |
 
 ### Archive
 

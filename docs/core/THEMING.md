@@ -1,7 +1,6 @@
-# Theming v0 — tokens, scale, theme packs
+# Theming — Manifest
 
-**Purpose:** Build-ready token schema and scaling rules. No magic geometry.  
-**Scope:** FP1. Design system v0 from FP1.md.
+**Purpose:** How to implement and integrate themes. Token schema, scaling rules, theme packs. Keep in sync with `front/index.css` and themePacks.
 
 ---
 

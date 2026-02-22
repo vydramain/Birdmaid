@@ -4,7 +4,7 @@ Browser-based window manager + taskbar + AppHost for iframe applications. FP1 (S
 
 ## Repo layout
 
-See [STRUCTURE.md](STRUCTURE.md) for target tree. Key areas:
+See [docs/style/STRUCTURE.md](docs/style/STRUCTURE.md) for target tree. Key areas:
 
 - `front/` — Shell core, UI adapter, protocol
 - `back/` — Gateway (FS API, MinIO/S3)
@@ -87,13 +87,13 @@ Compose also runs `dev-server`. Open http://shell.local after stack is up.
 
 - **pnpm install EACCES:** See [docs/dev/GUARDRAILS.md](docs/dev/GUARDRAILS.md) — Troubleshooting pnpm EACCES. Use container for verification.
 - **Pre-commit:** Requires deps on host. If EACCES, run container check before commit.
-- **Domains:** [docs/dev/DEV_DOMAIN.md](docs/dev/DEV_DOMAIN.md) — hosts, ports, fallback curl.
+- **Domains:** [docs/dev/ARCHITECTURE.md](docs/dev/ARCHITECTURE.md) § Dev Domain, [infra/README.md](infra/README.md).
 
 ---
 
 ## References
 
 - [docs/README.md](docs/README.md) — Documentation index
-- [docs/dev/DEV_DOMAIN.md](docs/dev/DEV_DOMAIN.md) — Dev domain, entrypoints
+- [docs/dev/ARCHITECTURE.md](docs/dev/ARCHITECTURE.md) § Dev Domain — entrypoints
 - [infra/README.md](infra/README.md) — Stack, fixtures, logs
 - [AGENTS.md](AGENTS.md) — Workflow, agents
