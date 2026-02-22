@@ -65,8 +65,18 @@
   content: "\1F4BE";
 }
 
+/** FP3.2: Back button icon (left arrow). */
+.fs-icon-back::before {
+  content: "\2190";
+}
+
 .fs-icon-folder::before {
   content: "\1F4C1";
+}
+
+/** FP3.2 A4: App dir (contains index.html). */
+.fs-icon-app::before {
+  content: "\1F5A5";
 }
 
 .fs-icon-file::before {

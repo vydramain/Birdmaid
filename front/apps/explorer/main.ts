@@ -100,6 +100,13 @@ function isWritablePath(apiPath: string): boolean {
   return /\/@root\/DISK_C\/My Documents\//.test(apiPath);
 }
 
+/** FP3.2 A8: dirname(fromPath) — parent dir with trailing slash. */
+function dirname(apiPath: string): string {
+  const trimmed = apiPath.replace(/\/$/, "");
+  const idx = trimmed.lastIndexOf("/");
+  return idx >= 0 ? trimmed.slice(0, idx + 1) : "";
+}
+
 async function fetchWithToken(
   url: string,
   opts: RequestInit & { body?: unknown }
@@ -127,7 +134,7 @@ function getRootEl(): HTMLElement | null {
 }
 
 function renderToolbar(displayPath: string, backDisabled: boolean): void {
-  let toolbar = document.querySelector("[data-testid='explorer-toolbar']");
+  let toolbar = document.querySelector("[data-testid='explorer-toolbar']") as HTMLDivElement | null;
   if (!toolbar) {
     toolbar = document.createElement("div");
     toolbar.setAttribute("data-testid", "explorer-toolbar");
@@ -136,15 +143,26 @@ function renderToolbar(displayPath: string, backDisabled: boolean): void {
     toolbar.style.gap = "0.25rem";
     toolbar.style.padding = "0.25rem 0.5rem";
     toolbar.style.borderBottom = "1px solid #ccc";
+    toolbar.style.flexShrink = "0";
+    toolbar.style.position = "sticky";
+    toolbar.style.top = "0";
+    toolbar.style.background = "#fff";
+    toolbar.style.zIndex = "1";
     const container = getRootEl();
     if (container) container.insertBefore(toolbar, container.firstChild);
 
     const backBtn = document.createElement("button");
     backBtn.setAttribute("data-testid", "explorer-back");
-    backBtn.textContent = "Back";
+    backBtn.setAttribute("aria-label", "Back");
     backBtn.style.fontSize = "0.875rem";
     backBtn.style.padding = "0.25rem 0.5rem";
     backBtn.style.cursor = "pointer";
+    backBtn.style.border = "none";
+    backBtn.style.background = "transparent";
+    const backIcon = document.createElement("span");
+    backIcon.className = "fs-tile-icon fs-icon-back";
+    backIcon.setAttribute("aria-hidden", "true");
+    backBtn.appendChild(backIcon);
     backBtn.addEventListener("click", onBackClick);
     toolbar.appendChild(backBtn);
 
@@ -160,6 +178,7 @@ function renderToolbar(displayPath: string, backDisabled: boolean): void {
   const bar = toolbar.querySelector("[data-testid='address-bar']");
   if (backBtn) {
     backBtn.disabled = backDisabled;
+    backBtn.setAttribute("aria-disabled", backDisabled ? "true" : "false");
   }
   if (bar) {
     bar.textContent = displayPath;
@@ -239,7 +258,7 @@ function renderRoots(): void {
   const root = getRootEl();
   if (!root) return;
   root.innerHTML = "";
-  renderToolbar("", true);
+  /* FP3.2: No toolbar in roots view */
   const content = createContentWrapper();
   const grid = document.createElement("div");
   grid.setAttribute("data-testid", "explorer-roots");
@@ -248,16 +267,7 @@ function renderRoots(): void {
     "repeat(auto-fill, minmax(var(--fs-tile-width), var(--fs-tile-width)))";
   grid.style.gap = "1rem";
   grid.style.padding = "1rem";
-  const myComputerTile = createFsTile(
-    "fs-icon-my-computer",
-    "My Computer",
-    "root-my-computer",
-    () => {},
-    "my-computer-icon"
-  );
-  myComputerTile.style.cursor = "default";
-  myComputerTile.setAttribute("aria-disabled", "true");
-  grid.appendChild(myComputerTile);
+  /* FP3.2: Only disks A/C/D; no "My Computer" tile */
   for (const r of roots) {
     const item = createFsTile(
       "fs-icon-disk",
@@ -671,7 +681,7 @@ async function onUploadZipChange(): Promise<void> {
   const tempId = pendingUploadId++;
   const testId = `item-pending-upload-${tempId}`;
   const div = createFsTile(
-    "fs-icon-folder",
+    "fs-icon-app",
     dirName,
     testId,
     () => onItemDblClick(placeholder),
@@ -730,6 +740,8 @@ async function onDelete(item: FsItem): Promise<void> {
   if (!found) return;
   const { tile, labelEl } = found;
   const oldName = item.name;
+  tile.setAttribute("aria-disabled", "true");
+  tile.style.pointerEvents = "none";
   const spinner = document.createElement("div");
   spinner.setAttribute("data-testid", "delete-spinner");
   spinner.className = "fs-tile-spinner";
@@ -757,6 +769,8 @@ async function onDelete(item: FsItem): Promise<void> {
         }
       }
     } else {
+      tile.removeAttribute("aria-disabled");
+      tile.style.pointerEvents = "";
       const restored = document.createElement("span");
       restored.className = "fs-tile-label";
       restored.textContent = oldName;
@@ -765,6 +779,8 @@ async function onDelete(item: FsItem): Promise<void> {
       console.error("[Explorer] delete failed:", res.status, await res.text());
     }
   } catch (e) {
+    tile.removeAttribute("aria-disabled");
+    tile.style.pointerEvents = "";
     const restored = document.createElement("span");
     restored.className = "fs-tile-label";
     restored.textContent = oldName;
@@ -850,12 +866,14 @@ async function commitRename(
   tile: HTMLDivElement,
   oldName: string
 ): Promise<void> {
-  const parentPath = item.path.replace(/\/[^/]+$/, "").replace(/([^/])$/, "$1/");
   const fromPath =
     item.kind === "dir" ? (item.path.endsWith("/") ? item.path : item.path + "/") : item.path;
+  const parentPath = dirname(fromPath);
   const toPath = item.kind === "dir" ? parentPath + newName + "/" : parentPath + newName;
   const input = tile.querySelector("[data-testid='rename-input']") as HTMLInputElement | null;
   if (input) input.remove();
+  tile.setAttribute("aria-disabled", "true");
+  tile.style.pointerEvents = "none";
   const labelEl = document.createElement("span");
   labelEl.className = "fs-tile-label";
   const spinner = document.createElement("div");
@@ -871,6 +889,8 @@ async function commitRename(
       body: JSON.stringify({ fromPath, toPath }),
     });
     spinner.remove();
+    tile.removeAttribute("aria-disabled");
+    tile.style.pointerEvents = "";
     if (res.ok) {
       const idx = currentListItems.findIndex((i) => itemPathMatch(i, item));
       if (idx >= 0) {
@@ -888,6 +908,8 @@ async function commitRename(
     }
   } catch (e) {
     spinner.remove();
+    tile.removeAttribute("aria-disabled");
+    tile.style.pointerEvents = "";
     labelEl.textContent = oldName;
     tile.appendChild(labelEl);
     // eslint-disable-next-line no-console -- FP3.1 B1.3: log error only
@@ -927,7 +949,8 @@ async function loadAndRenderList(): Promise<void> {
     currentListItems = items;
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      const iconClass = item.kind === "dir" ? "fs-icon-folder" : "fs-icon-file";
+      const iconClass =
+        item.kind === "dir" ? (item.isApp ? "fs-icon-app" : "fs-icon-folder") : "fs-icon-file";
       const testId = `item-${pathToUniqueId(item.path)}`;
       const div = createFsTile(
         iconClass,
@@ -958,6 +981,7 @@ function setupExplorerRootLayout(): void {
   root.style.display = "flex";
   root.style.flexDirection = "column";
   root.style.minHeight = "100vh";
+  root.style.overflow = "hidden";
 }
 
 async function init(): Promise<void> {
