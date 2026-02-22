@@ -47,6 +47,62 @@
 
 ---
 
+## FP3.2 UX Delta
+
+**Source:** docs/fps/FP3_2.md. Точные решения по 10 UX/logic дефектам.
+
+### 1. My Computer Root View
+
+| Rule                  | Spec                                                                               |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| **Только диски**      | В корне "My Computer" отображаются только tiles A:, C:, D: (из GET /api/fs/roots). |
+| **Без Computer tile** | Tile "My Computer" (fs-icon-my-computer) НЕ отображается в roots view.             |
+
+### 2. Header Policy
+
+| State                         | Header (toolbar) | Содержимое                                     |
+| ----------------------------- | ---------------- | ---------------------------------------------- |
+| **Root view** (mode=roots)    | Скрыт            | Нет address bar, нет back. Только grid дисков. |
+| **Folder view** (mode=folder) | Показан          | Back + address bar; sticky.                    |
+
+### 3. Sticky Header + Scroll
+
+| Элемент              | Поведение                                                                                                                    |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Toolbar**          | `position: sticky; top: 0`; всегда виден при скролле.                                                                        |
+| **Scroll container** | Только у grid/list tiles; `overflow-y: auto` на content area, не на root.                                                    |
+| **Layout**           | Root: `display: flex; flex-direction: column`. Toolbar: `flex-shrink: 0`. Content: `flex: 1; min-height: 0; overflow: auto`. |
+
+### 4. Back Button
+
+| Аспект        | Spec                                             |
+| ------------- | ------------------------------------------------ |
+| **Визуал**    | Иконка-стрелка влево (←), не текст "Back".       |
+| **States**    | disabled когда historyStack пуст; enabled иначе. |
+| **Поведение** | Click → pop history, navigate to previous path.  |
+
+### 5. Multi-Instance Explorer: State Persist
+
+| Что хранится     | Где                                   | Условие                     |
+| ---------------- | ------------------------------------- | --------------------------- |
+| **currentPath**  | `state` (mode, apiPath) внутри iframe | ОБЯЗАТЕЛЬНО при focus/blur. |
+| **historyStack** | Внутри iframe                         | ОБЯЗАТЕЛЬНО.                |
+| **selection**    | `currentListItems`, selected index    | Опционально (P2).           |
+
+**Правило:** Не сбрасывать state при focus/blur окна. Каждый Explorer iframe — отдельный JS context; state не должен переинициализироваться при window focus. Проверить: нет ли `window.addEventListener("focus", init)` или подобного, вызывающего reset.
+
+---
+
+## CTA Overview (FP3.2 Additions)
+
+| CTA                | Endpoint              | State                 | Notes                                            |
+| ------------------ | --------------------- | --------------------- | ------------------------------------------------ | ---------------------------------------- |
+| (unchanged)        | delete_item           | DELETE /api/fs/delete | ui.item_deleted                                  | FP3.2: UI event wiring, send request     |
+| (unchanged)        | rename_item           | PUT /api/fs/rename    | ui.item_renamed                                  | FP3.2: toPath = parent(fromPath)+newName |
+| open_app_after_zip | POST /api/fs/open-url | —                     | FP3.2: первый open после zip → 200 (no 404 race) |
+
+---
+
 ## CTA Overview (FP1 Shell)
 
 ```mermaid

@@ -16,14 +16,15 @@
 
 ## Feature Packs
 
-| Document                               | Purpose                               |
-| -------------------------------------- | ------------------------------------- |
-| [fps/FP1.md](fps/FP1.md)               | FP1 Shell MVP, Evidence               |
-| [fps/FP2.md](fps/FP2.md)               | FP2 Gateway + FS contract, Evidence   |
-| [fps/FP3.md](fps/FP3.md)               | FP3 Explorer + Shell (patchset M5–M9) |
-| [fps/README.md](fps/README.md)         | FP catalog, how to create FPs         |
-| [fps/TEMPLATE.md](fps/TEMPLATE.md)     | Blank FP structure                    |
-| [fps/FP_EXAMPLE.md](fps/FP_EXAMPLE.md) | Example FP reference                  |
+| Document                               | Purpose                                  |
+| -------------------------------------- | ---------------------------------------- |
+| [fps/FP1.md](fps/FP1.md)               | FP1 Shell MVP, Evidence                  |
+| [fps/FP2.md](fps/FP2.md)               | FP2 Gateway + FS contract, Evidence      |
+| [fps/FP3.md](fps/FP3.md)               | FP3 Explorer + Shell (patchset M5–M9)    |
+| [fps/FP3_2.md](fps/FP3_2.md)           | FP3.2 Explorer UX & Shell Maximize Fixes |
+| [fps/README.md](fps/README.md)         | FP catalog, how to create FPs            |
+| [fps/TEMPLATE.md](fps/TEMPLATE.md)     | Blank FP structure                       |
+| [fps/FP_EXAMPLE.md](fps/FP_EXAMPLE.md) | Example FP reference                     |
 
 ---
 
@@ -87,6 +88,10 @@
 | core/UX_MAP.md            | CTA → Endpoint → State                                |
 | dev/DESIGN_LOG.md         | FP3 decisions, build contracts                        |
 | tests/FP3_TESTS.md        | AC→tests mapping                                      |
+| fps/FP3_2.md              | FP3.2 Explorer UX & Shell Maximize Fixes              |
+| tests/FP3_2_TESTS.md      | FP3.2 AC→tests mapping                                |
+| core/FS_BEHAVIOR_FP3_2.md | FP3.2 Rename/Delete/Zip open rules                    |
+| dev/FP3_2_SECURITY_DOD.md | FP3.2 Security delta (no user app access expansion)   |
 | dev/FP3_SECURITY_DOD.md   | Sandbox, token, CORS                                  |
 | audit/FP3_AUDIT_REPORT.md | FP3 evidence (M6 + M10)                               |
 

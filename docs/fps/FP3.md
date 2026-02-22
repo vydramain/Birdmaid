@@ -785,6 +785,8 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 
 **Docs consolidation:** FP3 patchset (M5–M9) merged into FP3; no separate patchset entity. Audit: docs/audit/FP3_AUDIT_REPORT.md (M6 + M10).
 
+**Superseded by FP3.2:** Explorer UX & Shell Maximize Fixes — см. [FP3_2.md](FP3_2.md) (roots tile, sticky toolbar, back icon, app icon, 404 race, multi-explorer path, delete, rename path, roots toolbar, maximize).
+
 ---
 
 ## References
