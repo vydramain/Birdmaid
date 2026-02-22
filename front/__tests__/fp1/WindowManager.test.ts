@@ -43,7 +43,7 @@ describe("WindowManager", () => {
 
     it("maximize changes state to maximized", () => {
       wm.createWindow({ id: "win-1" });
-      wm.maximize("win-1");
+      wm.maximize("win-1", { width: 800, height: 600 });
       const windows = wm.getWindows();
       expect(windows.find((w) => w.id === "win-1")?.state).toBe("maximized");
     });
@@ -58,7 +58,7 @@ describe("WindowManager", () => {
 
     it("unmaximize from maximized changes state to normal", () => {
       wm.createWindow({ id: "win-1" });
-      wm.maximize("win-1");
+      wm.maximize("win-1", { width: 800, height: 600 });
       wm.unmaximize("win-1");
       const windows = wm.getWindows();
       expect(windows.find((w) => w.id === "win-1")?.state).toBe("normal");
@@ -122,6 +122,45 @@ describe("WindowManager", () => {
       const win = wm.getWindows().find((w) => w.id === "win-1");
       expect(win?.bounds).toEqual(
         expect.objectContaining({ x: 100, y: 50, width: 400, height: 300 })
+      );
+    });
+
+    it("updateBounds is ignored when maximized", () => {
+      wm.createWindow({ id: "win-1" });
+      wm.updateBounds("win-1", { x: 100, y: 50, width: 400, height: 300 });
+      wm.maximize("win-1", { x: 0, y: 0, width: 800, height: 600 });
+      wm.updateBounds("win-1", { x: 200, y: 100, width: 300, height: 200 });
+      const win = wm.getWindows().find((w) => w.id === "win-1");
+      expect(win?.bounds).toEqual({ x: 0, y: 0, width: 800, height: 600 });
+    });
+  });
+
+  describe("maximize / unmaximize (FP3.2 A10)", () => {
+    const viewport = { x: 0, y: 0, width: 1024, height: 768 };
+
+    it("maximize stores prevRect and sets bounds to viewport", () => {
+      wm.createWindow({ id: "win-1" });
+      wm.updateBounds("win-1", { x: 150, y: 80, width: 400, height: 300 });
+      wm.maximize("win-1", viewport);
+      const win = wm.getWindows().find((w) => w.id === "win-1");
+      expect(win?.state).toBe("maximized");
+      expect(win?.bounds).toEqual({
+        x: 0,
+        y: 0,
+        width: 1024,
+        height: 768,
+      });
+    });
+
+    it("unmaximize restores prevRect", () => {
+      wm.createWindow({ id: "win-1" });
+      wm.updateBounds("win-1", { x: 150, y: 80, width: 400, height: 300 });
+      wm.maximize("win-1", viewport);
+      wm.unmaximize("win-1");
+      const win = wm.getWindows().find((w) => w.id === "win-1");
+      expect(win?.state).toBe("normal");
+      expect(win?.bounds).toEqual(
+        expect.objectContaining({ x: 150, y: 80, width: 400, height: 300 })
       );
     });
   });

@@ -124,6 +124,42 @@ test.describe("FP1 Shell — F: AppHost handshake", () => {
   });
 });
 
+test.describe("FP3.2 A10: Maximize", () => {
+  test("T-A10 — maximize → viewport; unmaximize → restore", async ({ page }) => {
+    await page.setViewportSize({ width: 800, height: 600 });
+    await page.goto("/");
+    const openBtn = page.getByRole("button", { name: /new window/i });
+    await openBtn.click();
+
+    const chrome = page.locator("[data-testid='window-chrome']").first();
+    await expect(chrome).toBeVisible({ timeout: 5000 });
+
+    const boxBefore = await chrome.boundingBox();
+    expect(boxBefore).toBeTruthy();
+
+    const maximizeBtn = page.getByRole("button", { name: /maximize/i }).first();
+    await maximizeBtn.click();
+
+    await expect(chrome).toHaveAttribute("data-maximized", "true");
+    const boxMax = await chrome.boundingBox();
+    expect(boxMax).toBeTruthy();
+    expect(boxMax!.width).toBeGreaterThanOrEqual(780);
+    expect(boxMax!.height).toBeGreaterThanOrEqual(560);
+    expect(boxMax!.x).toBeLessThanOrEqual(5);
+    expect(boxMax!.y).toBeLessThanOrEqual(5);
+
+    await maximizeBtn.click();
+
+    await expect(chrome).not.toHaveAttribute("data-maximized", "true");
+    const boxAfter = await chrome.boundingBox();
+    expect(boxAfter).toBeTruthy();
+    expect(Math.abs(boxAfter!.x - boxBefore!.x)).toBeLessThan(20);
+    expect(Math.abs(boxAfter!.y - boxBefore!.y)).toBeLessThan(20);
+    expect(Math.abs(boxAfter!.width - boxBefore!.width)).toBeLessThan(20);
+    expect(Math.abs(boxAfter!.height - boxBefore!.height)).toBeLessThan(20);
+  });
+});
+
 test.describe("FP1 Shell — Theme/Scale (THEMING_v0 asserts)", () => {
   test("Theme switch — DefaultMock ↔ Win98Mock changes token", async ({ page }) => {
     await page.goto("/");

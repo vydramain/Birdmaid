@@ -403,7 +403,12 @@ test.describe("FP3 Explorer — FP3.1 M5: New Folder (placeholder + rename)", ()
 });
 
 const MY_DOCS_ITEMS = [
-  { path: "/@root/DISK_C/My Documents/sample-app/", name: "sample-app", kind: "dir" as const },
+  {
+    path: "/@root/DISK_C/My Documents/sample-app/",
+    name: "sample-app",
+    kind: "dir" as const,
+    isApp: true,
+  },
   {
     path: "/@root/DISK_C/My Documents/sample-image.png",
     name: "sample-image.png",
@@ -599,6 +604,69 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
     ).toBeVisible({ timeout: 15000 });
     await expect(frame!.locator("[data-upload-zip-placeholder]")).toHaveCount(0, { timeout: 3000 });
   });
+
+  test("T-A5-E2E — Upload zip: app icon, double click opens app (no 404)", async ({ page }) => {
+    mockFsForM6(page);
+    await page.route(/upload-zip-app/, async (route) => {
+      await new Promise((r) => setTimeout(r, 400));
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({
+          path: "/@root/DISK_C/My Documents/e2e-zip-app/",
+          name: "e2e-zip-app",
+        }),
+      });
+    });
+    const appDataUrl =
+      "data:text/html,<html><body><h1 data-testid='e2e-app-loaded'>App Loaded</h1></body></html>";
+    await page.route(/\/api\/fs\/open-url/, async (route) => {
+      const body = route.request().postDataJSON();
+      if (body?.path?.includes("e2e-zip-app")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ url: appDataUrl, expiresIn: 3600 }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+    await page.goto("/");
+    const myComputer = page.getByRole("button", { name: /my computer/i });
+    await myComputer.dblclick();
+
+    const iframe = page.locator("iframe[src*='/apps/explorer']");
+    await expect(iframe).toBeVisible({ timeout: 5000 });
+    const frame = await iframe.contentFrame();
+    expect(frame).toBeTruthy();
+
+    await frame!.getByTestId("root-disk_c").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
+    await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
+
+    await openBlankContextMenu(frame!);
+    await frame!.getByTestId("context-menu").press("Escape");
+
+    const zipPath = path.join(process.cwd(), "e2e", "fixtures", "e2e-zip-app.zip");
+    const zipBuf = fs.readFileSync(zipPath);
+    await frame!
+      .getByTestId("upload-zip-input")
+      .setInputFiles([{ name: "e2e-zip-app.zip", mimeType: "application/zip", buffer: zipBuf }]);
+
+    const appTile = frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/e2e-zip-app/"));
+    await expect(appTile).toBeVisible({ timeout: 15000 });
+    await expect(appTile.locator(".fs-icon-app")).toBeVisible({ timeout: 2000 });
+    await expect(frame!.locator("[data-upload-zip-placeholder]")).toHaveCount(0, { timeout: 3000 });
+
+    await appTile.dblclick();
+
+    const appIframe = page.locator("iframe[src^='data:']").first();
+    await expect(appIframe).toBeVisible({ timeout: 5000 });
+    const appFrame = await appIframe.contentFrame();
+    expect(appFrame).toBeTruthy();
+    await expect(appFrame!.getByTestId("e2e-app-loaded")).toBeVisible({ timeout: 3000 });
+  });
 });
 
 test.describe("FP3 Explorer — FP3.1 D1: State persistence", () => {
@@ -667,7 +735,7 @@ test.describe("FP3 Explorer — FP3.1 M6: Delete flow", () => {
 });
 
 test.describe("FP3 Explorer — FP3.1 A1: Back button", () => {
-  test("T-A1.1 — Back button visible left of address bar", async ({ page }) => {
+  test("T-A1.1 — Inside disk: Back button visible left of address bar", async ({ page }) => {
     await page.goto("/");
     const myComputer = page.getByRole("button", { name: /my computer/i });
     await myComputer.dblclick();
@@ -677,11 +745,13 @@ test.describe("FP3 Explorer — FP3.1 A1: Back button", () => {
     const frame = await iframe.contentFrame();
     expect(frame).toBeTruthy();
 
+    await frame!.getByTestId("root-disk_c").dblclick();
+    await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 5000 });
+
     const backBtn = frame!.getByTestId("explorer-back");
     await expect(backBtn).toBeVisible();
     const addressBar = frame!.getByTestId("address-bar");
     await expect(addressBar).toBeVisible();
-    // Back must be before address bar (left of it)
     const backBox = await backBtn.boundingBox();
     const barBox = await addressBar.boundingBox();
     expect(backBox).toBeTruthy();
@@ -689,7 +759,7 @@ test.describe("FP3 Explorer — FP3.1 A1: Back button", () => {
     expect(backBox!.x).toBeLessThan(barBox!.x);
   });
 
-  test("T-A1.2 — Back disabled when history empty (at roots)", async ({ page }) => {
+  test("T-A1.2 — Roots view: no toolbar (FP3.2: header hidden in roots)", async ({ page }) => {
     await page.goto("/");
     const myComputer = page.getByRole("button", { name: /my computer/i });
     await myComputer.dblclick();
@@ -700,9 +770,7 @@ test.describe("FP3 Explorer — FP3.1 A1: Back button", () => {
     expect(frame).toBeTruthy();
 
     await expect(frame!.getByTestId("explorer-roots")).toBeVisible({ timeout: 10000 });
-    const backBtn = frame!.getByTestId("explorer-back");
-    await expect(backBtn).toBeVisible();
-    await expect(backBtn).toBeDisabled();
+    await expect(frame!.getByTestId("explorer-toolbar")).toHaveCount(0);
   });
 
   test("T-A1.3 — Navigate C:/ then Back returns to roots", async ({ page }) => {
@@ -726,7 +794,8 @@ test.describe("FP3 Explorer — FP3.1 A1: Back button", () => {
 
     await expect(frame!.getByTestId("explorer-roots")).toBeVisible({ timeout: 5000 });
     await expect(frame!.getByTestId("root-disk_a")).toBeVisible();
-    await expect(frame!.getByTestId("address-bar")).toHaveText("");
+    // FP3.2: In roots, no toolbar/address-bar
+    await expect(frame!.getByTestId("explorer-toolbar")).toHaveCount(0);
   });
 });
 
@@ -911,12 +980,10 @@ test.describe("FP3 Explorer — FP3.1 A2: Tile layout", () => {
 });
 
 test.describe("FP3 Explorer — FP3.1 A4: Shared icons", () => {
-  test("T-A4.1 — My Computer icon same on Desktop and in Explorer (same class/data-testid)", async ({
+  test("T-A4.1 — Desktop has My Computer icon; Explorer roots has only disks (FP3.2: no Computer tile)", async ({
     page,
   }) => {
     await page.goto("/");
-    const desktopIcon = page.getByTestId("desktop-icon-my-computer");
-    await expect(desktopIcon).toBeVisible();
     const desktopMyComputerIcon = page.getByTestId("my-computer-icon");
     await expect(desktopMyComputerIcon).toBeVisible();
 
@@ -929,13 +996,307 @@ test.describe("FP3 Explorer — FP3.1 A4: Shared icons", () => {
     expect(frame).toBeTruthy();
     await expect(frame!.getByTestId("explorer-roots")).toBeVisible({ timeout: 10000 });
 
-    const explorerMyComputerIcon = frame!.getByTestId("my-computer-icon");
-    await expect(explorerMyComputerIcon).toBeVisible();
+    // FP3.2: Roots view shows only disks A/C/D; no "My Computer" tile
+    await expect(frame!.getByTestId("root-disk_a")).toBeVisible();
+    await expect(frame!.getByTestId("root-disk_c")).toBeVisible();
+    await expect(frame!.getByTestId("root-disk_d")).toBeVisible();
+    await expect(frame!.getByTestId("root-my-computer")).toHaveCount(0);
+  });
+});
 
-    const desktopClass = await desktopMyComputerIcon.getAttribute("class");
-    const explorerClass = await explorerMyComputerIcon.getAttribute("class");
-    expect(desktopClass).toContain("fs-icon-my-computer");
-    expect(explorerClass).toContain("fs-icon-my-computer");
+test.describe("FP3.2 M3: Explorer state persist (multi-instance)", () => {
+  test("T-A6 — Two Explorer windows: path persists on focus switch", async ({ page }) => {
+    await page.route("**/api/fs/roots", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          roots: [
+            { id: "DISK_A", label: "Floppy (A:)" },
+            { id: "DISK_C", label: "(C:)" },
+            { id: "DISK_D", label: "(D:)" },
+          ],
+        }),
+      });
+    });
+    const PROGRAM_FILES_ITEMS = [
+      { path: "/@root/DISK_C/Program Files/Explorer/", name: "Explorer", kind: "dir" as const },
+    ];
+    await page.route("**/api/fs/list*", async (route) => {
+      const url = route.request().url();
+      if (url.includes("My%20Documents") || url.includes("My Documents")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            items: [
+              {
+                path: "/@root/DISK_C/My Documents/sample-app/",
+                name: "sample-app",
+                kind: "dir" as const,
+              },
+            ],
+          }),
+        });
+      } else if (url.includes("Program%20Files") || url.includes("Program Files")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ items: PROGRAM_FILES_ITEMS }),
+        });
+      } else if (url.includes("DISK_C") && !url.includes("My") && !url.includes("Program")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            items: [
+              { path: "/@root/DISK_C/My Documents/", name: "My Documents", kind: "dir" as const },
+              { path: "/@root/DISK_C/Program Files/", name: "Program Files", kind: "dir" as const },
+            ],
+          }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.goto("/");
+    const desktopMyComputer = page.getByTestId("desktop-icon-my-computer");
+
+    // Explorer 1: open
+    await desktopMyComputer.dblclick();
+    const iframes = page.locator("iframe[src*='/apps/explorer']");
+    await expect(iframes.first()).toBeVisible({ timeout: 5000 });
+
+    // Explorer 2: open
+    await desktopMyComputer.dblclick();
+    await expect(iframes).toHaveCount(2, { timeout: 3000 });
+
+    // Get window IDs from taskbar (creation order: first=win-1, second=win-2)
+    const win1Id = await page
+      .locator("[data-testid='taskbar'] [data-window-id]")
+      .nth(0)
+      .getAttribute("data-window-id");
+    const win2Id = await page
+      .locator("[data-testid='taskbar'] [data-window-id]")
+      .nth(1)
+      .getAttribute("data-window-id");
+    expect(win1Id).toBeTruthy();
+    expect(win2Id).toBeTruthy();
+
+    // Navigate Explorer 1 (win-1) to My Documents
+    const iframe1 = page.locator(`iframe[title="${win1Id}"]`);
+    const frame1 = await iframe1.contentFrame();
+    expect(frame1).toBeTruthy();
+    await frame1!.getByTestId("root-disk_c").dblclick();
+    await frame1!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
+    await expect(frame1!.getByTestId("explorer-list")).toBeVisible({ timeout: 5000 });
+    await expect(frame1!.getByTestId("address-bar")).toContainText(
+      /My Documents|C:\/My Documents/i
+    );
+
+    // Navigate Explorer 2 (win-2) to Program Files
+    const iframe2 = page.locator(`iframe[title="${win2Id}"]`);
+    const frame2 = await iframe2.contentFrame();
+    expect(frame2).toBeTruthy();
+    await frame2!.getByTestId("root-disk_c").dblclick();
+    await frame2!.getByTestId(pathToTestId("/@root/DISK_C/Program Files/")).dblclick();
+    await expect(frame2!.getByTestId("explorer-list")).toBeVisible({ timeout: 5000 });
+    await expect(frame2!.getByTestId("address-bar")).toContainText(
+      /Program Files|C:\/Program Files/i
+    );
+
+    // Before focus switch: both paths must be correct
+    const frame1Before = await iframe1.contentFrame();
+    const frame2Before = await iframe2.contentFrame();
+    expect(frame1Before).toBeTruthy();
+    expect(frame2Before).toBeTruthy();
+    await expect(frame1Before!.getByTestId("address-bar")).toContainText(
+      /My Documents|C:\/My Documents/i
+    );
+    await expect(frame2Before!.getByTestId("address-bar")).toContainText(
+      /Program Files|C:\/Program Files/i
+    );
+
+    // Switch focus: click first taskbar button (Explorer 1)
+    await page.getByTestId(`taskbar-item-${win1Id}`).click();
+    await page.waitForTimeout(300);
+
+    // After focus switch: both paths must persist
+    const frame1After = await iframe1.contentFrame();
+    const frame2After = await iframe2.contentFrame();
+    expect(frame1After).toBeTruthy();
+    expect(frame2After).toBeTruthy();
+    await expect(frame1After!.getByTestId("address-bar")).toContainText(
+      /My Documents|C:\/My Documents/i
+    );
+    await expect(frame2After!.getByTestId("address-bar")).toContainText(
+      /Program Files|C:\/Program Files/i
+    );
+
+    // Switch focus again: click second taskbar button (Explorer 2)
+    await page.getByTestId(`taskbar-item-${win2Id}`).click();
+    await page.waitForTimeout(300);
+
+    // Both paths still persist
+    const frame1Final = await iframe1.contentFrame();
+    const frame2Final = await iframe2.contentFrame();
+    expect(frame1Final).toBeTruthy();
+    expect(frame2Final).toBeTruthy();
+    await expect(frame1Final!.getByTestId("address-bar")).toContainText(
+      /My Documents|C:\/My Documents/i
+    );
+    await expect(frame2Final!.getByTestId("address-bar")).toContainText(
+      /Program Files|C:\/Program Files/i
+    );
+  });
+});
+
+test.describe("FP3.2 M2: Explorer UI — roots, header, back icon, scroll", () => {
+  test("T-A1 — Root view: no My Computer tile, only DISK_A/C/D", async ({ page }) => {
+    await page.goto("/");
+    const myComputer = page.getByRole("button", { name: /my computer/i });
+    await myComputer.dblclick();
+
+    const iframe = page.locator("iframe[src*='/apps/explorer']");
+    await expect(iframe).toBeVisible({ timeout: 5000 });
+    const frame = await iframe.contentFrame();
+    expect(frame).toBeTruthy();
+
+    await expect(frame!.getByTestId("explorer-roots")).toBeVisible({ timeout: 10000 });
+    await expect(frame!.getByTestId("root-disk_a")).toBeVisible();
+    await expect(frame!.getByTestId("root-disk_c")).toBeVisible();
+    await expect(frame!.getByTestId("root-disk_d")).toBeVisible();
+    await expect(frame!.getByTestId("root-my-computer")).toHaveCount(0);
+  });
+
+  test("T-A9 — Root view: header (toolbar) absent", async ({ page }) => {
+    await page.goto("/");
+    const myComputer = page.getByRole("button", { name: /my computer/i });
+    await myComputer.dblclick();
+
+    const iframe = page.locator("iframe[src*='/apps/explorer']");
+    await expect(iframe).toBeVisible({ timeout: 5000 });
+    const frame = await iframe.contentFrame();
+    expect(frame).toBeTruthy();
+
+    await expect(frame!.getByTestId("explorer-roots")).toBeVisible({ timeout: 10000 });
+    await expect(frame!.getByTestId("explorer-toolbar")).toHaveCount(0);
+  });
+
+  test("T-A9b — Inside disk: header present, back icon visible", async ({ page }) => {
+    await page.goto("/");
+    const myComputer = page.getByRole("button", { name: /my computer/i });
+    await myComputer.dblclick();
+
+    const iframe = page.locator("iframe[src*='/apps/explorer']");
+    await expect(iframe).toBeVisible({ timeout: 5000 });
+    const frame = await iframe.contentFrame();
+    expect(frame).toBeTruthy();
+
+    await frame!.getByTestId("root-disk_c").dblclick();
+    await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 5000 });
+
+    await expect(frame!.getByTestId("explorer-toolbar")).toBeVisible();
+    await expect(frame!.getByTestId("explorer-back")).toBeVisible();
+    await expect(frame!.getByTestId("address-bar")).toBeVisible();
+    // FP3.2: Back = icon (arrow), not text "Back"
+    const backBtn = frame!.getByTestId("explorer-back");
+    await expect(backBtn).toHaveAttribute("aria-label", /back|назад/i);
+    const text = await backBtn.textContent();
+    expect(text).not.toMatch(/^Back$/i);
+  });
+
+  test("T-A4 — Dir with index.html shows app icon (fs-icon-app)", async ({ page }) => {
+    mockFsForM6(page);
+    await page.goto("/");
+    const myComputer = page.getByRole("button", { name: /my computer/i });
+    await myComputer.dblclick();
+
+    const iframe = page.locator("iframe[src*='/apps/explorer']");
+    await expect(iframe).toBeVisible({ timeout: 5000 });
+    const frame = await iframe.contentFrame();
+    expect(frame).toBeTruthy();
+
+    await frame!.getByTestId("root-disk_c").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
+    await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 3000 });
+
+    const sampleAppTile = frame!.getByTestId(
+      pathToTestId("/@root/DISK_C/My Documents/sample-app/")
+    );
+    await expect(sampleAppTile).toBeVisible();
+    await expect(sampleAppTile.locator(".fs-icon-app")).toBeVisible();
+    await expect(sampleAppTile.locator(".fs-icon-folder")).toHaveCount(0);
+  });
+
+  test("T-A2 — Scroll: header stays in place, only tiles container scrolls", async ({ page }) => {
+    const manyItems = Array.from({ length: 25 }, (_, i) => ({
+      path: `/@root/DISK_C/My Documents/item-${i}/`,
+      name: `item-${i}`,
+      kind: "dir" as const,
+    }));
+    await page.route("**/api/fs/roots", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          roots: [
+            { id: "DISK_A", label: "Floppy (A:)" },
+            { id: "DISK_C", label: "(C:)" },
+            { id: "DISK_D", label: "(D:)" },
+          ],
+        }),
+      });
+    });
+    await page.route("**/api/fs/list*", async (route) => {
+      const url = route.request().url();
+      if (url.includes("My%20Documents") || url.includes("My Documents")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ items: manyItems }),
+        });
+      } else if (url.includes("DISK_C") && !url.includes("My")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            items: [{ path: "/@root/DISK_C/My Documents/", name: "My Documents", kind: "dir" }],
+          }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.goto("/");
+    const myComputer = page.getByRole("button", { name: /my computer/i });
+    await myComputer.dblclick();
+
+    const iframe = page.locator("iframe[src*='/apps/explorer']");
+    await expect(iframe).toBeVisible({ timeout: 5000 });
+    const frame = await iframe.contentFrame();
+    expect(frame).toBeTruthy();
+
+    await frame!.getByTestId("root-disk_c").dblclick();
+    await frame!.getByTestId(pathToTestId("/@root/DISK_C/My Documents/")).dblclick();
+    await expect(frame!.getByTestId("explorer-list")).toBeVisible({ timeout: 5000 });
+
+    const toolbar = frame!.getByTestId("explorer-toolbar");
+    const content = frame!.getByTestId("explorer-content");
+    await expect(toolbar).toBeVisible();
+    await expect(content).toBeVisible();
+
+    // Scroll content area down
+    await content.evaluate((el) => el.scrollTo(0, 200));
+    await page.waitForTimeout(100);
+
+    // Header must still be visible (sticky)
+    await expect(toolbar).toBeVisible();
+    const toolbarBox = await toolbar.boundingBox();
+    expect(toolbarBox).toBeTruthy();
+    expect(toolbarBox!.y).toBeLessThan(150);
   });
 });
 
