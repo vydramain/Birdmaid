@@ -102,6 +102,28 @@ describe("FP3 M5: Write operations (api-fs-write)", () => {
     expect(found).toBeUndefined();
   });
 
+  it("T-A7: delete dir -> endpoint called, 204, item gone", async () => {
+    const folderName = testPrefix + "del-dir-" + Date.now();
+    const path = basePath + folderName + "/";
+    await fetchApi("/api/fs/create-folder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...WRITE_HEADERS },
+      body: JSON.stringify({ path }),
+    });
+
+    const delRes = await fetchApi("/api/fs/delete", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", ...WRITE_HEADERS },
+      body: JSON.stringify({ path }),
+    });
+    expect(delRes.status).toBe(204);
+
+    const listRes = await fetchApi("/api/fs/list?path=" + encodeURIComponent(basePath));
+    const listBody = await listRes.json();
+    const found = listBody.items?.find((i: { name: string }) => i.name === folderName);
+    expect(found).toBeUndefined();
+  });
+
   it("T-M5.7: rename same-parent -> 200", async () => {
     const fromName = testPrefix + "rn-from-" + Date.now() + ".png";
     const toName = testPrefix + "rn-to-" + Date.now() + ".png";
@@ -124,6 +146,31 @@ describe("FP3 M5: Write operations (api-fs-write)", () => {
     const listBody = await listRes.json();
     expect(listBody.items?.find((i: { name: string }) => i.name === fromName)).toBeUndefined();
     expect(listBody.items?.find((i: { name: string }) => i.name === toName)).toBeDefined();
+  });
+
+  it("T-A8: rename dir — toPath = parent + newName (not nested)", async () => {
+    const folderName = "Новая Папка 3";
+    const newName = "Новая Папка 343";
+    const fromPath = basePath + folderName + "/";
+    const toPath = basePath + newName + "/";
+
+    await fetchApi("/api/fs/create-folder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...WRITE_HEADERS },
+      body: JSON.stringify({ path: fromPath }),
+    });
+
+    const res = await fetchApi("/api/fs/rename", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...WRITE_HEADERS },
+      body: JSON.stringify({ fromPath, toPath }),
+    });
+    expect(res.status).toBe(200);
+
+    const listRes = await fetchApi("/api/fs/list?path=" + encodeURIComponent(basePath));
+    const listBody = await listRes.json();
+    expect(listBody.items?.find((i: { name: string }) => i.name === folderName)).toBeUndefined();
+    expect(listBody.items?.find((i: { name: string }) => i.name === newName)).toBeDefined();
   });
 
   it("T-M5.7: rename cross-parent -> 403", async () => {
@@ -171,5 +218,17 @@ describe("FP3 M5: Write operations (api-fs-write)", () => {
     expect(found).toBeDefined();
     expect(found.kind).toBe("dir");
     expect(found.isApp).toBe(true);
+
+    // FP3.2 A5: Open immediately after upload — no 404 race
+    const indexPath = path + "index.html";
+    const openRes = await fetchApi("/api/fs/open-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: indexPath }),
+    });
+    expect(openRes.status).toBe(200);
+    const openBody = await openRes.json();
+    expect(openBody).toHaveProperty("url");
+    expect(typeof openBody.url).toBe("string");
   });
 });

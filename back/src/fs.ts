@@ -233,14 +233,24 @@ export async function getOpenUrl(
 
   const effectiveTtl = clampTtl(ttlSec, envTtlSec);
 
-  try {
-    await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
-  } catch (e: unknown) {
-    const meta = (e as { $metadata?: { httpStatusCode?: number } }).$metadata;
-    if (meta?.httpStatusCode === 404 || (e as { name?: string }).name === "NotFound") {
-      return { ok: false, code: "NOT_FOUND", message: "Object not found" };
+  const maxAttempts = 3;
+  const retryDelayMs = 200;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+      break;
+    } catch (e: unknown) {
+      const meta = (e as { $metadata?: { httpStatusCode?: number } }).$metadata;
+      const isNotFound =
+        meta?.httpStatusCode === 404 || (e as { name?: string }).name === "NotFound";
+      if (!isNotFound) {
+        return { ok: false, code: "INTERNAL_ERROR", message: (e as Error).message };
+      }
+      if (attempt === maxAttempts - 1) {
+        return { ok: false, code: "NOT_FOUND", message: "Object not found" };
+      }
+      await new Promise((r) => setTimeout(r, retryDelayMs));
     }
-    return { ok: false, code: "INTERNAL_ERROR", message: (e as Error).message };
   }
 
   const command = new GetObjectCommand({ Bucket: bucket, Key: key });
@@ -299,7 +309,7 @@ export async function deleteItem(
   const v = validatePath(rawPath, KNOWN_ROOT_IDS, false);
   if (!v.ok) return { ok: false, code: v.code, message: v.message };
 
-  const key = toS3Key(v.rootId, v.suffix);
+  const key = rawPath.endsWith("/") ? toS3Prefix(v.rootId, v.suffix) : toS3Key(v.rootId, v.suffix);
   try {
     await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
     return { ok: true };
@@ -328,19 +338,25 @@ export async function renameItem(
   const vTo = validatePath(toPath, KNOWN_ROOT_IDS, false);
   if (!vTo.ok) return { ok: false, code: vTo.code, message: vTo.message };
 
-  const fromKey = toS3Key(vFrom.rootId, vFrom.suffix);
-  const toKey = toS3Key(vTo.rootId, vTo.suffix);
+  const fromKey = fromPath.endsWith("/")
+    ? toS3Prefix(vFrom.rootId, vFrom.suffix)
+    : toS3Key(vFrom.rootId, vFrom.suffix);
+  const toKey = toPath.endsWith("/")
+    ? toS3Prefix(vTo.rootId, vTo.suffix)
+    : toS3Key(vTo.rootId, vTo.suffix);
 
   try {
     await s3.send(
       new CopyObjectCommand({
         Bucket: bucket,
-        CopySource: `${bucket}/${fromKey}`,
+        CopySource: encodeURIComponent(`${bucket}/${fromKey}`),
         Key: toKey,
       })
     );
     await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: fromKey }));
-    const name = toKey.slice(toKey.lastIndexOf("/") + 1) || toKey;
+    const name = toKey.endsWith("/")
+      ? (toKey.slice(0, -1).split("/").pop() ?? "")
+      : toKey.slice(toKey.lastIndexOf("/") + 1) || toKey;
     return { ok: true, path: vTo.path, name };
   } catch (e: unknown) {
     const meta = (e as { $metadata?: { httpStatusCode?: number } }).$metadata;
