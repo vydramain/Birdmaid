@@ -17,6 +17,7 @@ type Mode = "audio" | "video";
 let playlist: PlaylistItem[] = [];
 let currentIndex = 0;
 let mode: Mode = "audio";
+let keydownHandlerRef: ((e: KeyboardEvent) => void) | null = null;
 let state: MediaPlayerState;
 let mediaEl: HTMLAudioElement | HTMLVideoElement | null = null;
 
@@ -56,114 +57,124 @@ function syncMediaToState(): void {
 const DEV_DEBUG = typeof import.meta !== "undefined" && import.meta.env?.DEV === true;
 const LOAD_TIMEOUT_MS = 10000;
 
+let currentMediaObjectUrl: string | null = null;
+
+function revokeCurrentMediaObjectUrl(): void {
+  if (currentMediaObjectUrl) {
+    URL.revokeObjectURL(currentMediaObjectUrl);
+    currentMediaObjectUrl = null;
+  }
+}
+
+function setMediaSrcAndPlay(
+  el: HTMLAudioElement | HTMLVideoElement,
+  objectUrl: string,
+  pressPlay: HTMLElement | null,
+  loadError: HTMLElement | null,
+  url: string
+): void {
+  let loadResolved = false;
+  const resolveLoad = (): void => {
+    if (loadResolved) return;
+    loadResolved = true;
+    if (loadError) loadError.style.display = "none";
+  };
+  const timeoutId = setTimeout(() => {
+    if (loadResolved) return;
+    if (DEV_DEBUG) console.debug("[MediaPlayer] load timeout");
+    if (typeof console !== "undefined" && console.error) {
+      console.error("[MediaPlayer] Load timeout (CORS/network?):", url);
+    }
+    resolveLoad();
+    if (loadError) loadError.style.setProperty("display", "block");
+  }, LOAD_TIMEOUT_MS);
+  el.onerror = () => {
+    clearTimeout(timeoutId);
+    resolveLoad();
+    if (DEV_DEBUG) console.debug("[MediaPlayer] onerror fired");
+    if (typeof console !== "undefined" && console.error) {
+      console.error("[MediaPlayer] Failed to load:", url);
+    }
+  };
+  el.oncanplay = () => resolveLoad();
+  el.src = objectUrl;
+  el.load();
+  state.stop();
+  el.play().then(
+    () => {
+      state.play();
+      pressPlay?.style.setProperty("display", "none");
+    },
+    () => {
+      if (shouldShowPressPlay(true)) {
+        pressPlay?.style.setProperty("display", "block");
+      }
+    }
+  );
+}
+
 function loadMedia(url: string): void {
-  if (DEV_DEBUG) console.debug("[MediaPlayer] signedUrl set");
+  if (DEV_DEBUG) console.debug("[MediaPlayer] fetch started:", url);
   if (mediaEl) {
     mediaEl.pause();
     mediaEl.currentTime = 0;
   }
+  revokeCurrentMediaObjectUrl();
+
   const videoArea = getEl("player-video-area");
   const audioArea = getEl("player-audio-area");
   const pressPlay = getEl("player-press-play");
   const loadError = getEl("player-load-error");
   if (loadError) loadError.style.display = "none";
-  if (mode === "video") {
-    videoArea?.classList.remove("hidden");
-    audioArea?.classList.add("hidden");
-    const video = getEl("player-video") as HTMLVideoElement | null;
-    if (video) {
-      mediaEl = video;
-      let loadResolved = false;
-      const resolveLoad = (): void => {
-        if (loadResolved) return;
-        loadResolved = true;
-        if (loadError) loadError.style.display = "none";
-      };
-      const timeoutId = setTimeout(() => {
-        if (loadResolved) return;
-        if (DEV_DEBUG) console.debug("[MediaPlayer] load timeout");
-        if (typeof console !== "undefined" && console.error) {
-          console.error("[MediaPlayer] Load timeout (CORS/network?):", url);
+
+  const expectedType = mode === "video" ? /^video\//i : /^audio\//i;
+
+  fetch(url, { mode: "cors" })
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const ct = res.headers.get("Content-Type") ?? "";
+      if (!expectedType.test(ct)) {
+        throw new Error(`Invalid Content-Type: ${ct}`);
+      }
+      return res.blob();
+    })
+    .then((blob) => {
+      const objectUrl = URL.createObjectURL(blob);
+      currentMediaObjectUrl = objectUrl;
+
+      if (mode === "video") {
+        videoArea?.classList.remove("hidden");
+        audioArea?.classList.add("hidden");
+        const video = getEl("player-video") as HTMLVideoElement | null;
+        if (video) {
+          mediaEl = video;
+          setMediaSrcAndPlay(video, objectUrl, pressPlay, loadError, url);
         }
-        resolveLoad();
-        if (loadError) loadError.style.setProperty("display", "block");
-      }, LOAD_TIMEOUT_MS);
-      video.onerror = () => {
-        clearTimeout(timeoutId);
-        resolveLoad();
-        if (DEV_DEBUG) console.debug("[MediaPlayer] onerror fired");
-        if (typeof console !== "undefined" && console.error) {
-          console.error("[MediaPlayer] Failed to load video:", url);
+      } else {
+        videoArea?.classList.add("hidden");
+        audioArea?.classList.remove("hidden");
+        let audio = document.querySelector("#player-audio") as HTMLAudioElement | null;
+        if (!audio && audioArea) {
+          audio = document.createElement("audio");
+          audio.id = "player-audio";
+          audioArea.appendChild(audio);
         }
-      };
-      video.oncanplay = () => resolveLoad();
-      video.src = url;
-      video.load();
-      state.stop();
-      video.play().then(
-        () => {
-          state.play();
-          pressPlay?.style.setProperty("display", "none");
-        },
-        () => {
-          if (shouldShowPressPlay(true)) {
-            pressPlay?.style.setProperty("display", "block");
-          }
+        if (audio) {
+          mediaEl = audio;
+          setMediaSrcAndPlay(audio, objectUrl, pressPlay, loadError, url);
         }
-      );
-    }
-  } else {
-    videoArea?.classList.add("hidden");
-    audioArea?.classList.remove("hidden");
-    let audio = document.querySelector("#player-audio") as HTMLAudioElement | null;
-    if (!audio && audioArea) {
-      audio = document.createElement("audio");
-      audio.id = "player-audio";
-      audioArea.appendChild(audio);
-    }
-    if (audio) {
-      mediaEl = audio;
-      let loadResolved = false;
-      const resolveLoad = (): void => {
-        if (loadResolved) return;
-        loadResolved = true;
-        if (loadError) loadError.style.display = "none";
-      };
-      const timeoutId = setTimeout(() => {
-        if (loadResolved) return;
-        if (DEV_DEBUG) console.debug("[MediaPlayer] load timeout");
-        if (typeof console !== "undefined" && console.error) {
-          console.error("[MediaPlayer] Load timeout (CORS/network?):", url);
-        }
-        resolveLoad();
-        if (loadError) loadError.style.setProperty("display", "block");
-      }, LOAD_TIMEOUT_MS);
-      audio.onerror = () => {
-        clearTimeout(timeoutId);
-        resolveLoad();
-        if (DEV_DEBUG) console.debug("[MediaPlayer] onerror fired");
-        if (typeof console !== "undefined" && console.error) {
-          console.error("[MediaPlayer] Failed to load audio:", url);
-        }
-      };
-      audio.oncanplay = () => resolveLoad();
-      audio.src = url;
-      audio.load();
-      state.stop();
-      audio.play().then(
-        () => {
-          state.play();
-          pressPlay?.style.setProperty("display", "none");
-        },
-        () => {
-          if (shouldShowPressPlay(true)) {
-            pressPlay?.style.setProperty("display", "block");
-          }
-        }
-      );
-    }
-  }
-  syncMediaToState();
+      }
+      syncMediaToState();
+    })
+    .catch((err) => {
+      if (DEV_DEBUG) console.debug("[MediaPlayer] fetch failed:", err);
+      if (typeof console !== "undefined" && console.error) {
+        console.error("[MediaPlayer] Failed to load:", url, err);
+      }
+      if (loadError) {
+        loadError.style.display = "block";
+      }
+    });
 }
 
 function goPrev(): void {
@@ -258,7 +269,10 @@ function handleOpenFile(payload: {
     };
   }
 
-  document.addEventListener("keydown", (e) => {
+  if (keydownHandlerRef) {
+    document.removeEventListener("keydown", keydownHandlerRef);
+  }
+  keydownHandlerRef = (e: KeyboardEvent) => {
     if (e.key === " ") {
       e.preventDefault();
       if (state.playbackState === "playing") {
@@ -274,7 +288,8 @@ function handleOpenFile(payload: {
       e.preventDefault();
       goNext();
     }
-  });
+  };
+  document.addEventListener("keydown", keydownHandlerRef);
 
   if (initialUrl) {
     loadMedia(initialUrl);

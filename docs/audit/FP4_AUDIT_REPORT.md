@@ -588,3 +588,80 @@ No code changes required. Routing already correct; tests verify contract.
 - **E2E:** Excluded from FP4 DoD per FP4.md Non-Goals.
 
 **Action:** Commit FP4 work; re-run `git status --porcelain`; re-audit for PASS.
+
+---
+
+## 16. Audit Report (mode=audit-pass) — 2026-02-23 (final)
+
+**Role:** @Audit  
+**Scope:** FP4 viewers + overall repo  
+**Source:** [FP4.md](../fps/FP4.md), [FP4_TESTS.md](../tests/FP4_TESTS.md)
+
+### 16.1 Commands → Exit Codes (actual)
+
+| Command                      | Exit | Result                                                                |
+| ---------------------------- | ---- | --------------------------------------------------------------------- |
+| `git status --porcelain`     | 0    | **Not empty** — 5 modified, 28 untracked (FP4 work)                   |
+| `./infra/smoke.sh`           | 0    | PLATFORM OK                                                           |
+| `pnpm lint`                  | 0    | Green                                                                 |
+| `pnpm format:check`          | 0    | Green                                                                 |
+| `./infra/test-unit.sh`       | 0    | 113 passed (21 files)                                                 |
+| `./infra/test-api-fp.sh FP4` | 0    | 54 passed (0 skipped)                                                 |
+| `./infra/gate.sh FP4`        | 0    | GATE OK                                                               |
+| `pnpm test:api` (full)       | 1    | 2 failed (FP2 T-E2 CORS, FP3 T-A8 rename dir — **outside FP4 scope**) |
+| `pnpm test:e2e`              | —    | **Excluded from FP4 DoD** (FP4.md Non-Goals §7)                       |
+
+### 16.2 Skipped Tests
+
+**FP4 gate scope:** No skipped tests. `./infra/test-api-fp.sh FP4` → 54 passed, 0 skipped. `./infra/test-unit.sh` → 113 passed.
+
+**E2E (out of scope):** `e2e/fp4-viewers.spec.ts` contains `test.skip("T-FP4-M0-S3-GET:...")`. FP4 gate does NOT run E2E. Per FP4.md §7, E2E excluded from FP4 DoD.
+
+### 16.3 Evidence Paths
+
+| Category    | Path / Command                                                  |
+| ----------- | --------------------------------------------------------------- |
+| Gate        | `./infra/gate.sh FP4`                                           |
+| Unit        | `front/__tests__/fp4/*.test.{ts,tsx}` (21 files, 113 tests)     |
+| Integration | `back/__tests__/fp4/*.integration.test.ts` (11 files, 54 tests) |
+| FP4 spec    | `docs/fps/FP4.md`                                               |
+| Test map    | `docs/tests/FP4_TESTS.md`                                       |
+
+### 16.4 TEMP(FP4.1) Files — Merge/Delete on FP4 Archive
+
+| Path                                         | Action                      |
+| -------------------------------------------- | --------------------------- |
+| `docs/dev/_tmp/FP4_M0_FACTS.md`              | Merge into FP4.md or delete |
+| `docs/dev/_tmp/FP4_M1_EVIDENCE.md`           | Merge into FP4.md or delete |
+| `docs/dev/_tmp/FP4_M2_HANDSHAKE_EVIDENCE.md` | Merge into FP4.md or delete |
+| `docs/dev/_tmp/FP4_M3_EVIDENCE.md`           | Merge into FP4.md or delete |
+| `docs/dev/_tmp/FP4_LOADING_FIX_PLAN.md`      | Merge into FP4.md or delete |
+| `docs/dev/_tmp/FP4_SIGNED_URL_HEADERS.txt`   | Merge or delete             |
+| `docs/dev/_tmp/M1_FIX_NOTES.md`              | Merge into FP4.md or delete |
+| `docs/audit/FP4_M0_VIEWERS_AUDIT.md`         | Merge or delete             |
+| `docs/audit/FP4_M1_HANDSHAKE_FIX.md`         | Merge or delete             |
+| `docs/audit/FP4_M2_SIGNED_URL_FIX.md`        | Merge or delete             |
+| `docs/audit/FP4_M3_VIEWER_BEHAVIOR.md`       | Merge or delete             |
+| `docs/audit/FP4_M4_CURSOR_FIX.md`            | Merge or delete             |
+| `docs/audit/FP4_VIEWERS_REPRO_REPORT.md`     | Merge or delete             |
+| `docs/audit/FP4_VIEWERS_REJECT_ROOTCAUSE.md` | Merge or delete             |
+| `archive/FP4/temp_docs/DESIGN_LOG_FP4_1.md`  | Merge into FP4.md or delete |
+| `archive/FP4/temp_docs/UX_FP4_1.md`          | Merge into FP4.md or delete |
+| `archive/FP4/temp_docs/API_FP4_DELTA.md`     | Merge into FP4.md or delete |
+| `archive/FP4/temp_docs/FP4_TESTS.md`         | Merge into FP4.md or delete |
+| `archive/FP4/temp_docs/FP4_SECURITY_DOD.md`  | Merge into FP4.md or delete |
+
+**Checklist:** [archive/FP4/README.md](../../archive/FP4/README.md) § Archive FP4 checklist.
+
+### 16.5 Verdict
+
+**REJECT**
+
+| Blocker                  | Detail                                                                 |
+| ------------------------ | ---------------------------------------------------------------------- |
+| `git status --porcelain` | Not empty — uncommitted FP4 work                                       |
+| `pnpm test:api`          | Exit 1 — 2 failures in FP2 (CORS), FP3 (rename dir); outside FP4 scope |
+
+**FP4 scope:** All FP4 gate commands green (smoke, lint, format, unit 113, integration 54). No skipped tests in FP4 gate. No known failures in FP4 scope.
+
+**Action:** (1) Commit FP4 work; (2) Fix FP2/FP3 failures or accept as pre-existing; (3) Re-run `git status --porcelain`; (4) Re-audit for PASS.

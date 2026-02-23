@@ -31,16 +31,16 @@
 
 **Location:** `back/__tests__/fp4/`
 
-| Test ID              | File                                             | Description                                                                  |
-| -------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------- |
-| T-FP4-M0-BODY-SIG    | `signed-url-body-signature.integration.test.ts`  | POST open-url → GET url → 200 + Content-Type + body signature + NOT XML/HTML |
-| T-FP4-NO-CHECKSUM    | `signed-url-fetchable.integration.test.ts`       | Modifying presigned URL (strip/add x-amz-checksum-mode) invalidates → 403     |
-| T-FP4-SIGNED-URL-MAGIC-BYTES | `signed-url-magic-bytes.integration.test.ts` | All fixtures: 200 + Content-Type + magic bytes (RIFF/WEBP, PNG, JPEG, MP3, ftyp, EBML) |
-| T-FP4-M0-CURL        | `signed-url-fetchable.integration.test.ts`       | sample.webp dedicated: fetchable, image/webp, WebP signature, NOT XML        |
-| T-FP4-M0-MP3         | `signed-url-fetchable.integration.test.ts`       | sample.mp3 (Media Player): 200 + audio/mpeg + body signature, NOT XML        |
-| T-FP4-M0-REACHABLE   | `open-url-reachable.integration.test.ts`         | open-url → 200 + Content-Type + body > 0 + CORS (webp/png/jpg/mp3/mp4/webm)  |
-| T-FP4-ORIGIN-NULL-\* | `open-url-reachable.integration.test.ts`         | signed URL fetchable with Origin: null (sandboxed viewer) per media type     |
-| T-FP4-M2-\*          | `signed-url-content-type-m2.integration.test.ts` | All media: 200 + Content-Type; mp4/webm Range → 206 + Accept-Ranges          |
+| Test ID                      | File                                             | Description                                                                            |
+| ---------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| T-FP4-M0-BODY-SIG            | `signed-url-body-signature.integration.test.ts`  | POST open-url → GET url → 200 + Content-Type + body signature + NOT XML/HTML           |
+| T-FP4-NO-CHECKSUM            | `signed-url-fetchable.integration.test.ts`       | Modifying presigned URL (strip/add x-amz-checksum-mode) invalidates → 403              |
+| T-FP4-SIGNED-URL-MAGIC-BYTES | `signed-url-magic-bytes.integration.test.ts`     | All fixtures: 200 + Content-Type + magic bytes (RIFF/WEBP, PNG, JPEG, MP3, ftyp, EBML) |
+| T-FP4-M0-CURL                | `signed-url-fetchable.integration.test.ts`       | sample.webp dedicated: fetchable, image/webp, WebP signature, NOT XML                  |
+| T-FP4-M0-MP3                 | `signed-url-fetchable.integration.test.ts`       | sample.mp3 (Media Player): 200 + audio/mpeg + body signature, NOT XML                  |
+| T-FP4-M0-REACHABLE           | `open-url-reachable.integration.test.ts`         | open-url → 200 + Content-Type + body > 0 + CORS (webp/png/jpg/mp3/mp4/webm)            |
+| T-FP4-ORIGIN-NULL-\*         | `open-url-reachable.integration.test.ts`         | signed URL fetchable with Origin: null (sandboxed viewer) per media type               |
+| T-FP4-M2-\*                  | `signed-url-content-type-m2.integration.test.ts` | All media: 200 + Content-Type; mp4/webm Range → 206 + Accept-Ranges                    |
 
 ### 2.1.1 Unit Tests (Viewer Bootstrap + Handshake)
 
@@ -92,23 +92,24 @@ No tokens in logs.
 
 **Location:** `front/__tests__/fp4/`
 
-| File                                  | Coverage                                                                                                                |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `mime-mapping.test.ts`                | getMimeForPath, isAllowedMime for allowlist ext                                                                         |
-| `handler-routing.test.ts`             | getHandlerForMime: MIME → ImageViewer \| MediaPlayer(mode)                                                              |
-| `playlist-filter-sort.test.ts`        | filterMediaItems, sortByLocaleCompare, getExtensionsForMedia (playlist ordering)                                        |
-| `playlist-nav.test.ts`                | nextIndex, prevIndex ring navigation (cyclic)                                                                           |
-| `unsupported-mime.test.ts`            | getHandlerForMime returns null for unsupported                                                                          |
-| `media-player-state.test.ts`          | Play/Pause/Stop state machine, Volume 0..100, Mute toggle                                                               |
-| `autoplay-blocked.test.ts`            | shouldShowPressPlay when autoplay blocked                                                                               |
-| `protocol-null-origin.test.ts`        | isAllowedOrigin("null") returns true                                                                                    |
-| `viewer-open-file-sets-src.test.ts`   | OPEN_FILE sets img#viewer-img src; T-FP4-M3-PLAYLIST; T-FP4-M3-NEXT-PREV-URL (initial load + next/prev changes img src) |
-| `media-player-m2.test.ts`             | T-FP4-MP-PLAYLIST (N=100 cap), T-FP4-MP-NEXT-PREV (cyclic), T-FP4-MP-PLAY-PAUSE-STOP, T-FP4-MP-VOLUME-MUTE              |
-| `media-player-playlist-m3.test.ts`    | T-FP4-M3-MP-PLAYLIST; T-FP4-M3-MP-NEXT-PREV-URL (initial load + next/prev changes media src)                            |
-| `app-host-handshake.test.tsx`         | APP_READY from origin "null" → handshake; unknown source rejected                                                       |
-| `viewer-bootstrap-sandbox.test.ts`    | T-FP4-M0-BOOT: targetOrigin \*; T-FP4-M0-BOOT-MODULE: module script + ACAO                                              |
-| `viewer-open-file-handshake.test.ts`  | T-FP4-M0-PAYLOAD-SCHEMA: OpenFilePayload has initialPath/Url/playlist; no token                                         |
-| `explorer-postmessage-target.test.ts` | T-FP4-M4-EXPLORER-TARGET: targetOrigin \*; T-FP4-M3-PLAYLIST-LIMIT: PLAYLIST_LIMIT = 100                                |
+| File                                  | Coverage                                                                                                   |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `mime-mapping.test.ts`                | getMimeForPath, isAllowedMime for allowlist ext                                                            |
+| `handler-routing.test.ts`             | getHandlerForMime: MIME → ImageViewer \| MediaPlayer(mode)                                                 |
+| `playlist-filter-sort.test.ts`        | filterMediaItems, sortByLocaleCompare, getExtensionsForMedia (playlist ordering)                           |
+| `playlist-nav.test.ts`                | nextIndex, prevIndex ring navigation (cyclic)                                                              |
+| `unsupported-mime.test.ts`            | getHandlerForMime returns null for unsupported                                                             |
+| `media-player-state.test.ts`          | Play/Pause/Stop state machine, Volume 0..100, Mute toggle                                                  |
+| `autoplay-blocked.test.ts`            | shouldShowPressPlay when autoplay blocked                                                                  |
+| `protocol-null-origin.test.ts`        | isAllowedOrigin("null") returns true                                                                       |
+| `viewer-open-file-sets-src.test.ts`   | OPEN_FILE fetch→blob→objectURL; T-FP4-M3-PLAYLIST; T-FP4-M3-NEXT-PREV-URL (playlist nav)                   |
+| `viewer-state-transitions.test.ts`    | T-FP4-STATE-LOADING, T-FP4-STATE-ERROR, T-FP4-STATE-PREV-NEXT (loading→loaded, fetch failure, prev/next)   |
+| `media-player-m2.test.ts`             | T-FP4-MP-PLAYLIST (N=100 cap), T-FP4-MP-NEXT-PREV (cyclic), T-FP4-MP-PLAY-PAUSE-STOP, T-FP4-MP-VOLUME-MUTE |
+| `media-player-playlist-m3.test.ts`    | T-FP4-M3-MP-PLAYLIST; T-FP4-M3-MP-NEXT-PREV-URL (initial load + next/prev changes media src)               |
+| `app-host-handshake.test.tsx`         | APP_READY from origin "null" → handshake; unknown source rejected                                          |
+| `viewer-bootstrap-sandbox.test.ts`    | T-FP4-M0-BOOT: targetOrigin \*; T-FP4-M0-BOOT-MODULE: module script + ACAO                                 |
+| `viewer-open-file-handshake.test.ts`  | T-FP4-M0-PAYLOAD-SCHEMA: OpenFilePayload has initialPath/Url/playlist; no token                            |
+| `explorer-postmessage-target.test.ts` | T-FP4-M4-EXPLORER-TARGET: targetOrigin \*; T-FP4-M3-PLAYLIST-LIMIT: PLAYLIST_LIMIT = 100                   |
 
 **Commands:** `pnpm test -- front/__tests__/fp4/` or `./infra/test-unit.sh`
 
@@ -124,8 +125,8 @@ No tokens in logs.
 | `allowlist-types.integration.test.ts`            | open-url for png/mp3/mp4 → 200 (no 500)                                                                                                                              |
 | `unsupported-negative.integration.test.ts`       | missing file → 404, path traversal → 400, unsupported ext → no 500                                                                                                   |
 | `signed-url-body-signature.integration.test.ts`  | T-FP4-M0-BODY-SIG: 200 + Content-Type + body signature + NOT XML                                                                                                     |
-| `signed-url-fetchable.integration.test.ts`       | T-FP4-NO-CHECKSUM: modifying presigned URL invalidates → 403; T-FP4-M0-CURL: sample.webp; T-FP4-M0-MP3: sample.mp3 |
-| `signed-url-magic-bytes.integration.test.ts`    | T-FP4-SIGNED-URL-MAGIC-BYTES: all fixtures (webp/png/jpg/mp3/mp4/webm) → 200 + Content-Type + magic bytes                                                              |
+| `signed-url-fetchable.integration.test.ts`       | T-FP4-NO-CHECKSUM: modifying presigned URL invalidates → 403; T-FP4-M0-CURL: sample.webp; T-FP4-M0-MP3: sample.mp3                                                   |
+| `signed-url-magic-bytes.integration.test.ts`     | T-FP4-SIGNED-URL-MAGIC-BYTES: all fixtures (webp/png/jpg/mp3/mp4/webm) → 200 + Content-Type + magic bytes                                                            |
 | `signed-url-content-type-m2.integration.test.ts` | T-FP4-M2: all media Content-Type                                                                                                                                     |
 | `playlist-flow.integration.test.ts`              | T-FP4-M3-PLAYLIST-BUILD: list + open-url → playlist N>=1; T-FP4-M3-PLAYLIST-NEXT-PREV: cyclic wrap; T-FP4-M3-OPEN-FILE-PAYLOAD: payload for initial load + next/prev |
 | `open-url-reachable.integration.test.ts`         | T-FP4-M0-REACHABLE: open-url → 200 + Content-Type + body > 0 + CORS                                                                                                  |

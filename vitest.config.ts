@@ -7,5 +7,6 @@ export default defineConfig({
     environment: "jsdom",
     include: ["front/**/*.test.{ts,tsx}"],
     globals: true,
+    setupFiles: ["front/__tests__/setup-url-object.ts"],
   },
 });

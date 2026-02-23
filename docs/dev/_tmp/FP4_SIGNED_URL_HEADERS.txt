@@ -1,0 +1,26 @@
+# TEMP(FP4.1) — curl response for signed URL (sample.webp)
+# Captured: 2026-02-23
+# Command: curl -v -L -o /tmp/fp4.bin -H "Host: s3.shell.local" "<SIGNED_URL>"
+
+## Status line
+HTTP/1.1 200 OK
+
+## Response headers
+Accept-Ranges: bytes
+Access-Control-Allow-Origin: *
+Access-Control-Expose-Headers: Content-Length,Content-Type,ETag,Accept-Ranges,Content-Range
+Content-Length: 68
+Content-Type: image/webp
+Date: Mon, 23 Feb 2026 15:53:40 GMT
+Etag: "fed00530d5b8302eb8fc663b2a50fa7e"
+Last-Modified: Mon, 23 Feb 2026 15:53:26 GMT
+Server: MinIO
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Vary: Origin
+Vary: Accept-Encoding
+X-Amz-Id-2: dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8
+X-Amz-Request-Id: 1896EB1EABB1BC76
+X-Content-Type-Options: nosniff
+X-Ratelimit-Limit: 5057
+X-Ratelimit-Remaining: 5057
+X-Xss-Protection: 1; mode=block

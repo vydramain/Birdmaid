@@ -12,6 +12,7 @@ interface PlaylistItem {
 
 let playlist: PlaylistItem[] = [];
 let currentIndex = 0;
+let keydownHandlerRef: ((e: KeyboardEvent) => void) | null = null;
 
 function send(type: string, payload?: Record<string, unknown>): void {
   if (window.parent !== window) {
@@ -31,15 +32,27 @@ const DEV_DEBUG = typeof import.meta !== "undefined" && import.meta.env?.DEV ===
 
 const LOAD_TIMEOUT_MS = 10000;
 
+let currentObjectUrl: string | null = null;
+
+function revokeCurrentObjectUrl(): void {
+  if (currentObjectUrl) {
+    URL.revokeObjectURL(currentObjectUrl);
+    currentObjectUrl = null;
+  }
+}
+
 function showImage(url: string): void {
   const img = getEl("viewer-img") as HTMLImageElement | null;
   const loading = getEl("viewer-loading");
   const error = getEl("viewer-error");
   if (!img || !loading || !error) return;
+
+  revokeCurrentObjectUrl();
+  img.src = "";
   loading.style.display = "block";
   error.style.display = "none";
   img.style.display = "none";
-  if (DEV_DEBUG) console.debug("[ImageViewer] signedUrl set");
+  if (DEV_DEBUG) console.debug("[ImageViewer] fetch started:", url);
 
   let resolved = false;
   const resolve = (): void => {
@@ -60,24 +73,48 @@ function showImage(url: string): void {
     img.style.display = "none";
   }, LOAD_TIMEOUT_MS);
 
-  img.onerror = () => {
-    if (DEV_DEBUG) console.debug("[ImageViewer] onerror fired");
-    clearTimeout(timeoutId);
-    if (typeof console !== "undefined" && console.error) {
-      console.error("[ImageViewer] Failed to load image:", url);
-    }
-    resolve();
-    error.style.display = "block";
-    error.textContent = "Unable to load image";
-    img.style.display = "none";
-  };
-  img.onload = () => {
-    clearTimeout(timeoutId);
-    resolve();
-    error.style.display = "none";
-    img.style.display = "block";
-  };
-  img.src = url;
+  fetch(url, { mode: "cors" })
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const ct = res.headers.get("Content-Type") ?? "";
+      if (!ct.toLowerCase().startsWith("image/")) {
+        throw new Error(`Invalid Content-Type: ${ct}`);
+      }
+      return res.blob();
+    })
+    .then((blob) => {
+      if (resolved) return;
+      clearTimeout(timeoutId);
+      const objectUrl = URL.createObjectURL(blob);
+      currentObjectUrl = objectUrl;
+      img.onerror = () => {
+        revokeCurrentObjectUrl();
+        resolve();
+        error.style.display = "block";
+        error.textContent = "Unable to load image";
+        img.style.display = "none";
+      };
+      img.onload = () => {
+        resolve();
+        error.style.display = "none";
+        img.style.display = "block";
+      };
+      img.src = objectUrl;
+    })
+    .catch((err) => {
+      if (resolved) return;
+      clearTimeout(timeoutId);
+      if (DEV_DEBUG) console.debug("[ImageViewer] fetch failed:", err);
+      if (typeof console !== "undefined" && console.error) {
+        console.error("[ImageViewer] Failed to load image:", url, err);
+      }
+      resolve();
+      error.style.display = "block";
+      error.textContent = "Unable to load image";
+      img.style.display = "none";
+    });
 }
 
 function updateStatus(): void {
@@ -149,7 +186,10 @@ function handleOpenFile(payload: {
   updateStatus();
   updateTitle(initialPath.split("/").pop() ?? "Picture Viewer");
 
-  document.addEventListener("keydown", (e) => {
+  if (keydownHandlerRef) {
+    document.removeEventListener("keydown", keydownHandlerRef);
+  }
+  keydownHandlerRef = (e: KeyboardEvent) => {
     if (e.key === "ArrowLeft") {
       e.preventDefault();
       goPrev();
@@ -157,7 +197,8 @@ function handleOpenFile(payload: {
       e.preventDefault();
       goNext();
     }
-  });
+  };
+  document.addEventListener("keydown", keydownHandlerRef);
 }
 
 window.addEventListener("message", (e) => {

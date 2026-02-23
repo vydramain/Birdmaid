@@ -14,12 +14,16 @@ export default defineConfig({
           const u = req.url ?? "";
           // M1 fix (Option C): viewer assets need ACAO for opaque-origin iframe (sandbox allow-scripts).
           // Module scripts in opaque-origin context require CORS; ACAO: * allows load.
-          // Include @vite/client and @id/ (Vite injects these into viewer HTML in dev).
+          // Include @vite/client, @id/, @react-refresh (Vite injects these into HTML in dev).
+          // Include /front/lib/ (viewer imports e.g. playlist.ts) and /front/apps/ (viewer entry modules).
           const needsCors =
             u.includes("image-viewer") ||
             u.includes("media-player") ||
             u.startsWith("/@vite/") ||
             u.startsWith("/@id/") ||
+            u.startsWith("/@react-refresh") ||
+            u.startsWith("/front/lib/") ||
+            u.startsWith("/front/apps/") ||
             u.includes("/node_modules/");
           if (needsCors) {
             res.setHeader("Access-Control-Allow-Origin", "*");
