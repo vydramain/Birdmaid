@@ -24,8 +24,8 @@ done
 # Create bucket
 mc mb "myminio/$BUCKET" --ignore-existing
 
-# Apply CORS
-mc cors set "$CORS_JSON" "myminio/$BUCKET"
+# CORS: free MinIO does not support bucket CORS. Use Traefik middleware (docker-compose) instead.
+# mc cors set "$CORS_JSON" "myminio/$BUCKET" || true
 
 # Upload fixtures (roots/DISK_A, DISK_C, DISK_D). FP3: APPS deprecated.
 if [ -d "$FIXTURES/DISK_A" ]; then

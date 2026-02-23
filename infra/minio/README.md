@@ -70,9 +70,9 @@ _(Adjust network name to match docker-compose.)_
 
 ## 4. CORS
 
-- Config: `cors.json`
-- Applied by init.sh: `mc cors set cors.json myminio/birdmaid-dev`
-- To re-apply: run `mc cors set cors.json myminio/birdmaid-dev`
+- **Free MinIO:** `mc cors set` is not supported (functionality not implemented).
+- **CORS handled by Traefik:** `docker-compose.dev.yml` applies `minio-cors` middleware to s3.shell.local route: `Access-Control-Allow-Origin: *`, methods GET/HEAD, expose headers for Content-Type, Range, etc.
+- **Legacy:** `cors.json` exists but is not used for free MinIO.
 
 ---
 

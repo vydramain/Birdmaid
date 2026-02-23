@@ -16,7 +16,7 @@
 
 ---
 
-## temp_docs (TEMP → merged → archived)
+## temp_docs (TEMP(FP4.1) → merged → archived)
 
 | File                | Merged into                               |
 | ------------------- | ----------------------------------------- |
@@ -25,6 +25,13 @@
 | API_FP4_DELTA.md    | FP4.md § Dependencies (API: no changes)   |
 | FP4_TESTS.md        | FP4.md § Tests Plan, AC→test mapping      |
 | FP4_SECURITY_DOD.md | FP4.md § Security Checklist               |
+
+### Archive FP4 checklist (on final archive)
+
+- [ ] Merge `archive/FP4/temp_docs/*` into FP4.md or delete
+- [ ] Merge or delete `docs/dev/_tmp/FP4_*.md`, `M1_FIX_NOTES.md`
+- [ ] Merge or delete `docs/audit/FP4_M0_VIEWERS_AUDIT.md`, `FP4_M1_HANDSHAKE_FIX.md`, `FP4_M2_SIGNED_URL_FIX.md`, `FP4_M3_VIEWER_BEHAVIOR.md`, `FP4_M4_CURSOR_FIX.md`, `FP4_VIEWERS_REPRO_REPORT.md` (TEMP(FP4.1))
+- [ ] No TEMP(FP4.1) docs remain in tree
 
 ---
 

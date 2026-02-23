@@ -11,7 +11,7 @@ export const ALLOWED_ORIGINS = [
   "http://127.0.0.1",
   "http://s3.shell.local", // FP3 M6: user-app FETCH_RESULT (source === iframe.contentWindow only)
   "http://s3.shell.local:80",
-  "null", // sandboxed same-origin iframe
+  "null", // sandboxed viewer iframe (allow-scripts only); AppHost accepts ONLY when event.source === iframe.contentWindow
 ];
 
 export interface ShellMessage {

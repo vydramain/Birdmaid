@@ -129,7 +129,7 @@ async function fetchWithToken(
 function send(type: string, payload?: Record<string, unknown>): void {
   if (window.parent !== window) {
     try {
-      window.parent.postMessage({ type, payload, timestamp: Date.now() }, window.location.origin);
+      window.parent.postMessage({ type, payload, timestamp: Date.now() }, "*");
     } catch {
       /* ignore */
     }

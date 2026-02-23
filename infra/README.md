@@ -6,6 +6,24 @@
 
 ---
 
+## Prerequisite: Hosts (required for browser + curl)
+
+Add to `/etc/hosts` (or equivalent):
+
+```
+127.0.0.1  shell.local
+127.0.0.1  api.shell.local
+127.0.0.1  s3.shell.local
+```
+
+**Why:** Traefik routes by Host header. The browser and curl must resolve these names to 127.0.0.1 so requests hit Traefik on port 80.
+
+**Verify:** `getent hosts s3.shell.local` → 127.0.0.1 s3.shell.local
+
+See [docs/dev/DEV_DOMAIN.md](../docs/dev/DEV_DOMAIN.md) for full details.
+
+---
+
 ## What runs in docker-compose.dev.yml
 
 | Service    | Image                     | Domains / Ports                    |
@@ -120,4 +138,4 @@ Runs API integration tests in container. **Scoped:** FP2 gate uses `test-api-fp.
 | `test-unit.sh`           | Unit tests (container)            |
 | `gate.sh`                | Full gate sequence per FP         |
 
-**Prerequisite:** `/etc/hosts` with shell.local, api.shell.local, s3.shell.local. See [docs/dev/ARCHITECTURE.md](../docs/dev/ARCHITECTURE.md) § Dev Domain.
+**Prerequisite:** `/etc/hosts` with shell.local, api.shell.local, s3.shell.local. See [docs/dev/DEV_DOMAIN.md](../docs/dev/DEV_DOMAIN.md) and [docs/dev/ARCHITECTURE.md](../docs/dev/ARCHITECTURE.md) § Dev Domain.

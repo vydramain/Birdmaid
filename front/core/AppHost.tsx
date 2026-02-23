@@ -3,7 +3,7 @@
  * Origin allowlist, event.source routing, targetOrigin=event.origin, handshake timeout 2000ms.
  */
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useCallback, useState } from "react";
 import { isAllowedOrigin, createShellCaps, type ShellMessage } from "./protocol";
 import { analytics } from "./analytics";
 
@@ -63,9 +63,9 @@ export function AppHost({
     (source: MessageEventSource, origin: string, data: ShellMessage) => {
       if (!isAllowedOrigin(origin)) return;
       const win = source as Window;
-      if (typeof win.postMessage === "function") {
-        win.postMessage(data, origin);
-      }
+      if (typeof win.postMessage !== "function") return;
+      const targetOrigin = origin === "null" ? "*" : origin;
+      win.postMessage(data, targetOrigin);
     },
     []
   );
@@ -165,7 +165,8 @@ export function AppHost({
     ]
   );
 
-  useEffect(() => {
+  // M2: useLayoutEffect so listener is attached before iframe can load (avoids race with cached viewer)
+  useLayoutEffect(() => {
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [handleMessage]);

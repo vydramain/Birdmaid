@@ -23,7 +23,7 @@ let mediaEl: HTMLAudioElement | HTMLVideoElement | null = null;
 function send(type: string, payload?: Record<string, unknown>): void {
   if (window.parent !== window) {
     try {
-      window.parent.postMessage({ type, payload, timestamp: Date.now() }, window.location.origin);
+      window.parent.postMessage({ type, payload, timestamp: Date.now() }, "*");
     } catch {
       /* ignore */
     }
@@ -48,11 +48,16 @@ function syncMediaToState(): void {
     mediaEl.pause();
     mediaEl.currentTime = 0;
   }
+  mediaEl.volume = state.volume / 100;
   const slider = getEl("volume-slider") as HTMLInputElement | null;
   if (slider) slider.value = String(state.volume);
 }
 
+const DEV_DEBUG = typeof import.meta !== "undefined" && import.meta.env?.DEV === true;
+const LOAD_TIMEOUT_MS = 10000;
+
 function loadMedia(url: string): void {
+  if (DEV_DEBUG) console.debug("[MediaPlayer] signedUrl set");
   if (mediaEl) {
     mediaEl.pause();
     mediaEl.currentTime = 0;
@@ -60,12 +65,38 @@ function loadMedia(url: string): void {
   const videoArea = getEl("player-video-area");
   const audioArea = getEl("player-audio-area");
   const pressPlay = getEl("player-press-play");
+  const loadError = getEl("player-load-error");
+  if (loadError) loadError.style.display = "none";
   if (mode === "video") {
     videoArea?.classList.remove("hidden");
     audioArea?.classList.add("hidden");
     const video = getEl("player-video") as HTMLVideoElement | null;
     if (video) {
       mediaEl = video;
+      let loadResolved = false;
+      const resolveLoad = (): void => {
+        if (loadResolved) return;
+        loadResolved = true;
+        if (loadError) loadError.style.display = "none";
+      };
+      const timeoutId = setTimeout(() => {
+        if (loadResolved) return;
+        if (DEV_DEBUG) console.debug("[MediaPlayer] load timeout");
+        if (typeof console !== "undefined" && console.error) {
+          console.error("[MediaPlayer] Load timeout (CORS/network?):", url);
+        }
+        resolveLoad();
+        if (loadError) loadError.style.setProperty("display", "block");
+      }, LOAD_TIMEOUT_MS);
+      video.onerror = () => {
+        clearTimeout(timeoutId);
+        resolveLoad();
+        if (DEV_DEBUG) console.debug("[MediaPlayer] onerror fired");
+        if (typeof console !== "undefined" && console.error) {
+          console.error("[MediaPlayer] Failed to load video:", url);
+        }
+      };
+      video.oncanplay = () => resolveLoad();
       video.src = url;
       video.load();
       state.stop();
@@ -92,6 +123,30 @@ function loadMedia(url: string): void {
     }
     if (audio) {
       mediaEl = audio;
+      let loadResolved = false;
+      const resolveLoad = (): void => {
+        if (loadResolved) return;
+        loadResolved = true;
+        if (loadError) loadError.style.display = "none";
+      };
+      const timeoutId = setTimeout(() => {
+        if (loadResolved) return;
+        if (DEV_DEBUG) console.debug("[MediaPlayer] load timeout");
+        if (typeof console !== "undefined" && console.error) {
+          console.error("[MediaPlayer] Load timeout (CORS/network?):", url);
+        }
+        resolveLoad();
+        if (loadError) loadError.style.setProperty("display", "block");
+      }, LOAD_TIMEOUT_MS);
+      audio.onerror = () => {
+        clearTimeout(timeoutId);
+        resolveLoad();
+        if (DEV_DEBUG) console.debug("[MediaPlayer] onerror fired");
+        if (typeof console !== "undefined" && console.error) {
+          console.error("[MediaPlayer] Failed to load audio:", url);
+        }
+      };
+      audio.oncanplay = () => resolveLoad();
       audio.src = url;
       audio.load();
       state.stop();
@@ -143,6 +198,7 @@ function handleOpenFile(payload: {
   initialUrl?: string;
   playlist?: PlaylistItem[];
 }): void {
+  if (DEV_DEBUG) console.debug("[MediaPlayer] OPEN_FILE received");
   const list = payload.playlist ?? [];
   const initialPath = payload.initialPath ?? "";
   const initialUrl = payload.initialUrl ?? "";

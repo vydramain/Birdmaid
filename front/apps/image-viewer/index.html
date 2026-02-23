@@ -85,16 +85,19 @@
         <span class="viewer-status" id="viewer-status"></span>
       </div>
     </div>
-    <!-- M1: Early APP_READY before module load to avoid handshake timeout -->
+    <!-- M1+M2: Early APP_READY before module load; DOMContentLoaded fallback for listener race -->
     <script>
       (function () {
         if (window.parent === window) return;
-        try {
-          window.parent.postMessage(
-            { type: "APP_READY", timestamp: Date.now() },
-            window.location.origin
-          );
-        } catch (_) {}
+        function sendReady() {
+          try {
+            window.parent.postMessage({ type: "APP_READY", timestamp: Date.now() }, "*");
+          } catch (_) {}
+        }
+        sendReady();
+        if (document.readyState !== "complete") {
+          window.addEventListener("DOMContentLoaded", sendReady);
+        }
         window.__fp4PendingOpenFile = null;
         window.addEventListener("message", function (e) {
           var d = e.data;

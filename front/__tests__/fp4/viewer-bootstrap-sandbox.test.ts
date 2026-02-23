@@ -15,9 +15,16 @@ const IMAGE_VIEWER_HTML = resolve(__dirname, "../../apps/image-viewer/index.html
 describe("FP4 Viewer bootstrap in sandbox (T-FP4-M0-BOOT)", () => {
   it("T-FP4-M0-BOOT: viewer APP_READY postMessage uses targetOrigin * (not window.location.origin)", () => {
     const html = readFileSync(IMAGE_VIEWER_HTML, "utf-8");
-    // RED: Assert bug — viewer uses window.location.origin (causes handshake timeout).
-    // Fix: viewer must use "*" so message delivers to shell.local parent.
+    // Regression: viewer must use "*" so message delivers to shell.local parent.
+    // Using window.location.origin causes handshake timeout in sandboxed iframe (origin "null").
     const usesWindowLocationOrigin = html.includes("window.location.origin");
-    expect(usesWindowLocationOrigin).toBe(true);
+    expect(usesWindowLocationOrigin).toBe(false);
+  });
+
+  it("T-FP4-M0-BOOT-MODULE: viewer uses module script (requires ACAO for opaque-origin)", () => {
+    const html = readFileSync(IMAGE_VIEWER_HTML, "utf-8");
+    // Module scripts in sandbox (opaque origin) require CORS. Vite middleware adds ACAO: *.
+    expect(html).toContain('type="module"');
+    expect(html).toMatch(/src="\.\/main\.ts"/);
   });
 });

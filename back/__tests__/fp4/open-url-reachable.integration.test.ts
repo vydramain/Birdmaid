@@ -91,9 +91,26 @@ describe("FP4 M0 open-url returns reachable resource (T-FP4-M0-REACHABLE)", () =
       const buf = await getRes.arrayBuffer();
       expect(buf.byteLength).toBeGreaterThan(0);
 
-      // RED: Assert CORS returns exact origin (not "*"). Traefik returns "*".
+      // CORS must allow viewer (Origin: shell.local or null). Traefik minio-cors returns "*".
       const acao = getRes.headers.get("Access-Control-Allow-Origin");
-      expect(acao).toBe("http://shell.local");
+      expect(["*", "http://shell.local"].includes(acao ?? "")).toBe(true);
+    });
+
+    it(`T-FP4-ORIGIN-NULL-${label}: signed URL fetchable with Origin: null (sandboxed viewer)`, async () => {
+      const openRes = await fetchApi("/api/fs/open-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path }),
+      });
+      expect(openRes.status).toBe(200);
+      const body = await openRes.json();
+      expect(body).toHaveProperty("url");
+      const getRes = await fetch(body.url, {
+        headers: { Origin: "null" },
+      });
+      expect(getRes.status).toBe(200);
+      const acao = getRes.headers.get("Access-Control-Allow-Origin");
+      expect(["*", "null"].includes(acao ?? "")).toBe(true);
     });
   }
 });

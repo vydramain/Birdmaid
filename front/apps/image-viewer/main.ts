@@ -16,7 +16,7 @@ let currentIndex = 0;
 function send(type: string, payload?: Record<string, unknown>): void {
   if (window.parent !== window) {
     try {
-      window.parent.postMessage({ type, payload, timestamp: Date.now() }, window.location.origin);
+      window.parent.postMessage({ type, payload, timestamp: Date.now() }, "*");
     } catch {
       /* ignore */
     }
@@ -27,6 +27,10 @@ function getEl(id: string): HTMLElement | null {
   return document.getElementById(id);
 }
 
+const DEV_DEBUG = typeof import.meta !== "undefined" && import.meta.env?.DEV === true;
+
+const LOAD_TIMEOUT_MS = 10000;
+
 function showImage(url: string): void {
   const img = getEl("viewer-img") as HTMLImageElement | null;
   const loading = getEl("viewer-loading");
@@ -35,14 +39,41 @@ function showImage(url: string): void {
   loading.style.display = "block";
   error.style.display = "none";
   img.style.display = "none";
-  img.onerror = () => {
+  if (DEV_DEBUG) console.debug("[ImageViewer] signedUrl set");
+
+  let resolved = false;
+  const resolve = (): void => {
+    if (resolved) return;
+    resolved = true;
     loading.style.display = "none";
+  };
+
+  const timeoutId = setTimeout(() => {
+    if (resolved) return;
+    if (DEV_DEBUG) console.debug("[ImageViewer] load timeout");
+    if (typeof console !== "undefined" && console.error) {
+      console.error("[ImageViewer] Load timeout (CORS/network?):", url);
+    }
+    resolve();
+    error.style.display = "block";
+    error.textContent = "Unable to load image";
+    img.style.display = "none";
+  }, LOAD_TIMEOUT_MS);
+
+  img.onerror = () => {
+    if (DEV_DEBUG) console.debug("[ImageViewer] onerror fired");
+    clearTimeout(timeoutId);
+    if (typeof console !== "undefined" && console.error) {
+      console.error("[ImageViewer] Failed to load image:", url);
+    }
+    resolve();
     error.style.display = "block";
     error.textContent = "Unable to load image";
     img.style.display = "none";
   };
   img.onload = () => {
-    loading.style.display = "none";
+    clearTimeout(timeoutId);
+    resolve();
     error.style.display = "none";
     img.style.display = "block";
   };
@@ -93,6 +124,7 @@ function handleOpenFile(payload: {
   initialUrl?: string;
   playlist?: PlaylistItem[];
 }): void {
+  if (DEV_DEBUG) console.debug("[ImageViewer] OPEN_FILE received");
   const list = payload.playlist ?? [];
   const initialPath = payload.initialPath ?? "";
   const initialUrl = payload.initialUrl ?? "";

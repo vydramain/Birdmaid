@@ -11,6 +11,32 @@ export default defineConfig({
       enforce: "pre",
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
+          const u = req.url ?? "";
+          // M1 fix (Option C): viewer assets need ACAO for opaque-origin iframe (sandbox allow-scripts).
+          // Module scripts in opaque-origin context require CORS; ACAO: * allows load.
+          // Include @vite/client and @id/ (Vite injects these into viewer HTML in dev).
+          const needsCors =
+            u.includes("image-viewer") ||
+            u.includes("media-player") ||
+            u.startsWith("/@vite/") ||
+            u.startsWith("/@id/") ||
+            u.includes("/node_modules/");
+          if (needsCors) {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+          }
+          const origEnd = res.end;
+          res.end = function (chunk?: unknown, encoding?: unknown, callback?: () => void) {
+            const url = req.url ?? "";
+            if (
+              (url.includes("image-viewer") || url.includes("media-player")) &&
+              (url.includes("index.html") || !url.includes("."))
+            ) {
+              res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+            }
+            return (
+              origEnd as (chunk?: unknown, encoding?: unknown, callback?: () => void) => void
+            ).call(res, chunk, encoding, callback);
+          };
           if (req.url === "/health" || req.url === "/health/") {
             res.statusCode = 200;
             res.setHeader("Content-Type", "application/json");
@@ -52,7 +78,15 @@ export default defineConfig({
   publicDir: "public",
   server: {
     host: true, // listen on 0.0.0.0 so Traefik can reach dev-server in Docker
-    allowedHosts: ["shell.local", "api.shell.local", "s3.shell.local", "localhost", ".localhost"],
+    allowedHosts: [
+      "shell.local",
+      "api.shell.local",
+      "s3.shell.local",
+      "localhost",
+      ".localhost",
+      "10.200.1.6",
+      "127.0.0.1",
+    ],
     proxy: {
       "/api": {
         target: API_PROXY_TARGET,

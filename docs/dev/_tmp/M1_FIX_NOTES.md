@@ -1,4 +1,6 @@
-# M1 Fix Notes — TEMP (merge/delete on archive FP4)
+# M1 Fix Notes — TEMP(FP4.1)
+
+> **TEMP(FP4.1):** MUST MERGE/DELETE ON ARCHIVE FP4; source-of-truth = docs/fps/FP4.md + docs/core/PROTOCOL_v0.md
 
 **Date:** 2026-02-23  
 **Scope:** ImageViewer "App not responding" + signed URL integrity

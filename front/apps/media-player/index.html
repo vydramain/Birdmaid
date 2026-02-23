@@ -89,6 +89,9 @@
       </div>
       <div id="player-audio-area" class="player-audio-area hidden"></div>
       <div id="player-press-play" class="player-press-play" style="display: none">Press Play</div>
+      <div id="player-load-error" class="player-press-play" style="display: none; color: #c00">
+        Unable to load media
+      </div>
       <div class="player-controls">
         <button type="button" class="player-btn" id="btn-prev" disabled>◀</button>
         <button type="button" class="player-btn" id="btn-play">▶</button>
@@ -106,16 +109,19 @@
         />
       </div>
     </div>
-    <!-- M1: Early APP_READY before module load to avoid handshake timeout -->
+    <!-- M1+M2: Early APP_READY before module load; DOMContentLoaded fallback for listener race -->
     <script>
       (function () {
         if (window.parent === window) return;
-        try {
-          window.parent.postMessage(
-            { type: "APP_READY", timestamp: Date.now() },
-            window.location.origin
-          );
-        } catch (_) {}
+        function sendReady() {
+          try {
+            window.parent.postMessage({ type: "APP_READY", timestamp: Date.now() }, "*");
+          } catch (_) {}
+        }
+        sendReady();
+        if (document.readyState !== "complete") {
+          window.addEventListener("DOMContentLoaded", sendReady);
+        }
         window.__fp4PendingOpenFile = null;
         window.addEventListener("message", function (e) {
           var d = e.data;

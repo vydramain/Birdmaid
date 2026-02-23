@@ -41,7 +41,11 @@ export default tseslint.config(
     ignores: ["node_modules", "dist", "coverage", "playwright-report", "test-results"],
   },
   {
-    files: ["front/apps/explorer/main.ts"],
-    rules: { "no-console": "off" }, // FP3/FP4: Explorer logs errors + unsupported types
+    files: [
+      "front/apps/explorer/main.ts",
+      "front/apps/image-viewer/main.ts",
+      "front/apps/media-player/main.ts",
+    ],
+    rules: { "no-console": "off" }, // FP3/FP4: Explorer + viewers log errors (M3)
   }
 );

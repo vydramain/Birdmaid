@@ -1,6 +1,6 @@
 # Protocol — Shell ↔ Apps postMessage
 
-> **CANON UPDATE;** must be merged into canonical after build.
+> **Canonical.** Single source of truth for Shell ↔ App message types, handshake, routing.
 
 **Purpose:** Canonical message types, handshake, routing. Consolidates FP1, FP3, FP4.  
 **References:** [FP1.md](../fps/FP1.md) § Protocol, [FP3.md](../fps/FP3.md), [FP4.md](../fps/FP4.md)
@@ -29,8 +29,8 @@
 
 ### Origin rules
 
-- Shell validates `event.origin` allowlist (shell.local, localhost:5173).
-- Use `event.origin` as targetOrigin; never `"*"`.
+- Shell validates `event.origin` allowlist (shell.local, localhost:5173, null for sandboxed viewers).
+- Use `event.origin` as targetOrigin; `"*"` only when replying to origin `"null"` (FP4 sandboxed viewers).
 - Route by `event.source` (contentWindow mapping).
 
 ---
@@ -88,8 +88,9 @@
 
 ### Token policy (FP4)
 
-- **Viewers/Players:** Never receive token. Sandbox: allow-scripts only (no allow-same-origin).
+- **Viewers/Players:** Never receive token. OPEN_FILE payload has initialPath, initialUrl, playlist only.
 - **Explorer:** Only app with token; does list + open-url; passes data via SHELL_OPEN_FILE.
+- **User apps:** SHELL_CAPS without token; sandbox allow-scripts only → cannot call privileged APIs.
 
 ---
 

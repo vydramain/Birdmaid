@@ -31,6 +31,8 @@ const s3 = new S3Client({
   forcePathStyle: true,
 });
 
+// M1: Presign client uses public URL (s3.shell.local) so signed URLs work from browser.
+// requestChecksumCalculation: WHEN_REQUIRED — avoid x-amz-checksum-mode in presigned URLs (MinIO/Firefox compatibility).
 const s3Presign =
   process.env.FS_S3_PUBLIC_URL &&
   new S3Client({
@@ -41,6 +43,7 @@ const s3Presign =
       secretAccessKey: process.env.FS_S3_SECRET_KEY ?? "",
     },
     forcePathStyle: true,
+    requestChecksumCalculation: "WHEN_REQUIRED",
   });
 
 const BUCKET = process.env.FS_S3_BUCKET ?? "birdmaid-dev";

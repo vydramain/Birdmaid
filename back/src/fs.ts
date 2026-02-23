@@ -38,8 +38,12 @@ const MIME_MAP: Record<string, string> = {
   ".jpeg": "image/jpeg",
   ".gif": "image/gif",
   ".svg": "image/svg+xml",
+  ".webp": "image/webp",
   ".css": "text/css",
   ".js": "application/javascript",
+  ".mp3": "audio/mpeg",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
 };
 
 function inferMime(key: string, contentType?: string): string | null {
@@ -253,7 +257,14 @@ export async function getOpenUrl(
     }
   }
 
-  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+  const name = key.slice(key.lastIndexOf("/") + 1) || key;
+  const responseContentType = inferMime(name, undefined);
+
+  const command = new GetObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    ...(responseContentType && { ResponseContentType: responseContentType }),
+  });
   const client = presignS3 ?? s3;
   const url = await getSignedUrl(client, command, { expiresIn: effectiveTtl });
 

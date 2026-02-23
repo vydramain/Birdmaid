@@ -18,9 +18,12 @@ if [[ -z "$FP" ]]; then
 fi
 
 case "$FP" in
-  FP2|FP4)
+  FP2)
     echo "E2E not required for $FP"
     exit 0
+    ;;
+  FP4)
+    SPEC="e2e/fp4-viewers.spec.ts"
     ;;
   FP1)
     SPEC="e2e/fp1-shell.spec.ts"

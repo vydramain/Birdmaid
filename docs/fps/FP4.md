@@ -1,8 +1,9 @@
 # FP4: System Viewers & Players (Image / Audio / Video)
 
-**Status:** design  
+**Status:** released (gate REJECT: git status not empty; commit required for PASS)  
 **Created:** 2025-02-23  
-**Updated:** 2025-02-23  
+**Updated:** 2026-02-23  
+**Audit:** [FP4_AUDIT_REPORT.md](../audit/FP4_AUDIT_REPORT.md)  
 **Purpose:** Добавить системные приложения для открытия простых файлов: Image Viewer, Media Player (audio/video). Открытие из Explorer по double click; virtual list + Prev/Next; Win98 look (98.css).
 
 **Archived:** [archive/FP4/](../../archive/FP4/README.md) (evidence, reports, TEMP docs)
@@ -24,6 +25,7 @@
 | 5   | Virtual list "TBD"                                                  | Explorer передаёт playlist в OPEN_FILE. Сортировка: localeCompare (как Explorer list).                                                    |
 | 6   | Autoplay "пытаемся; если blocked → ?"                               | Явное правило: пытаемся autoplay; если blocked → показать "Press Play".                                                                   |
 | 7   | E2E "опционально"                                                   | E2E OUT of scope FP4. Gate: smoke + unit + integration.                                                                                   |
+| 8   | Explorer postMessage targetOrigin vs Cursor/embedded                | M4: Explorer send() использует targetOrigin `"*"` — сообщения доставляются при parent в webview (Cursor Simple Browser).                  |
 
 ---
 
@@ -366,14 +368,14 @@ Viewers: код с shell.local (same-origin URL), но sandbox без allow-same
 
 **Location:** `front/__tests__/fp4/`
 
-- `mime-mapping.test.ts`, `handler-routing.test.ts`, `playlist-filter-sort.test.ts`, `playlist-nav.test.ts`, `unsupported-mime.test.ts`, `media-player-state.test.ts`, `autoplay-blocked.test.ts`
+- `mime-mapping.test.ts`, `handler-routing.test.ts`, `playlist-filter-sort.test.ts`, `playlist-nav.test.ts`, `unsupported-mime.test.ts`, `media-player-state.test.ts`, `autoplay-blocked.test.ts`, `window-manager-viewers.test.ts`
 - MIME mapping, handler routing, playlist filter/sort, unsupported: log, no crash.
 
 ### Integration
 
 **Location:** `back/__tests__/fp4/`
 
-- `open-url-viewers.integration.test.ts`, `allowlist-types.integration.test.ts`, `unsupported-negative.integration.test.ts`
+- `open-url-viewers.integration.test.ts`, `allowlist-types.integration.test.ts`, `unsupported-negative.integration.test.ts`, `signed-url-reuse.integration.test.ts`
 - Explorer: list + open-url → playlist; Shell SHELL_OPEN_FILE → handler → OPEN_FILE; viewer Prev/Next (no gateway).
 
 ### E2E
@@ -490,6 +492,41 @@ Viewers: код с shell.local (same-origin URL), но sandbox без allow-same
 - [x] Unit + integration green
 - [x] Smoke green
 - [x] docs/fps/FP4.md updated
+
+### M6 (Image Loading) — 2026-02-23
+
+**Problem:** ImageViewer stuck on "Loading..."; images never render.
+
+**Root cause:** Free MinIO has no bucket CORS; `mc cors set` fails. AWS SDK adds `x-amz-checksum-mode` to presigned URLs; MinIO may reject.
+
+**Fixes:**
+
+- Traefik middleware `minio-cors` on s3.shell.local route: Access-Control-Allow-Origin: `*`, methods GET/HEAD
+- Removed `mc cors set` from minio-init
+- Gateway env: `AWS_REQUEST_CHECKSUM_CALCULATION=WHEN_REQUIRED`
+
+**Paths:** `infra/docker-compose.dev.yml`
+
+### M3 HARDEN & REGRESSION — 2026-02-23
+
+**Scope:** Multiple viewers, re-open, Firefox signed URL reuse, evidence.
+
+**Tests added:**
+
+| Test ID         | File                                                      | Purpose                                                               |
+| --------------- | --------------------------------------------------------- | --------------------------------------------------------------------- |
+| T-FP4-M3-MULTI  | `front/__tests__/fp4/window-manager-viewers.test.ts`      | 2 viewer windows each store own playlist; focus switch does not reset |
+| T-FP4-M3-REOPEN | `front/__tests__/fp4/window-manager-viewers.test.ts`      | close → open same file again → new window works                       |
+| T-FP4-M3-REUSE  | `back/__tests__/fp4/signed-url-reuse.integration.test.ts` | same signed URL fetched 5× → 200 each (Firefox smoke, no single-use)  |
+
+**Commands:**
+
+| Command                      | Exit |
+| ---------------------------- | ---- |
+| `./infra/test-unit.sh`       | 0    |
+| `./infra/test-api-fp.sh FP4` | 0    |
+
+**TEMP(FP4.1) docs:** `docs/dev/_tmp/FP4_*.md`, `M1_FIX_NOTES.md`, `archive/FP4/temp_docs/*` — marked TEMP(FP4.1). On archive FP4: merge into FP4.md or delete; see [archive/FP4/README.md](../../archive/FP4/README.md) § Archive checklist.
 
 ---
 
