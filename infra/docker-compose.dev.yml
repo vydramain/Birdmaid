@@ -33,6 +33,7 @@ services:
       - "traefik.http.services.minio.loadbalancer.server.port=9000"
       - "traefik.http.services.minio.loadbalancer.passHostHeader=true"
       # M6+M2: CORS at Traefik (free MinIO has no bucket CORS). Viewer img/video/audio loads from s3.shell.local.
+      # M3: No compress middleware — Range/Content-Range must pass through for mp4 metadata/seek.
       # OPTIONS for preflight (Range requests); GET,HEAD for content.
       - "traefik.http.middlewares.minio-cors.headers.accesscontrolallowmethods=GET,HEAD,OPTIONS"
       - "traefik.http.middlewares.minio-cors.headers.accesscontrolalloworiginlist=*"

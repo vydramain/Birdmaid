@@ -3,8 +3,8 @@
   --wm-titlebar-height-base: 28px;
   --wm-border-width-base: 2px;
   --wm-taskbar-height-base: 32px;
-  --wm-window-min-width-base: 200px;
-  --wm-window-min-height-base: 150px;
+  --wm-window-min-width-base: 320px;
+  --wm-window-min-height-base: 240px;
   --wm-gap-1-base: 4px;
   --wm-gap-2-base: 8px;
   --wm-padding-1-base: 4px;
@@ -157,8 +157,8 @@ body {
 /* Window chrome */
 .wm-window {
   position: absolute;
-  min-width: var(--wm-window-min-width, 12.5rem);
-  min-height: var(--wm-window-min-height, 9.375rem);
+  min-width: var(--wm-window-min-width, 20rem);
+  min-height: var(--wm-window-min-height, 15rem);
   border: var(--wm-border-width, 0.125rem) solid var(--wm-border, #ccc);
   border-radius: 0.25rem;
   box-shadow: var(--wm-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));

@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { WindowManager } from "./core/WindowManager";
+import { WindowManager, DEFAULT_MIN_HEIGHT, DEFAULT_MIN_WIDTH } from "./core/WindowManager";
 import { getHandlerForMime, getMimeForPath } from "./lib/fp4/handler";
 import { analytics } from "./core/analytics";
 import { DesktopView } from "./ui/DesktopView";
@@ -281,18 +281,21 @@ export function Shell() {
       }
       if (resizeStateRef.current) {
         const { id, edge, startX, startY, startBounds } = resizeStateRef.current;
+        const w = wm.getWindow(id);
+        const minW = w?.minWidth ?? DEFAULT_MIN_WIDTH;
+        const minH = w?.minHeight ?? DEFAULT_MIN_HEIGHT;
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
         let { x, y, width, height } = { ...startBounds };
-        if (edge.includes("e")) width = Math.max(200, startBounds.width + dx);
+        if (edge.includes("e")) width = Math.max(minW, startBounds.width + dx);
         if (edge.includes("w")) {
-          const newWidth = Math.max(200, startBounds.width - dx);
+          const newWidth = Math.max(minW, startBounds.width - dx);
           x = startBounds.x + startBounds.width - newWidth;
           width = newWidth;
         }
-        if (edge.includes("s")) height = Math.max(150, startBounds.height + dy);
+        if (edge.includes("s")) height = Math.max(minH, startBounds.height + dy);
         if (edge.includes("n")) {
-          const newHeight = Math.max(150, startBounds.height - dy);
+          const newHeight = Math.max(minH, startBounds.height - dy);
           y = startBounds.y + startBounds.height - newHeight;
           height = newHeight;
         }

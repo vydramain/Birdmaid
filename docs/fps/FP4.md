@@ -1,6 +1,6 @@
 # FP4: System Viewers & Players (Image / Audio / Video)
 
-**Status:** released (gate REJECT: git status not empty; commit required for PASS)  
+**Status:** released  
 **Created:** 2025-02-23  
 **Updated:** 2026-02-23  
 **Audit:** [FP4_AUDIT_REPORT.md](../audit/FP4_AUDIT_REPORT.md)  
@@ -527,6 +527,47 @@ Viewers: код с shell.local (same-origin URL), но sandbox без allow-same
 | `./infra/test-api-fp.sh FP4` | 0    |
 
 **TEMP(FP4.1) docs:** `docs/dev/_tmp/FP4_*.md`, `M1_FIX_NOTES.md`, `archive/FP4/temp_docs/*` — marked TEMP(FP4.1). On archive FP4: merge into FP4.md or delete; see [archive/FP4/README.md](../../archive/FP4/README.md) § Archive checklist.
+
+### FP4.1 HOTFIX (Media Player) — 2026-02-24
+
+**Scope:** R1 play() reject handling, R2 min window size, R3 no scrollbars, R4 object-fit (verify), R5 logs only.
+
+**Paths changed:**
+
+| File                                              | Change                                                                                             |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `front/apps/media-player/main.ts`                 | syncMediaToState: play() Promise — .then() hide pressPlay, .catch() console.error + show pressPlay |
+| `front/apps/media-player/index.html`              | html,body + .player-root { overflow: hidden }                                                      |
+| `front/core/WindowManager.ts`                     | minWidth/minHeight per window; updateBounds enforces                                               |
+| `front/Shell.tsx`                                 | resize handler uses per-window min; default 320×240 for all iframe windows                         |
+| `front/__tests__/fp4/media-player-hotfix.test.ts` | T-FP4-HOTFIX-PLAY-REJECT, OVERFLOW, OBJECT-FIT, MIN-SIZE                                           |
+
+**Commands:** `pnpm lint` 0, `pnpm format:check` 0, `pnpm test` 0, `vitest run back/__tests__/fp4/` 0.
+
+### FP4.1 min-size (320×240) — 2026-02-24
+
+**Scope:** Default min 320×240 for all iframe windows; clamp on resize, restore, programmatic update.
+
+**Paths changed:**
+
+| File                                              | Change                                                                                        |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `front/core/WindowManager.ts`                     | DEFAULT_MIN_WIDTH=320, DEFAULT_MIN_HEIGHT=240; unmaximize clamps prevBounds; export constants |
+| `front/Shell.tsx`                                 | resize handler: wm.getWindow(id) for per-window min; removed Media Player override            |
+| `front/index.css`                                 | --wm-window-min-width-base: 320px; --wm-window-min-height-base: 240px; fallbacks 20rem/15rem  |
+| `front/__tests__/fp4/window-min-size.test.ts`     | NEW: T-MIN-DEFAULT, T-MIN-RESTORE, T-MIN-NO-CHANGE, T-MIN-OVERRIDE                            |
+| `front/__tests__/fp4/media-player-hotfix.test.ts` | T-FP4-HOTFIX-MIN-SIZE: default 320×240 for iframe window                                      |
+
+**Per-window override:** `createWindow({ minWidth: 400, minHeight: 300 })` — optional per-window override.
+
+**Commands:**
+
+| Command             | Exit |
+| ------------------- | ---- |
+| `./infra/smoke.sh`  | 0    |
+| `pnpm lint`         | 0    |
+| `pnpm format:check` | 0    |
+| `pnpm test`         | 0    |
 
 ---
 

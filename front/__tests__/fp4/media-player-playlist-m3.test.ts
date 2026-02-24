@@ -47,15 +47,6 @@ describe("FP4 Media Player — OPEN_FILE playlist (M3)", () => {
   it("T-FP4-M3-MP-PLAYLIST: OPEN_FILE with 2+ items enables Prev/Next", async () => {
     const url1 = "http://s3.shell.local/a.mp3";
     const url2 = "http://s3.shell.local/b.mp3";
-    const blob = new Blob([], { type: "audio/mpeg" });
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        headers: new Headers({ "Content-Type": "audio/mpeg" }),
-        blob: () => Promise.resolve(blob),
-      })
-    );
     await import("../../apps/media-player/main");
 
     window.dispatchEvent(
@@ -75,6 +66,12 @@ describe("FP4 Media Player — OPEN_FILE playlist (M3)", () => {
       })
     );
 
+    const audio = await vi.waitFor(
+      () => document.querySelector("#player-audio") as HTMLAudioElement,
+      { timeout: 500 }
+    );
+    audio.dispatchEvent(new Event("canplay"));
+
     const prevBtn = document.getElementById("btn-prev") as HTMLButtonElement;
     const nextBtn = document.getElementById("btn-next") as HTMLButtonElement;
     expect(prevBtn).toBeTruthy();
@@ -87,13 +84,6 @@ describe("FP4 Media Player — OPEN_FILE playlist (M3)", () => {
     const url1 = "http://s3.shell.local/a.mp3";
     const url2 = "http://s3.shell.local/b.mp3";
     const url3 = "http://s3.shell.local/c.mp3";
-    const blob = new Blob([], { type: "audio/mpeg" });
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      headers: new Headers({ "Content-Type": "audio/mpeg" }),
-      blob: () => Promise.resolve(blob),
-    });
-    vi.stubGlobal("fetch", fetchMock);
     await import("../../apps/media-player/main");
 
     window.dispatchEvent(
@@ -114,29 +104,26 @@ describe("FP4 Media Player — OPEN_FILE playlist (M3)", () => {
       })
     );
 
+    const audio = await vi.waitFor(
+      () => document.querySelector("#player-audio") as HTMLAudioElement,
+      { timeout: 500 }
+    );
+    expect(audio.src).toContain("b.mp3");
+    audio.dispatchEvent(new Event("canplay"));
+
     const prevBtn = document.getElementById("btn-prev") as HTMLButtonElement;
     const nextBtn = document.getElementById("btn-next") as HTMLButtonElement;
-    await vi.waitFor(
-      () => {
-        const audio = document.querySelector("#player-audio") as HTMLAudioElement;
-        expect(audio).toBeTruthy();
-        expect(audio.src).toMatch(/^blob:/);
-      },
-      { timeout: 1000 }
-    );
 
     nextBtn.click();
-    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledWith(url3, expect.any(Object)), {
-      timeout: 500,
-    });
+    await vi.waitFor(() => expect(audio.src).toContain("c.mp3"), { timeout: 500 });
 
     nextBtn.click();
-    expect(fetchMock).toHaveBeenCalledWith(url1, expect.any(Object));
+    expect(audio.src).toContain("a.mp3");
 
     prevBtn.click();
-    expect(fetchMock).toHaveBeenCalledWith(url3, expect.any(Object));
+    expect(audio.src).toContain("c.mp3");
 
     prevBtn.click();
-    expect(fetchMock).toHaveBeenCalledWith(url2, expect.any(Object));
+    expect(audio.src).toContain("b.mp3");
   });
 });

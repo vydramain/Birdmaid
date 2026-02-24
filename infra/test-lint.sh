@@ -6,6 +6,7 @@ set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
 docker run --rm \
+  -e CI=true \
   -v "$(pwd)":/app \
   -w /app \
   node:22-alpine \

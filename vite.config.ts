@@ -47,6 +47,23 @@ export default defineConfig({
             res.end(JSON.stringify({ status: "ok" }));
             return;
           }
+          // Trailing slash redirect: /apps/{viewer} → /apps/{viewer}/ (base href expects slash)
+          const viewerRedirect = (path: string) => {
+            if (
+              req.url === path ||
+              (req.url?.startsWith(path + "?") && !req.url.startsWith(path + "/"))
+            ) {
+              res.statusCode = 301;
+              res.setHeader(
+                "Location",
+                req.url === path ? path + "/" : path + "/" + (req.url?.slice(path.length) ?? "")
+              );
+              res.end();
+              return true;
+            }
+            return false;
+          };
+          if (viewerRedirect("/apps/image-viewer") || viewerRedirect("/apps/media-player")) return;
           if (req.url?.startsWith("/apps/explorer")) {
             if (!req.url.includes(".") || req.url === "/apps/explorer/") {
               req.url = "/front/apps/explorer/index.html";

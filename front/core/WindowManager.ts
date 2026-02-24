@@ -27,14 +27,20 @@ export interface WindowRecord {
   bounds: WindowBounds;
   src?: string;
   openFilePayload?: OpenFilePayload;
+  /** FP4.1: per-app min size (optional). */
+  minWidth?: number;
+  minHeight?: number;
 }
 
 const DEFAULT_WIDTH = 400;
 const DEFAULT_HEIGHT = 300;
 const DEFAULT_X = 100;
 const DEFAULT_Y = 80;
-const MIN_WIDTH = 200;
-const MIN_HEIGHT = 150;
+/** FP4.1: default min size for iframe windows. */
+export const DEFAULT_MIN_WIDTH = 320;
+export const DEFAULT_MIN_HEIGHT = 240;
+const MIN_WIDTH = DEFAULT_MIN_WIDTH;
+const MIN_HEIGHT = DEFAULT_MIN_HEIGHT;
 
 let nextId = 1;
 
@@ -60,6 +66,8 @@ export class WindowManager {
     src?: string;
     title?: string;
     openFilePayload?: OpenFilePayload;
+    minWidth?: number;
+    minHeight?: number;
   }): WindowRecord {
     const id = opts.id ?? genId();
     if (this.windows.has(id)) {
@@ -77,6 +85,8 @@ export class WindowManager {
       },
       src: opts.src,
       openFilePayload: opts.openFilePayload,
+      minWidth: opts.minWidth,
+      minHeight: opts.minHeight,
     };
     this.windows.set(id, win);
     this.zOrder.push(id);
@@ -129,7 +139,13 @@ export class WindowManager {
     if (w.state === "maximized") {
       const prev = this.prevBounds.get(id);
       if (prev) {
-        w.bounds = { ...prev };
+        const minW = w.minWidth ?? MIN_WIDTH;
+        const minH = w.minHeight ?? MIN_HEIGHT;
+        w.bounds = {
+          ...prev,
+          width: Math.max(minW, prev.width),
+          height: Math.max(minH, prev.height),
+        };
         this.prevBounds.delete(id);
       }
       w.state = "normal";
@@ -170,8 +186,10 @@ export class WindowManager {
     if (w.state === "maximized") return;
     if (bounds.x !== undefined) w.bounds.x = bounds.x;
     if (bounds.y !== undefined) w.bounds.y = bounds.y;
-    if (bounds.width !== undefined) w.bounds.width = Math.max(MIN_WIDTH, bounds.width);
-    if (bounds.height !== undefined) w.bounds.height = Math.max(MIN_HEIGHT, bounds.height);
+    const minW = w.minWidth ?? MIN_WIDTH;
+    const minH = w.minHeight ?? MIN_HEIGHT;
+    if (bounds.width !== undefined) w.bounds.width = Math.max(minW, bounds.width);
+    if (bounds.height !== undefined) w.bounds.height = Math.max(minH, bounds.height);
   }
 
   updateTitle(id: string, title: string): void {
