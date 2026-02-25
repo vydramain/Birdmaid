@@ -1,9 +1,11 @@
 /**
  * FP4 Media Player HOTFIX — R1 play() reject, R3 overflow, R4 object-fit, R2 min size.
+ * Layout+seek: computeSeekTime, duration disabled, flex layout.
  * M1 Red: tests fail before implementation.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { computeSeekTime, isSeekDisabled } from "../../lib/fp4/seek";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { WindowManager } from "../../core/WindowManager";
@@ -138,6 +140,70 @@ describe("FP4 Media Player HOTFIX", () => {
       const updated = wm.getWindow(win.id);
       expect(updated?.bounds.width).toBe(320);
       expect(updated?.bounds.height).toBe(240);
+    });
+  });
+
+  describe("Seek: computeSeekTime", () => {
+    it("T-FP4-SEEK-CLAMP: computeSeekTime clamps to [0, duration]", () => {
+      const rect = new DOMRect(0, 0, 100, 10);
+      expect(computeSeekTime(0, rect, 60)).toBe(0);
+      expect(computeSeekTime(50, rect, 60)).toBe(30);
+      expect(computeSeekTime(100, rect, 60)).toBe(60);
+      expect(computeSeekTime(-10, rect, 60)).toBe(0);
+      expect(computeSeekTime(150, rect, 60)).toBe(60);
+    });
+
+    it("T-FP4-SEEK-RECT-OFFSET: computeSeekTime uses rect.left", () => {
+      const rect = new DOMRect(20, 0, 60, 10);
+      expect(computeSeekTime(20, rect, 60)).toBe(0);
+      expect(computeSeekTime(50, rect, 60)).toBe(30);
+      expect(computeSeekTime(80, rect, 60)).toBe(60);
+    });
+  });
+
+  describe("Seek: duration NaN/Infinity => disabled", () => {
+    it("T-FP4-SEEK-DISABLED: isSeekDisabled true for NaN", () => {
+      expect(isSeekDisabled(Number.NaN)).toBe(true);
+    });
+    it("T-FP4-SEEK-DISABLED: isSeekDisabled true for Infinity", () => {
+      expect(isSeekDisabled(Number.POSITIVE_INFINITY)).toBe(true);
+      expect(isSeekDisabled(Number.NEGATIVE_INFINITY)).toBe(true);
+    });
+    it("T-FP4-SEEK-DISABLED: isSeekDisabled false for finite positive duration", () => {
+      expect(isSeekDisabled(60)).toBe(false);
+    });
+  });
+
+  describe("Layout: controls always visible (flex column)", () => {
+    it("T-FP4-LAYOUT-ROOT: player-root has flex column + overflow hidden", () => {
+      const htmlPath = resolve(__dirname, "../../apps/media-player/index.html");
+      const html = readFileSync(htmlPath, "utf-8");
+      expect(html).toMatch(/\.player-root\s*\{[^}]*display:\s*flex/);
+      expect(html).toMatch(/\.player-root\s*\{[^}]*flex-direction:\s*column/);
+      expect(html).toMatch(/\.player-root\s*\{[^}]*overflow:\s*hidden/);
+    });
+
+    it("T-FP4-LAYOUT-CONTROLS-LAST: controls container is last child of player-root", () => {
+      const htmlPath = resolve(__dirname, "../../apps/media-player/index.html");
+      const html = readFileSync(htmlPath, "utf-8");
+      const rootStart = html.indexOf('id="player-root"');
+      const rootEnd = html.indexOf("<!-- M1+M2:", rootStart);
+      expect(rootStart).toBeGreaterThan(-1);
+      expect(rootEnd).toBeGreaterThan(rootStart);
+      const rootContent = html.slice(rootStart, rootEnd);
+      const controlsIdx = rootContent.indexOf("player-controls");
+      const videoAreaIdx = rootContent.indexOf("player-video-area");
+      expect(controlsIdx).toBeGreaterThan(videoAreaIdx);
+      const afterControls = rootContent.slice(controlsIdx);
+      expect(afterControls).not.toMatch(
+        /<div[^>]*(?:id|class)="[^"]*player-(?:video|audio|press|load)/
+      );
+    });
+
+    it("T-FP4-LAYOUT-CONTROLS-FLEX: player-controls has flex 0 0 auto", () => {
+      const htmlPath = resolve(__dirname, "../../apps/media-player/index.html");
+      const html = readFileSync(htmlPath, "utf-8");
+      expect(html).toMatch(/\.player-controls\s*\{[^}]*flex:\s*0\s+0\s+auto/);
     });
   });
 });

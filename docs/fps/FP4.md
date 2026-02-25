@@ -569,6 +569,31 @@ Viewers: код с shell.local (same-origin URL), но sandbox без allow-same
 | `pnpm format:check` | 0    |
 | `pnpm test`         | 0    |
 
+### FP4.1 HOTFIX (MediaPlayer layout + seek) — 2026-02-26
+
+**Scope:** R1–R4 layout + timeline seek. Video overlaps controls fix; interactive seek.
+
+**Paths changed:**
+
+| File                                               | Change                                                                                               |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `front/core/WindowManager.ts`                      | Restore DEFAULT_MIN_WIDTH=320, DEFAULT_MIN_HEIGHT=240 (was 640×400)                                  |
+| `front/apps/media-player/index.html`               | player-root height:100%; player-controls flex:0 0 auto; timeline bar + thumb; .disabled class        |
+| `front/apps/media-player/main.ts`                  | updateTimelineUI, setupTimelineSeek; onloadedmetadata, ontimeupdate; computeSeekTime, isSeekDisabled |
+| `front/lib/fp4/seek.ts`                            | NEW: computeSeekTime(x, rect, duration), isSeekDisabled(duration)                                    |
+| `front/__tests__/fp4/media-player-hotfix.test.ts`  | T-FP4-SEEK-CLAMP, T-FP4-SEEK-RECT-OFFSET, T-FP4-SEEK-DISABLED, T-FP4-LAYOUT-ROOT/CONTROLS-LAST/FLEX  |
+| `docs/audit/FP4_MEDIA_PLAYER_LAYOUT_SEEK_AUDIT.md` | NEW: M0 audit                                                                                        |
+
+**Commands:**
+
+| Command                      | Exit          |
+| ---------------------------- | ------------- |
+| `./infra/smoke.sh`           | 0             |
+| `./infra/test-lint.sh`       | 0             |
+| `./infra/test-unit.sh`       | 0 (133 tests) |
+| `./infra/test-api-fp.sh FP4` | 0 (57 tests)  |
+| `./infra/gate.sh FP4`        | 0             |
+
 ---
 
 ## References

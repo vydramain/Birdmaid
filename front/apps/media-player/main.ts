@@ -6,6 +6,7 @@
 import { nextIndex, prevIndex } from "../../lib/fp4/playlist";
 import { MediaPlayerState } from "../../lib/fp4/MediaPlayerState";
 import { shouldShowPressPlay } from "../../lib/fp4/autoplay";
+import { computeSeekTime, isSeekDisabled } from "../../lib/fp4/seek";
 
 interface PlaylistItem {
   path: string;
@@ -37,6 +38,63 @@ function getEl(id: string): HTMLElement | null {
 
 function updateTitle(name: string): void {
   send("WINDOW_TITLE", { title: name || "Media Player" });
+}
+
+function updateTimelineUI(): void {
+  const timeline = getEl("player-timeline") as HTMLElement | null;
+  const fill = getEl("player-timeline-fill");
+  const thumb = getEl("player-timeline-thumb");
+  if (!timeline || !mediaEl || !fill || !thumb) return;
+  const duration = mediaEl.duration;
+  const disabled = isSeekDisabled(duration);
+  timeline.setAttribute("aria-valuemax", String(duration));
+  if (disabled) {
+    timeline.setAttribute("aria-disabled", "true");
+    timeline.classList.add("disabled");
+    fill.style.width = "0%";
+    thumb.style.left = "0%";
+    return;
+  }
+  timeline.setAttribute("aria-disabled", "false");
+  timeline.classList.remove("disabled");
+  const t = mediaEl.currentTime;
+  const pct = duration > 0 ? (t / duration) * 100 : 0;
+  timeline.setAttribute("aria-valuenow", String(t));
+  fill.style.width = `${pct}%`;
+  thumb.style.left = `${pct}%`;
+}
+
+function setupTimelineSeek(): void {
+  const timeline = getEl("player-timeline");
+  if (!timeline) return;
+  let seeking = false;
+  const onPointerUp = (e: PointerEvent): void => {
+    if (!seeking || !mediaEl) return;
+    seeking = false;
+    timeline.releasePointerCapture(e.pointerId);
+    const rect = timeline.getBoundingClientRect();
+    const t = computeSeekTime(e.clientX, rect, mediaEl.duration);
+    if (Number.isFinite(mediaEl.duration) && mediaEl.duration > 0) {
+      mediaEl.currentTime = t;
+    }
+  };
+  timeline.addEventListener("pointerdown", (e: PointerEvent) => {
+    if (timeline.classList.contains("disabled") || isSeekDisabled(mediaEl?.duration ?? NaN)) return;
+    seeking = true;
+    timeline.setPointerCapture(e.pointerId);
+  });
+  timeline.addEventListener("pointermove", (e: PointerEvent) => {
+    if (!seeking || !mediaEl) return;
+    const rect = timeline.getBoundingClientRect();
+    const t = computeSeekTime(e.clientX, rect, mediaEl.duration);
+    if (Number.isFinite(mediaEl.duration) && mediaEl.duration > 0) {
+      mediaEl.currentTime = t;
+    }
+  }); // seek while dragging (immediate feedback)
+  timeline.addEventListener("pointerup", onPointerUp);
+  timeline.addEventListener("pointercancel", () => {
+    seeking = false;
+  });
 }
 
 function syncMediaToState(): void {
@@ -111,6 +169,8 @@ function setMediaSrcAndPlay(
     if (loadError) loadError.style.setProperty("display", "block");
   };
   el.oncanplay = () => resolveLoad();
+  el.onloadedmetadata = () => updateTimelineUI();
+  el.ontimeupdate = () => updateTimelineUI();
   el.crossOrigin = "anonymous";
   el.src = srcUrl;
   el.load();
@@ -258,6 +318,8 @@ function handleOpenFile(payload: {
       if (mediaEl) mediaEl.volume = state.volume / 100;
     };
   }
+
+  setupTimelineSeek();
 
   if (keydownHandlerRef) {
     document.removeEventListener("keydown", keydownHandlerRef);
