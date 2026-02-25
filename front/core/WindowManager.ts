@@ -36,11 +36,24 @@ const DEFAULT_WIDTH = 400;
 const DEFAULT_HEIGHT = 300;
 const DEFAULT_X = 100;
 const DEFAULT_Y = 80;
-/** FP4.1: default min size for iframe windows. */
-export const DEFAULT_MIN_WIDTH = 320;
-export const DEFAULT_MIN_HEIGHT = 240;
+/** FP4.1: default min size for iframe windows. SSOT: TS is source, CSS consumes via vars. */
+export const DEFAULT_MIN_WIDTH = 640;
+export const DEFAULT_MIN_HEIGHT = 400;
 const MIN_WIDTH = DEFAULT_MIN_WIDTH;
 const MIN_HEIGHT = DEFAULT_MIN_HEIGHT;
+
+/** REPO M2: computed min size in px (scale applied once). Used for CSS vars and resize. */
+export function getComputedMinSize(
+  scale: number,
+  overrides?: { minWidth?: number; minHeight?: number }
+): { width: number; height: number } {
+  const baseW = overrides?.minWidth ?? DEFAULT_MIN_WIDTH;
+  const baseH = overrides?.minHeight ?? DEFAULT_MIN_HEIGHT;
+  return {
+    width: Math.round(baseW * scale),
+    height: Math.round(baseH * scale),
+  };
+}
 
 let nextId = 1;
 

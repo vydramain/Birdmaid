@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { WindowManager, DEFAULT_MIN_HEIGHT, DEFAULT_MIN_WIDTH } from "./core/WindowManager";
+import { WindowManager, getComputedMinSize } from "./core/WindowManager";
 import { getHandlerForMime, getMimeForPath } from "./lib/fp4/handler";
 import { analytics } from "./core/analytics";
 import { DesktopView } from "./ui/DesktopView";
@@ -282,8 +282,10 @@ export function Shell() {
       if (resizeStateRef.current) {
         const { id, edge, startX, startY, startBounds } = resizeStateRef.current;
         const w = wm.getWindow(id);
-        const minW = w?.minWidth ?? DEFAULT_MIN_WIDTH;
-        const minH = w?.minHeight ?? DEFAULT_MIN_HEIGHT;
+        const { width: minW, height: minH } = getComputedMinSize(scale, {
+          minWidth: w?.minWidth,
+          minHeight: w?.minHeight,
+        });
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
         let { x, y, width, height } = { ...startBounds };
@@ -319,7 +321,7 @@ export function Shell() {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
     };
-  }, [wm, refresh, clampDrag]);
+  }, [wm, refresh, clampDrag, scale]);
 
   const taskbarItems = windows.map((w) => ({
     windowId: w.id,
@@ -399,6 +401,8 @@ export function Shell() {
               actions={getActions(id)}
               theme={theme}
               scale={scale}
+              minWidth={w.minWidth}
+              minHeight={w.minHeight}
             >
               {w.src ? (
                 <AppHost

@@ -1,4 +1,5 @@
 import type { WindowState, WindowActions, ResizeEdge } from "../core/types";
+import { getComputedMinSize } from "../core/WindowManager";
 
 interface WindowChromeViewProps {
   window: WindowState;
@@ -6,6 +7,8 @@ interface WindowChromeViewProps {
   actions: WindowActions;
   theme: { fontFamily: string };
   scale: number;
+  minWidth?: number;
+  minHeight?: number;
   zIndex?: number;
   children?: React.ReactNode;
 }
@@ -16,11 +19,18 @@ export function WindowChromeView({
   window: win,
   isActive,
   actions,
+  scale,
+  minWidth,
+  minHeight,
   children,
   zIndex = 100,
 }: WindowChromeViewProps) {
   const isMinimized = win.state === "minimized";
   const isMaximized = win.state === "maximized";
+  const { width: minW, height: minH } = getComputedMinSize(scale, {
+    minWidth,
+    minHeight,
+  });
 
   return (
     <div
@@ -31,6 +41,7 @@ export function WindowChromeView({
       data-maximized={isMaximized ? "true" : undefined}
       // inline-style: allowed (reason: drag/resize; why: bounds from WindowManager state; revisit: FP7)
       // FP3.1 M9: display:none when minimized keeps iframe mounted, preserves Explorer path
+      // REPO M2: --wm-window-min-*-px from TS (SSOT)
       style={{
         left: win.bounds.x,
         top: win.bounds.y,
@@ -38,6 +49,8 @@ export function WindowChromeView({
         height: win.bounds.height,
         zIndex,
         display: isMinimized ? "none" : undefined,
+        ["--wm-window-min-width-px" as string]: `${minW}px`,
+        ["--wm-window-min-height-px" as string]: `${minH}px`,
       }}
     >
       <div

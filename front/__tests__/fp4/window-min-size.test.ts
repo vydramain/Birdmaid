@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
+import * as WindowManagerModule from "../../core/WindowManager";
 import { WindowManager } from "../../core/WindowManager";
 
 const DEFAULT_MIN_WIDTH = 320;
@@ -53,5 +54,22 @@ describe("FP4.1 iframe window min size (320×240)", () => {
     const w = wm.getWindow(win.id);
     expect(w?.bounds.width).toBe(400);
     expect(w?.bounds.height).toBe(300);
+  });
+});
+
+/**
+ * REPO M1 RED: SSOT min-size export.
+ * Fails until getComputedMinSize(scale) is implemented in WindowManager.
+ */
+describe("REPO M1 SSOT: computed min size export", () => {
+  it("T-SSOT-COMPUTED: scale=1.0, no override → computedMinWidthPx == 320, computedMinHeightPx == 240", () => {
+    const WM = WindowManagerModule as {
+      getComputedMinSize?: (scale: number) => { width: number; height: number };
+    };
+    const getComputedMinSize = WM.getComputedMinSize;
+    expect(getComputedMinSize).toBeDefined();
+    const { width, height } = getComputedMinSize!(1.0);
+    expect(width).toBe(320);
+    expect(height).toBe(240);
   });
 });
