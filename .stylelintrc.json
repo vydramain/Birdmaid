@@ -17,7 +17,8 @@
     "dist/**",
     "coverage/**",
     "__tests__/**/*.test.{ts,tsx,js,jsx,css,scss}",
-    "!__tests__/style-guardrails/**"
+    "!__tests__/style-guardrails/**",
+    "infra/minio/fixtures/**"
   ],
   "overrides": [
     {

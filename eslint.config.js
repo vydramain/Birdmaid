@@ -42,9 +42,12 @@ export default tseslint.config(
   },
   {
     files: [
-      "front/apps/explorer/main.ts",
-      "front/apps/image-viewer/main.ts",
-      "front/apps/media-player/main.ts",
+      "infra/minio/fixtures/DISK_C/Program Files/Explorer/main.ts",
+      "infra/minio/fixtures/DISK_C/Program Files/Explorer/_source/main.ts",
+      "infra/minio/fixtures/DISK_C/Program Files/Image Viewer/main.ts",
+      "infra/minio/fixtures/DISK_C/Program Files/Image Viewer/_source/main.ts",
+      "infra/minio/fixtures/DISK_C/Program Files/Media Player/main.ts",
+      "infra/minio/fixtures/DISK_C/Program Files/Media Player/_source/main.ts",
     ],
     rules: { "no-console": "off" }, // FP3/FP4: Explorer + viewers log errors (M3)
   }

@@ -24,6 +24,10 @@ done
 # Create bucket
 mc mb "myminio/$BUCKET" --ignore-existing
 
+# Public read so app assets (./assets/*.js, *.css) load without per-object signing.
+# index.html is loaded via signed URL; relative script/link URLs need anonymous GET.
+mc anonymous set download "myminio/$BUCKET" || true
+
 # CORS: free MinIO does not support bucket CORS. Use Traefik middleware (docker-compose) instead.
 # mc cors set "$CORS_JSON" "myminio/$BUCKET" || true
 

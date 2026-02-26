@@ -4,7 +4,19 @@ import { resolve } from "path";
 
 const API_PROXY_TARGET = process.env.VITE_API_PROXY_TARGET ?? "http://127.0.0.1:80";
 
+const FIXTURE_APPS = {
+  explorer: "infra/minio/fixtures/DISK_C/Program Files/Explorer",
+  "image-viewer": "infra/minio/fixtures/DISK_C/Program Files/Image Viewer",
+  "media-player": "infra/minio/fixtures/DISK_C/Program Files/Media Player",
+} as const;
+
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@lib": resolve(__dirname, "front/lib"),
+      "@shared": resolve(__dirname, "front/shared"),
+    },
+  },
   plugins: [
     {
       name: "health",
@@ -15,15 +27,16 @@ export default defineConfig({
           // M1 fix (Option C): viewer assets need ACAO for opaque-origin iframe (sandbox allow-scripts).
           // Module scripts in opaque-origin context require CORS; ACAO: * allows load.
           // Include @vite/client, @id/, @react-refresh (Vite injects these into HTML in dev).
-          // Include /front/lib/ (viewer imports e.g. playlist.ts) and /front/apps/ (viewer entry modules).
+          // Include /front/lib/ (viewer imports e.g. playlist.ts) and fixture app paths.
           const needsCors =
             u.includes("image-viewer") ||
             u.includes("media-player") ||
+            u.includes("explorer") ||
             u.startsWith("/@vite/") ||
             u.startsWith("/@id/") ||
             u.startsWith("/@react-refresh") ||
             u.startsWith("/front/lib/") ||
-            u.startsWith("/front/apps/") ||
+            u.startsWith("/infra/minio/fixtures/") ||
             u.includes("/node_modules/");
           if (needsCors) {
             res.setHeader("Access-Control-Allow-Origin", "*");
@@ -66,23 +79,29 @@ export default defineConfig({
           if (viewerRedirect("/apps/image-viewer") || viewerRedirect("/apps/media-player")) return;
           if (req.url?.startsWith("/apps/explorer")) {
             if (!req.url.includes(".") || req.url === "/apps/explorer/") {
-              req.url = "/front/apps/explorer/index.html";
+              req.url = "/" + FIXTURE_APPS.explorer + "/index.html";
             } else {
-              req.url = req.url.replace("/apps/explorer/", "/front/apps/explorer/");
+              req.url = req.url.replace("/apps/explorer/", "/" + FIXTURE_APPS.explorer + "/");
             }
           }
           if (req.url?.startsWith("/apps/image-viewer")) {
             if (!req.url.includes(".") || req.url === "/apps/image-viewer/") {
-              req.url = "/front/apps/image-viewer/index.html";
+              req.url = "/" + FIXTURE_APPS["image-viewer"] + "/index.html";
             } else {
-              req.url = req.url.replace("/apps/image-viewer/", "/front/apps/image-viewer/");
+              req.url = req.url.replace(
+                "/apps/image-viewer/",
+                "/" + FIXTURE_APPS["image-viewer"] + "/"
+              );
             }
           }
           if (req.url?.startsWith("/apps/media-player")) {
             if (!req.url.includes(".") || req.url === "/apps/media-player/") {
-              req.url = "/front/apps/media-player/index.html";
+              req.url = "/" + FIXTURE_APPS["media-player"] + "/index.html";
             } else {
-              req.url = req.url.replace("/apps/media-player/", "/front/apps/media-player/");
+              req.url = req.url.replace(
+                "/apps/media-player/",
+                "/" + FIXTURE_APPS["media-player"] + "/"
+              );
             }
           }
           if (req.url?.startsWith("/viewers/")) {
@@ -126,9 +145,9 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
-        explorer: resolve(__dirname, "front/apps/explorer/index.html"),
-        "image-viewer": resolve(__dirname, "front/apps/image-viewer/index.html"),
-        "media-player": resolve(__dirname, "front/apps/media-player/index.html"),
+        explorer: resolve(__dirname, FIXTURE_APPS.explorer, "index.html"),
+        "image-viewer": resolve(__dirname, FIXTURE_APPS["image-viewer"], "index.html"),
+        "media-player": resolve(__dirname, FIXTURE_APPS["media-player"], "index.html"),
         "viewers/image": resolve(__dirname, "front/viewers/image.html"),
       },
     },

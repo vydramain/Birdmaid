@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:apps": "APP=image-viewer vite build -c vite.apps.config.ts && APP=image-viewer node scripts/copy-app-to-fixtures.cjs && APP=media-player vite build -c vite.apps.config.ts && APP=media-player node scripts/copy-app-to-fixtures.cjs && APP=explorer vite build -c vite.apps.config.ts && APP=explorer node scripts/copy-app-to-fixtures.cjs",
     "preview": "vite preview",
     "lint": "pnpm check:styles && eslint front e2e back vite.config.ts playwright.config.ts vitest.config.ts vitest.api.config.ts --max-warnings 0 && stylelint \"front/**/*.{css,scss}\" --max-warnings 0 --allow-empty-input",
     "format": "prettier -w .",

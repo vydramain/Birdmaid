@@ -6,13 +6,9 @@
  * FP4 M3: list + open-url → playlist → SHELL_OPEN_FILE for image/audio/video.
  */
 
-import "../../shared/fs-tile.css";
-import { getMimeForPath } from "../../lib/fp4/handler";
-import {
-  getExtensionsForMedia,
-  filterMediaItems,
-  sortByLocaleCompare,
-} from "../../lib/fp4/playlist";
+import "@shared/fs-tile.css";
+import { getMimeForPath } from "@lib/fp4/handler";
+import { getExtensionsForMedia, filterMediaItems, sortByLocaleCompare } from "@lib/fp4/playlist";
 
 let systemToken: string | null = null;
 
@@ -23,13 +19,16 @@ window.addEventListener("message", (e) => {
   }
 });
 
+// When loaded from s3.shell.local (signed URL), API is on api.shell.local — use absolute base.
+// When on shell.local or localhost, relative URLs work (dev proxy).
 const API_BASE =
   typeof window !== "undefined" &&
-  (window.location.origin.includes("shell.local") ||
-    window.location.origin.includes("localhost") ||
-    window.location.origin.includes("127.0.0.1"))
-    ? ""
-    : "http://api.shell.local";
+  (window.location.hostname === "s3.shell.local" ||
+    (!window.location.origin.includes("shell.local") &&
+      !window.location.origin.includes("localhost") &&
+      !window.location.origin.includes("127.0.0.1")))
+    ? "http://api.shell.local"
+    : "";
 
 interface Root {
   id: string;

@@ -47,7 +47,7 @@ describe("FP4 Media Player — OPEN_FILE playlist (M3)", () => {
   it("T-FP4-M3-MP-PLAYLIST: OPEN_FILE with 2+ items enables Prev/Next", async () => {
     const url1 = "http://s3.shell.local/a.mp3";
     const url2 = "http://s3.shell.local/b.mp3";
-    await import("../../apps/media-player/main");
+    await import("../../../infra/minio/fixtures/DISK_C/Program Files/Media Player/main");
 
     window.dispatchEvent(
       new MessageEvent("message", {
@@ -84,7 +84,7 @@ describe("FP4 Media Player — OPEN_FILE playlist (M3)", () => {
     const url1 = "http://s3.shell.local/a.mp3";
     const url2 = "http://s3.shell.local/b.mp3";
     const url3 = "http://s3.shell.local/c.mp3";
-    await import("../../apps/media-player/main");
+    await import("../../../infra/minio/fixtures/DISK_C/Program Files/Media Player/main");
 
     window.dispatchEvent(
       new MessageEvent("message", {

@@ -16,7 +16,13 @@ import {
 import { checkWritable, validateRenameSameParent } from "./path-policy.js";
 import { checkUploadAllowlist } from "./upload-allowlist.js";
 
-const ALLOWED_ORIGINS = ["http://shell.local", "http://api.shell.local", "http://localhost:5173"];
+// s3.shell.local: Explorer/Image Viewer/Media Player loaded via signed URL need API (roots, list, open-url)
+const ALLOWED_ORIGINS = [
+  "http://shell.local",
+  "http://api.shell.local",
+  "http://s3.shell.local",
+  "http://localhost:5173",
+];
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || "0.0.0.0";

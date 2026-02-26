@@ -3,7 +3,7 @@
  * Sandbox: allow-scripts only. No gateway. Content via signed URL only.
  */
 
-import { nextIndex, prevIndex } from "../../lib/fp4/playlist";
+import { nextIndex, prevIndex } from "@lib/fp4/playlist";
 
 interface PlaylistItem {
   path: string;

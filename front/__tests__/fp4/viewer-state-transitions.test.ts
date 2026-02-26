@@ -42,7 +42,7 @@ describe("FP4 Image Viewer — state transitions", () => {
         blob: () => Promise.resolve(blob),
       })
     );
-    await import("../../apps/image-viewer/main");
+    await import("../../../infra/minio/fixtures/DISK_C/Program Files/Image Viewer/main");
 
     window.dispatchEvent(
       new MessageEvent("message", {
@@ -75,7 +75,7 @@ describe("FP4 Image Viewer — state transitions", () => {
 
   it("T-FP4-STATE-ERROR: fetch failure shows error, hides loading", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network error")));
-    await import("../../apps/image-viewer/main");
+    await import("../../../infra/minio/fixtures/DISK_C/Program Files/Image Viewer/main");
 
     window.dispatchEvent(
       new MessageEvent("message", {
@@ -112,7 +112,7 @@ describe("FP4 Image Viewer — state transitions", () => {
       blob: () => Promise.resolve(blob),
     });
     vi.stubGlobal("fetch", fetchMock);
-    await import("../../apps/image-viewer/main");
+    await import("../../../infra/minio/fixtures/DISK_C/Program Files/Image Viewer/main");
 
     window.dispatchEvent(
       new MessageEvent("message", {

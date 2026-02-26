@@ -3,10 +3,34 @@
  * Sandbox: allow-scripts only. No gateway. Content via signed URL only.
  */
 
-import { nextIndex, prevIndex } from "../../lib/fp4/playlist";
-import { MediaPlayerState } from "../../lib/fp4/MediaPlayerState";
-import { shouldShowPressPlay } from "../../lib/fp4/autoplay";
-import { computeSeekTime, isSeekDisabled } from "../../lib/fp4/seek";
+import { nextIndex, prevIndex } from "@lib/fp4/playlist";
+
+const DEBUG = false;
+const _log =
+  DEBUG && typeof globalThis !== "undefined"
+    ? (Reflect.get(globalThis, "console") as
+        | { debug?: (...a: unknown[]) => void; error?: (...a: unknown[]) => void }
+        | undefined)
+    : undefined;
+const log = {
+  debug: (...a: unknown[]) => _log?.debug?.(...a),
+  error: (...a: unknown[]) => _log?.error?.(...a),
+};
+
+const DEBUG = false;
+const _log =
+  DEBUG && typeof globalThis !== "undefined"
+    ? (Reflect.get(globalThis, "console") as
+        | { debug?: (...a: unknown[]) => void; error?: (...a: unknown[]) => void }
+        | undefined)
+    : undefined;
+const log = {
+  debug: (...a: unknown[]) => _log?.debug?.(...a),
+  error: (...a: unknown[]) => _log?.error?.(...a),
+};
+import { MediaPlayerState } from "@lib/fp4/MediaPlayerState";
+import { shouldShowPressPlay } from "@lib/fp4/autoplay";
+import { computeSeekTime, isSeekDisabled } from "@lib/fp4/seek";
 
 interface PlaylistItem {
   path: string;
@@ -107,9 +131,7 @@ function syncMediaToState(): void {
         pressPlay?.style.setProperty("display", "none");
       })
       .catch((err) => {
-        if (typeof console !== "undefined" && console.error) {
-          console.error("[MediaPlayer] play() rejected:", err);
-        }
+        log.error("[MediaPlayer] play() rejected:", err);
         if (shouldShowPressPlay(true)) {
           pressPlay?.style.setProperty("display", "block");
         }
@@ -125,7 +147,6 @@ function syncMediaToState(): void {
   if (slider) slider.value = String(state.volume);
 }
 
-const DEV_DEBUG = typeof import.meta !== "undefined" && import.meta.env?.DEV === true;
 const LOAD_TIMEOUT_MS = 30000;
 
 let currentMediaObjectUrl: string | null = null;
@@ -152,20 +173,16 @@ function setMediaSrcAndPlay(
   };
   const timeoutId = setTimeout(() => {
     if (loadResolved) return;
-    if (DEV_DEBUG) console.debug("[MediaPlayer] load timeout");
-    if (typeof console !== "undefined" && console.error) {
-      console.error("[MediaPlayer] Load timeout (CORS/network?):", urlForLog);
-    }
+    log.debug("[MediaPlayer] load timeout");
+    log.error("[MediaPlayer] Load timeout (CORS/network?):", urlForLog);
     resolveLoad();
     if (loadError) loadError.style.setProperty("display", "block");
   }, LOAD_TIMEOUT_MS);
   el.onerror = () => {
     clearTimeout(timeoutId);
     resolveLoad();
-    if (DEV_DEBUG) console.debug("[MediaPlayer] onerror fired");
-    if (typeof console !== "undefined" && console.error) {
-      console.error("[MediaPlayer] Failed to load:", urlForLog);
-    }
+    log.debug("[MediaPlayer] onerror fired");
+    log.error("[MediaPlayer] Failed to load:", urlForLog);
     if (loadError) loadError.style.setProperty("display", "block");
   };
   el.oncanplay = () => resolveLoad();
@@ -189,7 +206,7 @@ function setMediaSrcAndPlay(
 }
 
 function loadMedia(url: string): void {
-  if (DEV_DEBUG) console.debug("[MediaPlayer] load started (direct URL):", url);
+  log.debug("[MediaPlayer] load started (direct URL):", url);
   if (mediaEl) {
     mediaEl.pause();
     mediaEl.currentTime = 0;
@@ -259,7 +276,7 @@ function handleOpenFile(payload: {
   initialUrl?: string;
   playlist?: PlaylistItem[];
 }): void {
-  if (DEV_DEBUG) console.debug("[MediaPlayer] OPEN_FILE received");
+  log.debug("[MediaPlayer] OPEN_FILE received");
   const list = payload.playlist ?? [];
   const initialPath = payload.initialPath ?? "";
   const initialUrl = payload.initialUrl ?? "";

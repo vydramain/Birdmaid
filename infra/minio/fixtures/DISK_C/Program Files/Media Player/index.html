@@ -1,9 +1,197 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
+    <base href="./">
     <title>Media Player</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        overflow: hidden;
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, sans-serif;
+        font-size: 0.75rem;
+        background: #c0c0c0;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .player-root {
+        flex: 1;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .player-video-area {
+        flex: 1;
+        min-height: 0;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .player-video-area video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .player-video-area.hidden {
+        display: none;
+      }
+      .player-audio-area {
+        padding: 0.5rem;
+        min-height: 3rem;
+      }
+      .player-audio-area.hidden {
+        display: none;
+      }
+      .player-controls {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        background: #c0c0c0;
+        border-top: 1px solid #808080;
+      }
+      .player-btn {
+        padding: 0.25rem 0.5rem;
+        min-width: 1.5rem;
+        border: 1px solid;
+        border-color: #fff #404040 #404040 #fff;
+        background: #c0c0c0;
+        cursor: pointer;
+        font-size: 0.75rem;
+      }
+      .player-btn:disabled {
+        color: #808080;
+        cursor: default;
+        border-color: #808080;
+      }
+      .player-btn:not(:disabled):active {
+        border-color: #404040 #fff #fff #404040;
+      }
+      .player-slider {
+        width: 4rem;
+        height: 0.5rem;
+      }
+      .player-timeline {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        min-width: 4rem;
+      }
+      .player-timeline-track {
+        flex: 1;
+        height: 0.5rem;
+        background: #808080;
+        position: relative;
+        cursor: pointer;
+      }
+      .player-timeline-track.disabled {
+        cursor: default;
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      .player-timeline-fill {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        background: #000080;
+        pointer-events: none;
+      }
+      .player-timeline-thumb {
+        position: absolute;
+        top: 50%;
+        width: 0.5rem;
+        height: 0.75rem;
+        margin-top: -0.375rem;
+        margin-left: -0.25rem;
+        background: #fff;
+        border: 1px solid #404040;
+        pointer-events: none;
+      }
+      .player-press-play {
+        padding: 1rem;
+        text-align: center;
+        color: #808080;
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-BKzWdF_y.js"></script>
   </head>
   <body>
-    FP4 system app
+    <div id="player-root" class="player-root">
+      <div id="player-video-area" class="player-video-area hidden">
+        <video id="player-video"></video>
+      </div>
+      <div id="player-audio-area" class="player-audio-area hidden"></div>
+      <div id="player-press-play" class="player-press-play" style="display: none">Press Play</div>
+      <div id="player-load-error" class="player-press-play" style="display: none; color: #c00">
+        Unable to load media
+      </div>
+      <div class="player-controls">
+        <button type="button" class="player-btn" id="btn-prev" disabled>◀</button>
+        <button type="button" class="player-btn" id="btn-play">▶</button>
+        <button type="button" class="player-btn" id="btn-pause">⏸</button>
+        <button type="button" class="player-btn" id="btn-stop">⏹</button>
+        <button type="button" class="player-btn" id="btn-next" disabled>▶</button>
+        <div class="player-timeline">
+          <div
+            class="player-timeline-track"
+            id="player-timeline"
+            role="slider"
+            aria-valuemin="0"
+            aria-valuemax="0"
+            aria-valuenow="0"
+            tabindex="0"
+          >
+            <div class="player-timeline-fill" id="player-timeline-fill" style="width: 0%"></div>
+            <div class="player-timeline-thumb" id="player-timeline-thumb" style="left: 0%"></div>
+          </div>
+        </div>
+        <button type="button" class="player-btn" id="btn-mute">Mute</button>
+        <input
+          type="range"
+          class="player-slider"
+          id="volume-slider"
+          min="0"
+          max="100"
+          value="100"
+        />
+      </div>
+    </div>
+    <!-- M1+M2: Early APP_READY before module load; DOMContentLoaded fallback for listener race -->
+    <script>
+      (function () {
+        if (window.parent === window) return;
+        function sendReady() {
+          try {
+            window.parent.postMessage({ type: "APP_READY", timestamp: Date.now() }, "*");
+          } catch (_) {}
+        }
+        sendReady();
+        if (document.readyState !== "complete") {
+          window.addEventListener("DOMContentLoaded", sendReady);
+        }
+        window.__fp4PendingOpenFile = null;
+        window.addEventListener("message", function (e) {
+          var d = e.data;
+          if (d && d.type === "OPEN_FILE" && d.payload) {
+            window.__fp4PendingOpenFile = d.payload;
+          }
+        });
+      })();
+    </script>
   </body>
 </html>

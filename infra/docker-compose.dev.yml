@@ -53,6 +53,7 @@ services:
       - |
         until mc alias set myminio http://minio:9000 minioadmin minioadmin 2>/dev/null; do echo "Waiting for MinIO..."; sleep 2; done
         mc mb myminio/birdmaid-dev --ignore-existing
+        mc anonymous set download myminio/birdmaid-dev || true
         # M6: mc cors set not supported by free MinIO; CORS handled by Traefik middleware
         # M3: copy fixtures excluding .gitkeep (no .gitkeep pollution in S3)
         sh /minio/copy-fixtures-exclude-gitkeep.sh

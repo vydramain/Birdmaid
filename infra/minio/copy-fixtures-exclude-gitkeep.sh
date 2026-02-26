@@ -17,21 +17,13 @@ if [ "$count" -eq 0 ]; then
   done
 fi
 
+# minio/mc image (ubi9-micro) has no 'find'; use mc cp --recursive instead
 copy_disk() {
   disk="$1"
   src="$FIXTURES/$disk"
   [ ! -d "$src" ] && return 0
-  tmp="/tmp/copy-$$"
-  find "$src" -type f ! -name ".gitkeep" 2>/dev/null > "$tmp"
-  while IFS= read -r f; do
-    [ -z "$f" ] && continue
-    rel="${f#$src/}"
-    rel="${rel#/}"
-    [ -z "$rel" ] && continue
-    mc cp "$f" "myminio/$BUCKET/roots/$disk/$rel" 2>/dev/null || true
-  done < "$tmp"
-  rm -f "$tmp"
-  echo "Uploaded roots/$disk (excluding .gitkeep)"
+  mc cp --recursive "$src/" "myminio/$BUCKET/roots/$disk/" 2>/dev/null || true
+  echo "Uploaded roots/$disk"
 }
 
 # Create empty-dir placeholder (minimal file so dir appears in list)
@@ -47,12 +39,6 @@ ensure_empty_dir() {
 copy_disk DISK_A
 copy_disk DISK_C
 copy_disk DISK_D
-
-# Explicit copy for paths with spaces (find|while can lose them in some shells)
-for f in "Images/sample.jpg" "Images/sample-image.png" "Music/sample.mp3" "Videos/sample.mp4"; do
-  src="$FIXTURES/DISK_C/My Documents/$f"
-  [ -f "$src" ] && mc cp "$src" "myminio/$BUCKET/roots/DISK_C/My Documents/$f" 2>/dev/null || true
-done
 
 # Ensure empty dirs exist (had only .gitkeep in fixtures)
 ensure_empty_dir "DISK_A"
@@ -72,5 +58,6 @@ ensure_empty_dir "DISK_C/Program Files/Outlook Express"
 ensure_empty_dir "DISK_C/Program Files/Windows Media Player"
 ensure_empty_dir "DISK_C/Program Files/Windows Messaging"
 
-# Remove any .gitkeep that may exist from previous runs
+# Remove .gitkeep and _source (build-only, not deployed to S3)
 mc find "myminio/$BUCKET/roots/" --name ".gitkeep" --exec "mc rm {}" 2>/dev/null || true
+mc find "myminio/$BUCKET/roots/" --path "*_source/*" --exec "mc rm {}" 2>/dev/null || true

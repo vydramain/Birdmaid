@@ -57,7 +57,7 @@ describe("FP4 Media Player HOTFIX", () => {
     });
 
     it("T-FP4-HOTFIX-PLAY-REJECT: when play() rejects, console.error is called", async () => {
-      await import("../../apps/media-player/main");
+      await import("../../../infra/minio/fixtures/DISK_C/Program Files/Media Player/main");
 
       window.dispatchEvent(
         new MessageEvent("message", {
@@ -107,14 +107,20 @@ describe("FP4 Media Player HOTFIX", () => {
 
   describe("R3: no scrollbars (overflow hidden)", () => {
     it("T-FP4-HOTFIX-OVERFLOW: html and body have overflow hidden", () => {
-      const htmlPath = resolve(__dirname, "../../apps/media-player/index.html");
+      const htmlPath = resolve(
+        __dirname,
+        "../../../infra/minio/fixtures/DISK_C/Program Files/Media Player/index.html"
+      );
       const html = readFileSync(htmlPath, "utf-8");
       expect(html).toMatch(/overflow:\s*hidden/);
       expect(html).toMatch(/(?:html|body)[^}]*\{[^}]*overflow:\s*hidden/);
     });
 
     it("T-FP4-HOTFIX-OVERFLOW-ROOT: player-root has overflow hidden", () => {
-      const htmlPath = resolve(__dirname, "../../apps/media-player/index.html");
+      const htmlPath = resolve(
+        __dirname,
+        "../../../infra/minio/fixtures/DISK_C/Program Files/Media Player/index.html"
+      );
       const html = readFileSync(htmlPath, "utf-8");
       expect(html).toMatch(/\.player-root\s*\{[^}]*overflow:\s*hidden/);
     });
@@ -122,7 +128,10 @@ describe("FP4 Media Player HOTFIX", () => {
 
   describe("R4: object-fit contain", () => {
     it("T-FP4-HOTFIX-OBJECT-FIT: video uses object-fit contain", () => {
-      const htmlPath = resolve(__dirname, "../../apps/media-player/index.html");
+      const htmlPath = resolve(
+        __dirname,
+        "../../../infra/minio/fixtures/DISK_C/Program Files/Media Player/index.html"
+      );
       const html = readFileSync(htmlPath, "utf-8");
       expect(html).toMatch(/object-fit:\s*contain/);
     });
@@ -176,7 +185,10 @@ describe("FP4 Media Player HOTFIX", () => {
 
   describe("Layout: controls always visible (flex column)", () => {
     it("T-FP4-LAYOUT-ROOT: player-root has flex column + overflow hidden", () => {
-      const htmlPath = resolve(__dirname, "../../apps/media-player/index.html");
+      const htmlPath = resolve(
+        __dirname,
+        "../../../infra/minio/fixtures/DISK_C/Program Files/Media Player/index.html"
+      );
       const html = readFileSync(htmlPath, "utf-8");
       expect(html).toMatch(/\.player-root\s*\{[^}]*display:\s*flex/);
       expect(html).toMatch(/\.player-root\s*\{[^}]*flex-direction:\s*column/);
@@ -184,7 +196,10 @@ describe("FP4 Media Player HOTFIX", () => {
     });
 
     it("T-FP4-LAYOUT-CONTROLS-LAST: controls container is last child of player-root", () => {
-      const htmlPath = resolve(__dirname, "../../apps/media-player/index.html");
+      const htmlPath = resolve(
+        __dirname,
+        "../../../infra/minio/fixtures/DISK_C/Program Files/Media Player/index.html"
+      );
       const html = readFileSync(htmlPath, "utf-8");
       const rootStart = html.indexOf('id="player-root"');
       const rootEnd = html.indexOf("<!-- M1+M2:", rootStart);
@@ -201,7 +216,10 @@ describe("FP4 Media Player HOTFIX", () => {
     });
 
     it("T-FP4-LAYOUT-CONTROLS-FLEX: player-controls has flex 0 0 auto", () => {
-      const htmlPath = resolve(__dirname, "../../apps/media-player/index.html");
+      const htmlPath = resolve(
+        __dirname,
+        "../../../infra/minio/fixtures/DISK_C/Program Files/Media Player/index.html"
+      );
       const html = readFileSync(htmlPath, "utf-8");
       expect(html).toMatch(/\.player-controls\s*\{[^}]*flex:\s*0\s+0\s+auto/);
     });

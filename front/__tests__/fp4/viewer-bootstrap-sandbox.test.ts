@@ -10,7 +10,10 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
-const IMAGE_VIEWER_HTML = resolve(__dirname, "../../apps/image-viewer/index.html");
+const IMAGE_VIEWER_HTML = resolve(
+  __dirname,
+  "../../../infra/minio/fixtures/DISK_C/Program Files/Image Viewer/index.html"
+);
 
 describe("FP4 Viewer bootstrap in sandbox (T-FP4-M0-BOOT)", () => {
   it("T-FP4-M0-BOOT: viewer APP_READY postMessage uses targetOrigin * (not window.location.origin)", () => {
@@ -25,6 +28,6 @@ describe("FP4 Viewer bootstrap in sandbox (T-FP4-M0-BOOT)", () => {
     const html = readFileSync(IMAGE_VIEWER_HTML, "utf-8");
     // Module scripts in sandbox (opaque origin) require CORS. Vite middleware adds ACAO: *.
     expect(html).toContain('type="module"');
-    expect(html).toMatch(/src="\.\/main\.ts"/);
+    expect(html).toMatch(/src="\.\/(main\.ts|assets\/[^"]+\.js)"/);
   });
 });

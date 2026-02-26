@@ -45,7 +45,7 @@ describe("FP4 Image Viewer — OPEN_FILE sets img src (M0)", () => {
         blob: () => Promise.resolve(blob),
       })
     );
-    await import("../../apps/image-viewer/main");
+    await import("../../../infra/minio/fixtures/DISK_C/Program Files/Image Viewer/main");
 
     window.dispatchEvent(
       new MessageEvent("message", {
@@ -74,7 +74,7 @@ describe("FP4 Image Viewer — OPEN_FILE sets img src (M0)", () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const badUrl = "http://invalid.example/bad.webp";
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network error")));
-    await import("../../apps/image-viewer/main");
+    await import("../../../infra/minio/fixtures/DISK_C/Program Files/Image Viewer/main");
 
     window.dispatchEvent(
       new MessageEvent("message", {
@@ -113,7 +113,7 @@ describe("FP4 Image Viewer — OPEN_FILE sets img src (M0)", () => {
         blob: () => Promise.resolve(blob),
       })
     );
-    await import("../../apps/image-viewer/main");
+    await import("../../../infra/minio/fixtures/DISK_C/Program Files/Image Viewer/main");
 
     window.dispatchEvent(
       new MessageEvent("message", {
@@ -151,7 +151,7 @@ describe("FP4 Image Viewer — OPEN_FILE sets img src (M0)", () => {
       blob: () => Promise.resolve(blob),
     });
     vi.stubGlobal("fetch", fetchMock);
-    await import("../../apps/image-viewer/main");
+    await import("../../../infra/minio/fixtures/DISK_C/Program Files/Image Viewer/main");
 
     window.dispatchEvent(
       new MessageEvent("message", {

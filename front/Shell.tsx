@@ -31,6 +31,21 @@ function themeToTokenSet(themeId: ThemeId) {
 
 const TITLEBAR_HEIGHT = 28;
 
+const APP_PATHS: Record<string, string> = {
+  "image-viewer": "/@root/DISK_C/Program Files/Image Viewer/",
+  "media-player": "/@root/DISK_C/Program Files/Media Player/",
+  explorer: "/@root/DISK_C/Program Files/Explorer/",
+};
+
+function isExplorerWindow(src: string | undefined): boolean {
+  if (!src) return false;
+  return (
+    src.includes("/apps/explorer") ||
+    src.includes("Program%20Files/Explorer") ||
+    src.includes("Program Files/Explorer")
+  );
+}
+
 function toWindowState(w: WindowRecord): WindowState {
   return {
     id: w.id,
@@ -74,13 +89,30 @@ export function Shell() {
     refresh();
   }, [wm, refresh]);
 
-  const openMyComputer = useCallback(() => {
-    wm.createWindow({ src: "/apps/explorer/", title: "My Computer" });
+  const openMyComputer = useCallback(async () => {
+    const appPath = APP_PATHS.explorer;
+    let src = "/apps/explorer/";
+    if (appPath) {
+      try {
+        const res = await fetch("/api/fs/open-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: appPath.replace(/\/$/, "") + "/index.html" }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.url === "string") src = data.url;
+        }
+      } catch {
+        /* fallback to local Explorer */
+      }
+    }
+    wm.createWindow({ src, title: "My Computer" });
     refresh();
   }, [wm, refresh]);
 
   const openViewerFromPlaylist = useCallback(
-    (path: string, playlist: Array<{ path: string; url: string }>, title: string) => {
+    async (path: string, playlist: Array<{ path: string; url: string }>, title: string) => {
       const mime = getMimeForPath(path);
       if (!mime) return;
       const handler = getHandlerForMime(mime);
@@ -88,17 +120,31 @@ export function Shell() {
       const initial = playlist.find((p) => p.path === path) ?? playlist[0];
       if (!initial) return;
       const appId = handler.appId === "image-viewer" ? "image-viewer" : "media-player";
-      const src = `/apps/${appId}/`;
-      wm.createWindow({
-        src,
-        title,
-        openFilePayload: {
-          initialPath: path,
-          initialUrl: initial.url,
-          playlist,
-        },
-      });
-      refresh();
+      const appPath = APP_PATHS[appId];
+      if (!appPath) return;
+      try {
+        const res = await fetch("/api/fs/open-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: appPath.replace(/\/$/, "") + "/index.html" }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const src = typeof data.url === "string" ? data.url : null;
+        if (!src) return;
+        wm.createWindow({
+          src,
+          title,
+          openFilePayload: {
+            initialPath: path,
+            initialUrl: initial.url,
+            playlist,
+          },
+        });
+        refresh();
+      } catch {
+        /* open-url failed — app must be in S3 (run pnpm build:apps) */
+      }
     },
     [wm, refresh]
   );
@@ -408,18 +454,16 @@ export function Shell() {
                 <AppHost
                   windowId={id}
                   src={
-                    w.src.includes("/apps/explorer")
-                      ? `${w.src}?w=${encodeURIComponent(id)}`
+                    isExplorerWindow(w.src) && !w.src.includes("X-Amz-Signature")
+                      ? `${w.src}${w.src.includes("?") ? "&" : "?"}w=${encodeURIComponent(id)}`
                       : w.src
                   }
                   scale={scale}
                   theme={themeId}
                   onTitleUpdate={handleTitleUpdate}
-                  isExplorer={w.src.includes("/apps/explorer")}
-                  onShellOpen={w.src.includes("/apps/explorer") ? handleShellOpen : undefined}
-                  onShellOpenFile={
-                    w.src.includes("/apps/explorer") ? handleShellOpenFile : undefined
-                  }
+                  isExplorer={isExplorerWindow(w.src)}
+                  onShellOpen={isExplorerWindow(w.src) ? handleShellOpen : undefined}
+                  onShellOpenFile={isExplorerWindow(w.src) ? handleShellOpenFile : undefined}
                   openFilePayload={w.openFilePayload}
                 />
               ) : null}

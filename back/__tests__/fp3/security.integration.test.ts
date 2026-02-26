@@ -87,10 +87,10 @@ describe("FP3 M6: Security gates", () => {
     expect(res.status).toBe(403);
   });
 
-  it("T-M6-origin: s3.shell.local origin (user app) -> 403 for read", async () => {
+  it("T-M6-origin: s3.shell.local origin (Explorer/system apps) -> 200 for read", async () => {
     const res = await fetchApi("/api/fs/roots", {
       headers: { Origin: "http://s3.shell.local" },
     });
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
   });
 });
