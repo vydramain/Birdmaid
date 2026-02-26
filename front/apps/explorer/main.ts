@@ -956,8 +956,9 @@ async function commitRename(
     if (res.ok) {
       const idx = currentListItems.findIndex((i) => itemPathMatch(i, item));
       if (idx >= 0) {
-        const updated = { ...currentListItems[idx], name: newName, path: toPath };
-        currentListItems[idx] = updated;
+        const entry = currentListItems[idx];
+        entry.name = newName;
+        entry.path = toPath;
       }
       labelEl.textContent = newName;
       tile.setAttribute("data-testid", `item-${pathToUniqueId(toPath)}`);

@@ -9,6 +9,8 @@
  * Prerequisite: docker compose -f infra/docker-compose.dev.yml up -d
  */
 
+import { getTestNamespace, cleanupTestNamespace } from "../helpers/test-namespace";
+
 const API_BASE = "http://api.shell.local";
 
 const WRITE_HEADERS = {
@@ -27,6 +29,9 @@ async function fetchApi(path: string, opts?: RequestInit) {
 }
 
 describe("FP3 M5: Write operations (api-fs-write)", () => {
+  const { basePath } = getTestNamespace();
+  const testPrefix = "fp3-test-";
+
   beforeAll(async () => {
     const res = await fetchApi("/health").catch(() => null);
     if (!res || res.status !== 200) {
@@ -36,8 +41,13 @@ describe("FP3 M5: Write operations (api-fs-write)", () => {
     }
   });
 
-  const basePath = "/@root/DISK_C/My Documents/";
-  const testPrefix = "fp3-test-";
+  afterEach(async () => {
+    await cleanupTestNamespace(fetchApi, basePath, WRITE_HEADERS);
+  });
+
+  afterAll(async () => {
+    await cleanupTestNamespace(fetchApi, basePath, WRITE_HEADERS);
+  });
 
   it("T-M5.3: create-folder in My Documents -> 200 + visible in list", async () => {
     const folderName = testPrefix + "folder-" + Date.now();
@@ -149,16 +159,17 @@ describe("FP3 M5: Write operations (api-fs-write)", () => {
   });
 
   it("T-A8: rename dir — toPath = parent + newName (not nested)", async () => {
-    const folderName = "Новая Папка 3";
-    const newName = "Новая Папка 343";
+    const folderName = testPrefix + "rn-dir-from-" + Date.now();
+    const newName = testPrefix + "rn-dir-to-" + Date.now();
     const fromPath = basePath + folderName + "/";
     const toPath = basePath + newName + "/";
 
-    await fetchApi("/api/fs/create-folder", {
+    const createRes = await fetchApi("/api/fs/create-folder", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...WRITE_HEADERS },
       body: JSON.stringify({ path: fromPath }),
     });
+    expect(createRes.status).toBe(201);
 
     const res = await fetchApi("/api/fs/rename", {
       method: "PUT",

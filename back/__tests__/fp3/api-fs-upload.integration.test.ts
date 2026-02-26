@@ -7,6 +7,8 @@
  * Prerequisite: docker compose -f infra/docker-compose.dev.yml up -d
  */
 
+import { getTestNamespace, cleanupTestNamespace } from "../helpers/test-namespace";
+
 const API_BASE = "http://api.shell.local";
 
 const WRITE_HEADERS = {
@@ -25,6 +27,9 @@ async function fetchApi(path: string, opts?: RequestInit) {
 }
 
 describe("FP3.1 M7: upload-file allowlist (api-fs-upload)", () => {
+  const { basePath } = getTestNamespace();
+  const testPrefix = "fp3-upload-";
+
   beforeAll(async () => {
     const res = await fetchApi("/health").catch(() => null);
     if (!res || res.status !== 200) {
@@ -34,8 +39,13 @@ describe("FP3.1 M7: upload-file allowlist (api-fs-upload)", () => {
     }
   });
 
-  const basePath = "/@root/DISK_C/My Documents/";
-  const testPrefix = "fp3-upload-";
+  afterEach(async () => {
+    await cleanupTestNamespace(fetchApi, basePath, WRITE_HEADERS);
+  });
+
+  afterAll(async () => {
+    await cleanupTestNamespace(fetchApi, basePath, WRITE_HEADERS);
+  });
 
   it("T-C1.1: allowed upload (png) -> 201 and file in list", async () => {
     const fileName = testPrefix + "img-" + Date.now() + ".png";

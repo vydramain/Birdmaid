@@ -1,6 +1,6 @@
 /**
  * FP3 M2: list C:/ contains system folders + boot files.
- * T-M2.2: WINDOWS, Program Files, My Documents, Recycled, Temporary Internet Files + boot files.
+ * T-M2.2: Windows 98 default — WINDOWS, Program Files, My Documents, Recycled + boot files.
  *
  * Prerequisite: docker compose -f infra/docker-compose.dev.yml up -d
  */
@@ -17,13 +17,7 @@ async function fetchApi(path: string, opts?: RequestInit) {
   }
 }
 
-const REQUIRED_SYSTEM_FOLDERS = [
-  "WINDOWS",
-  "Program Files",
-  "My Documents",
-  "Recycled",
-  "Temporary Internet Files",
-];
+const REQUIRED_SYSTEM_FOLDERS = ["WINDOWS", "Program Files", "My Documents", "Recycled"];
 
 const REQUIRED_BOOT_FILES = [
   "MSDOS.SYS",

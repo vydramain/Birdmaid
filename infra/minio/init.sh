@@ -28,17 +28,8 @@ mc mb "myminio/$BUCKET" --ignore-existing
 # mc cors set "$CORS_JSON" "myminio/$BUCKET" || true
 
 # Upload fixtures (roots/DISK_A, DISK_C, DISK_D). FP3: APPS deprecated.
-if [ -d "$FIXTURES/DISK_A" ]; then
-  mc cp --recursive "$FIXTURES/DISK_A/" "myminio/$BUCKET/roots/DISK_A/" 2>/dev/null || true
-  echo "Uploaded roots/DISK_A"
-fi
-if [ -d "$FIXTURES/DISK_C" ]; then
-  mc cp --recursive "$FIXTURES/DISK_C/" "myminio/$BUCKET/roots/DISK_C/"
-  echo "Uploaded roots/DISK_C"
-fi
-if [ -d "$FIXTURES/DISK_D" ]; then
-  mc cp --recursive "$FIXTURES/DISK_D/" "myminio/$BUCKET/roots/DISK_D/" 2>/dev/null || true
-  echo "Uploaded roots/DISK_D"
-fi
+# M3: exclude .gitkeep (no .gitkeep pollution in S3)
+FIXTURES="$FIXTURES" BUCKET="$BUCKET" sh "$SCRIPT_DIR/copy-fixtures-exclude-gitkeep.sh"
+FIXTURES="$FIXTURES" BUCKET="$BUCKET" sh "$SCRIPT_DIR/upload-with-content-type.sh" 2>/dev/null || true
 
 echo "MinIO init done."

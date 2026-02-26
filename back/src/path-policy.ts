@@ -1,7 +1,7 @@
 /**
  * FP3 Path Policy — write allow/deny per API_FP3_DELTA.
  * Allow write: C:/My Documents/** only.
- * Deny: C:/WINDOWS/**, C:/Program Files/**, A:/**, D:/**, boot files, Recycled, Temporary Internet Files.
+ * Deny: C:/WINDOWS/**, C:/Program Files/**, A:/**, D:/**, boot files, Recycled.
  */
 
 const WRITABLE_PREFIX = "My Documents/";
@@ -39,8 +39,10 @@ export function validateRenameSameParent(
   fromPath: string,
   toPath: string
 ): { ok: true } | { ok: false; code: "CROSS_PARENT"; message: string } {
-  const dirFrom = fromPath.replace(/\/[^/]+$/, "").replace(/\/$/, "") + "/";
-  const dirTo = toPath.replace(/\/[^/]+$/, "").replace(/\/$/, "") + "/";
+  // Strip trailing slash for dirname; /\/[^/]+$/ fails when path ends with /
+  const stripLast = (p: string) => p.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/";
+  const dirFrom = stripLast(fromPath);
+  const dirTo = stripLast(toPath);
   if (dirFrom !== dirTo) {
     return {
       ok: false,

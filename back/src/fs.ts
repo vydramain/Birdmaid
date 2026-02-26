@@ -95,10 +95,12 @@ export async function listDir(
       });
     }
 
+    const HIDDEN_ARTIFACTS = [".emptydir", ".gitkeep"];
     for (const obj of out.Contents ?? []) {
       const key = (obj as _Object).Key ?? "";
       if (key === prefix || key.endsWith("/")) continue;
       const name = key.slice(prefix.length);
+      if (HIDDEN_ARTIFACTS.includes(name)) continue;
       const filePath = `${v.path.replace(/\/$/, "")}/${name}`;
       const size = (obj as _Object).Size ?? null;
       const modified = (obj as _Object).LastModified?.toISOString() ?? null;
@@ -333,6 +335,30 @@ export async function deleteItem(
   }
 }
 
+async function listAllKeysUnderPrefix(
+  s3: S3Client,
+  bucket: string,
+  prefix: string
+): Promise<string[]> {
+  const keys: string[] = [];
+  let continuationToken: string | undefined;
+  do {
+    const out = await s3.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      })
+    );
+    for (const obj of out.Contents ?? []) {
+      const k = (obj as _Object).Key;
+      if (k) keys.push(k);
+    }
+    continuationToken = out.NextContinuationToken;
+  } while (continuationToken);
+  return keys;
+}
+
 export async function renameItem(
   s3: S3Client,
   bucket: string,
@@ -356,15 +382,39 @@ export async function renameItem(
     ? toS3Prefix(vTo.rootId, vTo.suffix)
     : toS3Key(vTo.rootId, vTo.suffix);
 
+  const isDir = fromKey.endsWith("/");
+
   try {
-    await s3.send(
-      new CopyObjectCommand({
-        Bucket: bucket,
-        CopySource: encodeURIComponent(`${bucket}/${fromKey}`),
-        Key: toKey,
-      })
-    );
-    await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: fromKey }));
+    if (isDir) {
+      const keys = await listAllKeysUnderPrefix(s3, bucket, fromKey);
+      if (keys.length === 0) {
+        return { ok: false, code: "NOT_FOUND", message: "Source not found" };
+      }
+      for (const key of keys) {
+        const suffix = key.slice(fromKey.length);
+        const newKey = toKey + suffix;
+        const copySource = encodeURIComponent(`${bucket}/${key}`);
+        await s3.send(
+          new CopyObjectCommand({
+            Bucket: bucket,
+            CopySource: copySource,
+            Key: newKey,
+          })
+        );
+      }
+      for (const key of keys) {
+        await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+      }
+    } else {
+      await s3.send(
+        new CopyObjectCommand({
+          Bucket: bucket,
+          CopySource: encodeURIComponent(`${bucket}/${fromKey}`),
+          Key: toKey,
+        })
+      );
+      await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: fromKey }));
+    }
     const name = toKey.endsWith("/")
       ? (toKey.slice(0, -1).split("/").pop() ?? "")
       : toKey.slice(toKey.lastIndexOf("/") + 1) || toKey;

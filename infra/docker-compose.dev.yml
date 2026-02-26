@@ -54,9 +54,8 @@ services:
         until mc alias set myminio http://minio:9000 minioadmin minioadmin 2>/dev/null; do echo "Waiting for MinIO..."; sleep 2; done
         mc mb myminio/birdmaid-dev --ignore-existing
         # M6: mc cors set not supported by free MinIO; CORS handled by Traefik middleware
-        mc cp --recursive /minio/fixtures/DISK_A/ myminio/birdmaid-dev/roots/DISK_A/ 2>/dev/null || true
-        mc cp --recursive /minio/fixtures/DISK_C/ myminio/birdmaid-dev/roots/DISK_C/ 2>/dev/null || true
-        mc cp --recursive /minio/fixtures/DISK_D/ myminio/birdmaid-dev/roots/DISK_D/ 2>/dev/null || true
+        # M3: copy fixtures excluding .gitkeep (no .gitkeep pollution in S3)
+        sh /minio/copy-fixtures-exclude-gitkeep.sh
         sh /minio/upload-with-content-type.sh
         echo "MinIO init done."
 

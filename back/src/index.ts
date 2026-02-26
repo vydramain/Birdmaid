@@ -241,7 +241,7 @@ app.post("/api/fs/create-folder", async (req, reply) => {
   const durationMs = Date.now() - start;
   if (r.ok) {
     logEvent(app.log, "fs_create_folder", { path, durationMs, status: "ok" });
-    return reply.status(201).send({ path: r.path + r.name + "/", name: r.name });
+    return reply.status(201).send({ path: r.path, name: r.name });
   }
   if (r.code === "BAD_PATH" || r.code === "ROOT_NOT_FOUND") {
     return reply.status(r.code === "BAD_PATH" ? 400 : 403).send({
@@ -314,7 +314,7 @@ app.put("/api/fs/rename", async (req, reply) => {
   const durationMs = Date.now() - start;
   if (r.ok) {
     logEvent(app.log, "fs_rename", { fromPath, toPath, durationMs, status: "ok" });
-    return reply.send({ path: r.path + r.name, name: r.name });
+    return reply.send({ path: r.path, name: r.name });
   }
   if (r.code === "NOT_FOUND")
     return reply.status(404).send({ error: { code: r.code, message: r.message } });
@@ -460,7 +460,7 @@ app.post("/api/fs/upload-zip-app", async (req, reply) => {
   const durationMs = Date.now() - start;
   if (r.ok) {
     logEvent(app.log, "fs_upload_zip_app", { path, durationMs, status: "ok", hasIndexHtml: true });
-    return reply.status(201).send({ path: r.path + r.name + "/", name: r.name });
+    return reply.status(201).send({ path: r.path, name: r.name });
   }
   if (r.code === "NO_INDEX_HTML") {
     return reply.status(400).send({ error: { code: r.code, message: r.message } });
