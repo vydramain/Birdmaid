@@ -65,7 +65,7 @@
 
 | Document                                               | Purpose                                                   |
 | ------------------------------------------------------ | --------------------------------------------------------- |
-| [archive/FP4/](../archive/FP4/README.md)               | FP4 System Viewers & Players (evidence, reports, archive) |
+| [archive/FP4/](../archive/FP4/README.md)               | FP4 System Viewers & Players (evidence, audit)            |
 | [audit/FP4_AUDIT_REPORT.md](audit/FP4_AUDIT_REPORT.md) | FP4 evidence (M1–M4), gate PASS                           |
 | [evidence/README.md](../evidence/README.md)            | Tombstone (canonical evidence in archive/)                |
 

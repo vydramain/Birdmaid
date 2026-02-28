@@ -2,7 +2,7 @@
 
 **Date:** 2025-02-23  
 **Scope:** FP4 build M5 (Security + Audit)  
-**Source:** [FP4.md](../fps/FP4.md), [FP4_SECURITY_DOD.md](../../archive/FP4/temp_docs/FP4_SECURITY_DOD.md)
+**Source:** [FP4.md](../fps/FP4.md) § Security Checklist
 
 ---
 
@@ -101,7 +101,7 @@
 
 ---
 
-## 4. Security Checklist (FP4_SECURITY_DOD §8)
+## 4. Security Checklist (FP4.md § Security Checklist)
 
 - [x] ImageViewer iframe: sandbox allow-scripts only
 - [x] MediaPlayer iframe: sandbox allow-scripts only
@@ -230,7 +230,7 @@ No code changes required. Routing already correct; tests verify contract.
 | Area        | Files                                                                                                       | Change                                                           |
 | ----------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | PROTOCOL_v0 | `docs/core/PROTOCOL_v0.md`                                                                                  | Added: "CANON UPDATE; must be merged into canonical after build" |
-| Temp docs   | `docs/dev/_tmp/M1_FIX_NOTES.md`                                                                             | Already TEMP (merge/delete on archive FP4)                       |
+| Temp docs   | (archived)                                                                                                 | Merged/deleted per FP4 archive                                  |
 | .gitignore  | `.gitignore`                                                                                                | Added `*.har` (HAR captures)                                     |
 | Doc links   | `docs/README.md`, `docs/audit/FP4_AUDIT_REPORT.md`, `docs/fps/FP1.md`, `docs/fps/FP2.md`, `docs/fps/FP3.md` | Fixed broken links (archive paths, THEMING_v0→THEMING)           |
 
@@ -337,19 +337,6 @@ No code changes required. Routing already correct; tests verify contract.
 | Handshake                         | `front/__tests__/fp4/app-host-handshake.test.tsx`, `app-host-handshake-timeout.test.tsx`                      |
 | Load error logging                | `front/__tests__/fp4/viewer-open-file-sets-src.test.ts` (T-FP4-M3-LOAD-ERROR)                                 |
 
-### 12.4 TEMP(FP4.1) Docs
-
-| Path                                         | Status      | Plan                        |
-| -------------------------------------------- | ----------- | --------------------------- |
-| `docs/dev/_tmp/FP4_M0_FACTS.md`              | TEMP(FP4.1) | Merge/delete on archive FP4 |
-| `docs/dev/_tmp/FP4_M1_EVIDENCE.md`           | TEMP(FP4.1) | Merge/delete on archive FP4 |
-| `docs/dev/_tmp/FP4_M2_HANDSHAKE_EVIDENCE.md` | TEMP(FP4.1) | Merge/delete on archive FP4 |
-| `docs/dev/_tmp/FP4_M3_EVIDENCE.md`           | TEMP(FP4.1) | Merge/delete on archive FP4 |
-| `docs/dev/_tmp/M1_FIX_NOTES.md`              | TEMP(FP4.1) | Merge/delete on archive FP4 |
-| `archive/FP4/temp_docs/*`                    | TEMP(FP4.1) | Merge/delete on archive FP4 |
-
-**Rule:** TEMP(FP4.1) docs must be merged into canonical or deleted when FP4 is archived. Checklist: [archive/FP4/README.md](../../archive/FP4/README.md) § Archive FP4 checklist.
-
 ### 12.5 AC/DoD Checklist (FP4 scope)
 
 | Criterion                    | Status | Pointer                           |
@@ -440,7 +427,7 @@ No code changes required. Routing already correct; tests verify contract.
 
 **Role:** @Audit  
 **Scope:** FP4 viewers + overall repo  
-**Source:** [FP4.md](../fps/FP4.md), [FP4_TESTS.md](../tests/FP4_TESTS.md)
+**Source:** [FP4.md](../fps/FP4.md) § Tests Plan
 
 ### 14.1 Commands → Exit Codes (actual)
 
@@ -497,7 +484,7 @@ No code changes required. Routing already correct; tests verify contract.
 | Unit        | `front/__tests__/fp4/*.test.{ts,tsx}` (19 files, 108 tests)     |
 | Integration | `back/__tests__/fp4/*.integration.test.ts` (10 files, 40 tests) |
 | FP4 spec    | `docs/fps/FP4.md`                                               |
-| Test map    | `docs/tests/FP4_TESTS.md`                                       |
+| Test map    | `docs/fps/FP4.md` § Tests Plan                                  |
 
 ### 14.5 Verdict
 
@@ -518,7 +505,7 @@ No code changes required. Routing already correct; tests verify contract.
 
 **Role:** @Audit  
 **Scope:** FP4 viewers + overall repo  
-**Source:** [FP4.md](../fps/FP4.md), [FP4_TESTS.md](../tests/FP4_TESTS.md)
+**Source:** [FP4.md](../fps/FP4.md) § Tests Plan
 
 ### 15.1 Commands → Exit Codes (actual)
 
@@ -576,7 +563,7 @@ No code changes required. Routing already correct; tests verify contract.
 | Unit        | `front/__tests__/fp4/*.test.{ts,tsx}` (20 files, 110 tests)     |
 | Integration | `back/__tests__/fp4/*.integration.test.ts` (10 files, 47 tests) |
 | FP4 spec    | `docs/fps/FP4.md`                                               |
-| Test map    | `docs/tests/FP4_TESTS.md`                                       |
+| Test map    | `docs/fps/FP4.md` § Tests Plan                                  |
 
 ### 15.5 Verdict
 
@@ -595,7 +582,7 @@ No code changes required. Routing already correct; tests verify contract.
 
 **Role:** @Audit  
 **Scope:** FP4 viewers + overall repo  
-**Source:** [FP4.md](../fps/FP4.md), [FP4_TESTS.md](../tests/FP4_TESTS.md)
+**Source:** [FP4.md](../fps/FP4.md) § Tests Plan
 
 ### 16.1 Commands → Exit Codes (actual)
 
@@ -625,33 +612,11 @@ No code changes required. Routing already correct; tests verify contract.
 | Unit        | `front/__tests__/fp4/*.test.{ts,tsx}` (21 files, 113 tests)     |
 | Integration | `back/__tests__/fp4/*.integration.test.ts` (11 files, 54 tests) |
 | FP4 spec    | `docs/fps/FP4.md`                                               |
-| Test map    | `docs/tests/FP4_TESTS.md`                                       |
+| Test map    | `docs/fps/FP4.md` § Tests Plan                                  |
 
-### 16.4 TEMP(FP4.1) Files — Merge/Delete on FP4 Archive
+### 16.4 Archive Status
 
-| Path                                         | Action                      |
-| -------------------------------------------- | --------------------------- |
-| `docs/dev/_tmp/FP4_M0_FACTS.md`              | Merge into FP4.md or delete |
-| `docs/dev/_tmp/FP4_M1_EVIDENCE.md`           | Merge into FP4.md or delete |
-| `docs/dev/_tmp/FP4_M2_HANDSHAKE_EVIDENCE.md` | Merge into FP4.md or delete |
-| `docs/dev/_tmp/FP4_M3_EVIDENCE.md`           | Merge into FP4.md or delete |
-| `docs/dev/_tmp/FP4_LOADING_FIX_PLAN.md`      | Merge into FP4.md or delete |
-| `docs/dev/_tmp/FP4_SIGNED_URL_HEADERS.txt`   | Merge or delete             |
-| `docs/dev/_tmp/M1_FIX_NOTES.md`              | Merge into FP4.md or delete |
-| `docs/audit/FP4_M0_VIEWERS_AUDIT.md`         | Merge or delete             |
-| `docs/audit/FP4_M1_HANDSHAKE_FIX.md`         | Merge or delete             |
-| `docs/audit/FP4_M2_SIGNED_URL_FIX.md`        | Merge or delete             |
-| `docs/audit/FP4_M3_VIEWER_BEHAVIOR.md`       | Merge or delete             |
-| `docs/audit/FP4_M4_CURSOR_FIX.md`            | Merge or delete             |
-| `docs/audit/FP4_VIEWERS_REPRO_REPORT.md`     | Merge or delete             |
-| `docs/audit/FP4_VIEWERS_REJECT_ROOTCAUSE.md` | Merge or delete             |
-| `archive/FP4/temp_docs/DESIGN_LOG_FP4_1.md`  | Merge into FP4.md or delete |
-| `archive/FP4/temp_docs/UX_FP4_1.md`          | Merge into FP4.md or delete |
-| `archive/FP4/temp_docs/API_FP4_DELTA.md`     | Merge into FP4.md or delete |
-| `archive/FP4/temp_docs/FP4_TESTS.md`         | Merge into FP4.md or delete |
-| `archive/FP4/temp_docs/FP4_SECURITY_DOD.md`  | Merge into FP4.md or delete |
-
-**Checklist:** [archive/FP4/README.md](../../archive/FP4/README.md) § Archive FP4 checklist.
+TEMP(FP4.1) docs merged/deleted per [archive/FP4/README.md](../../archive/FP4/README.md). Canonical: FP4.md.
 
 ### 16.5 Verdict
 

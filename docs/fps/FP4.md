@@ -6,7 +6,7 @@
 **Audit:** [FP4_AUDIT_REPORT.md](../audit/FP4_AUDIT_REPORT.md)  
 **Purpose:** Добавить системные приложения для открытия простых файлов: Image Viewer, Media Player (audio/video). Открытие из Explorer по double click; virtual list + Prev/Next; Win98 look (98.css).
 
-**Archived:** [archive/FP4/](../../archive/FP4/README.md) (evidence, reports, TEMP docs)
+**Archived:** [archive/FP4/](../../archive/FP4/README.md) (evidence, audit)
 
 > **Context:** FP1–FP3 готовы. FP4 расширяет viewers (FP3 M4) до полноценных system apps с MIME routing, virtual list и controls.
 
@@ -474,7 +474,7 @@ Viewers: код с shell.local (same-origin URL), но sandbox без allow-same
 **Paths:**
 
 - `back/__tests__/fp4/open-url-viewers.integration.test.ts` — removed HEAD assertion
-- `archive/FP4/reports/FP4_AUDIT_REPORT.md` — M5 Security + Audit report
+- `docs/audit/FP4_AUDIT_REPORT.md` — M5 Security + Audit report
 - `eslint.config.js` — override `no-console: off` for `front/apps/explorer/main.ts`
 - `front/apps/explorer/main.ts` — removed inline eslint-disable (override covers)
 
@@ -525,8 +525,6 @@ Viewers: код с shell.local (same-origin URL), но sandbox без allow-same
 | ---------------------------- | ---- |
 | `./infra/test-unit.sh`       | 0    |
 | `./infra/test-api-fp.sh FP4` | 0    |
-
-**TEMP(FP4.1) docs:** `docs/dev/_tmp/FP4_*.md`, `M1_FIX_NOTES.md`, `archive/FP4/temp_docs/*` — marked TEMP(FP4.1). On archive FP4: merge into FP4.md or delete; see [archive/FP4/README.md](../../archive/FP4/README.md) § Archive checklist.
 
 ### FP4.1 HOTFIX (Media Player) — 2026-02-24
 
@@ -582,7 +580,6 @@ Viewers: код с shell.local (same-origin URL), но sandbox без allow-same
 | `front/apps/media-player/main.ts`                  | updateTimelineUI, setupTimelineSeek; onloadedmetadata, ontimeupdate; computeSeekTime, isSeekDisabled |
 | `front/lib/fp4/seek.ts`                            | NEW: computeSeekTime(x, rect, duration), isSeekDisabled(duration)                                    |
 | `front/__tests__/fp4/media-player-hotfix.test.ts`  | T-FP4-SEEK-CLAMP, T-FP4-SEEK-RECT-OFFSET, T-FP4-SEEK-DISABLED, T-FP4-LAYOUT-ROOT/CONTROLS-LAST/FLEX  |
-| `docs/audit/FP4_MEDIA_PLAYER_LAYOUT_SEEK_AUDIT.md` | NEW: M0 audit                                                                                        |
 
 **Commands:**
 
