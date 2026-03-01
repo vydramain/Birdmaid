@@ -138,7 +138,7 @@ describe("FP4 Media Player HOTFIX", () => {
   });
 
   describe("R2: min size for iframe windows (FP4.1)", () => {
-    it("T-FP4-HOTFIX-MIN-SIZE: default min 320×240 for iframe window", () => {
+    it("T-FP4-HOTFIX-MIN-SIZE: default min 640×400 for iframe window", () => {
       const wm = new WindowManager();
       const win = wm.createWindow({
         src: "/apps/media-player/",
@@ -147,8 +147,8 @@ describe("FP4 Media Player HOTFIX", () => {
       expect(win).toBeTruthy();
       wm.updateBounds(win.id, { width: 100, height: 50 });
       const updated = wm.getWindow(win.id);
-      expect(updated?.bounds.width).toBe(320);
-      expect(updated?.bounds.height).toBe(240);
+      expect(updated?.bounds.width).toBe(640);
+      expect(updated?.bounds.height).toBe(400);
     });
   });
 

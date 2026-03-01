@@ -86,7 +86,7 @@ describe("FP4 M3 MIME routing", () => {
       expect(payload).not.toHaveProperty("systemToken");
     });
 
-    it("viewer iframe has sandbox allow-scripts only (no allow-same-origin)", () => {
+    it("viewer iframe (image-viewer) has sandbox allow-scripts allow-same-origin", () => {
       const container = document.createElement("div");
       document.body.appendChild(container);
       const root = createRoot(container);
@@ -94,7 +94,7 @@ describe("FP4 M3 MIME routing", () => {
         root.render(
           <AppHost
             windowId="win-m3"
-            src="about:blank"
+            src="/apps/image-viewer/"
             scale={1}
             theme="DefaultMock"
             onTitleUpdate={() => {}}
@@ -110,7 +110,7 @@ describe("FP4 M3 MIME routing", () => {
       expect(iframe).toBeTruthy();
       const sandbox = (iframe as HTMLIFrameElement).getAttribute("sandbox");
       expect(sandbox).toContain("allow-scripts");
-      expect(sandbox).not.toContain("allow-same-origin");
+      expect(sandbox).toContain("allow-same-origin");
       root.unmount();
       container.remove();
     });

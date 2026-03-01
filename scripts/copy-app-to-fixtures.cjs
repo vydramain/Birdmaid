@@ -35,7 +35,8 @@ function copyRecursive(src, dest) {
 }
 
 // Vite outputs to dist-app-X/infra/minio/fixtures/.../App/_source/ when building from _source
-const appName = APP === "image-viewer" ? "Image Viewer" : APP === "media-player" ? "Media Player" : "Explorer";
+const appName =
+  APP === "image-viewer" ? "Image Viewer" : APP === "media-player" ? "Media Player" : "Explorer";
 const nested = path.join(distDir, "infra", "minio", "fixtures", "DISK_C", "Program Files", appName);
 const srcDir = path.join(nested, "_source");
 const srcDirFallback = fs.existsSync(srcDir) ? srcDir : nested;

@@ -68,6 +68,8 @@ Open http://localhost:5173 (no Docker required).
 
 Compose also runs `dev-server`. Open http://shell.local after stack is up.
 
+**Godot user apps** require HTTPS (Secure Context). Run once: `./infra/certs/generate.sh`, then use **https://shell.local**.
+
 ---
 
 ## Verification matrix

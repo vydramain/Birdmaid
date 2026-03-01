@@ -44,12 +44,16 @@ const MIME_MAP: Record<string, string> = {
   ".mp3": "audio/mpeg",
   ".mp4": "video/mp4",
   ".webm": "video/webm",
+  ".wasm": "application/wasm",
+  ".pck": "application/octet-stream",
 };
 
 function inferMime(key: string, contentType?: string): string | null {
-  if (contentType) return contentType;
   const ext = key.slice(key.lastIndexOf(".")).toLowerCase();
-  return MIME_MAP[ext] ?? "application/octet-stream";
+  const fromExt = MIME_MAP[ext];
+  // Prefer extension-based MIME for known types (S3 may store wrong Content-Type from zip uploads)
+  if (fromExt) return fromExt;
+  return contentType ?? "application/octet-stream";
 }
 
 export function getRoots() {
@@ -271,6 +275,71 @@ export async function getOpenUrl(
   const url = await getSignedUrl(client, command, { expiresIn: effectiveTtl });
 
   return { ok: true, url, expiresIn: effectiveTtl };
+}
+
+const USER_APP_DENY_PREFIX = "Program Files/";
+
+export interface GetObjectContentResult {
+  ok: true;
+  body: Buffer;
+  contentType: string;
+  contentRange?: string;
+  contentLength?: number;
+}
+
+/**
+ * FP5: Fetch object content for user app delivery. Package root must be writable (not Program Files).
+ * Subpath must not escape package (no ..).
+ * rangeHeader: optional "bytes=start-end" for partial content (Godot wasm streaming).
+ */
+export async function getObjectContent(
+  s3: S3Client,
+  bucket: string,
+  packageRoot: string,
+  subpath: string,
+  rangeHeader?: string
+): Promise<
+  | GetObjectContentResult
+  | { ok: false; code: "BAD_PATH" | "ROOT_NOT_FOUND"; message: string }
+  | { ok: false; code: "NOT_FOUND"; message: string }
+  | { ok: false; code: "INTERNAL_ERROR"; message: string }
+> {
+  const v = validatePath(packageRoot, KNOWN_ROOT_IDS, true);
+  if (!v.ok) return { ok: false, code: v.code, message: v.message };
+
+  const suffixNorm = v.suffix.replace(/^\/+/, "").replace(/\/+$/, "");
+  if (suffixNorm.startsWith(USER_APP_DENY_PREFIX)) {
+    return { ok: false, code: "ROOT_NOT_FOUND", message: "User app path not allowed" };
+  }
+
+  const subNorm = subpath.replace(/^\/+/, "").replace(/\/+/g, "/");
+  if (subNorm.includes("..") || subNorm.includes("\\")) {
+    return { ok: false, code: "BAD_PATH", message: "Invalid subpath" };
+  }
+
+  const filePath = subNorm ? `${suffixNorm}/${subNorm}` : `${suffixNorm}/index.html`;
+  const key = toS3Key(v.rootId, filePath);
+
+  const cmdOpts: { Bucket: string; Key: string; Range?: string } = { Bucket: bucket, Key: key };
+  if (rangeHeader && /^bytes=\d*-\d*$/.test(rangeHeader.trim())) {
+    cmdOpts.Range = rangeHeader.trim();
+  }
+
+  try {
+    const out = await s3.send(new GetObjectCommand(cmdOpts));
+    const body = Buffer.from(await (out.Body?.transformToByteArray() ?? []));
+    const name = key.slice(key.lastIndexOf("/") + 1) || key;
+    const contentType = inferMime(name, out.ContentType ?? undefined) ?? "application/octet-stream";
+    const result: GetObjectContentResult = { ok: true, body, contentType };
+    if (out.ContentRange) result.contentRange = out.ContentRange;
+    if (out.ContentLength != null) result.contentLength = out.ContentLength;
+    return result;
+  } catch (e: unknown) {
+    const meta = (e as { $metadata?: { httpStatusCode?: number } }).$metadata;
+    const is404 = meta?.httpStatusCode === 404 || (e as { name?: string }).name === "NotFound";
+    if (is404) return { ok: false, code: "NOT_FOUND", message: "Object not found" };
+    return { ok: false, code: "INTERNAL_ERROR", message: (e as Error).message };
+  }
 }
 
 export async function createFolder(

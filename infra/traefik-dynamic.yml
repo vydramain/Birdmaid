@@ -1,0 +1,8 @@
+# Traefik dynamic config: TLS store for HTTPS (Godot Secure Context)
+# Mounted with certs from infra/certs/ (run infra/certs/generate.sh first)
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/cert.pem
+        keyFile: /certs/key.pem

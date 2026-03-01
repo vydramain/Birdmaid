@@ -230,7 +230,7 @@ No code changes required. Routing already correct; tests verify contract.
 | Area        | Files                                                                                                       | Change                                                           |
 | ----------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | PROTOCOL_v0 | `docs/core/PROTOCOL_v0.md`                                                                                  | Added: "CANON UPDATE; must be merged into canonical after build" |
-| Temp docs   | (archived)                                                                                                 | Merged/deleted per FP4 archive                                  |
+| Temp docs   | (archived)                                                                                                  | Merged/deleted per FP4 archive                                   |
 | .gitignore  | `.gitignore`                                                                                                | Added `*.har` (HAR captures)                                     |
 | Doc links   | `docs/README.md`, `docs/audit/FP4_AUDIT_REPORT.md`, `docs/fps/FP1.md`, `docs/fps/FP2.md`, `docs/fps/FP3.md` | Fixed broken links (archive paths, THEMING_v0→THEMING)           |
 

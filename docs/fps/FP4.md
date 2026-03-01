@@ -573,13 +573,13 @@ Viewers: код с shell.local (same-origin URL), но sandbox без allow-same
 
 **Paths changed:**
 
-| File                                               | Change                                                                                               |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `front/core/WindowManager.ts`                      | Restore DEFAULT_MIN_WIDTH=320, DEFAULT_MIN_HEIGHT=240 (was 640×400)                                  |
-| `front/apps/media-player/index.html`               | player-root height:100%; player-controls flex:0 0 auto; timeline bar + thumb; .disabled class        |
-| `front/apps/media-player/main.ts`                  | updateTimelineUI, setupTimelineSeek; onloadedmetadata, ontimeupdate; computeSeekTime, isSeekDisabled |
-| `front/lib/fp4/seek.ts`                            | NEW: computeSeekTime(x, rect, duration), isSeekDisabled(duration)                                    |
-| `front/__tests__/fp4/media-player-hotfix.test.ts`  | T-FP4-SEEK-CLAMP, T-FP4-SEEK-RECT-OFFSET, T-FP4-SEEK-DISABLED, T-FP4-LAYOUT-ROOT/CONTROLS-LAST/FLEX  |
+| File                                              | Change                                                                                               |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `front/core/WindowManager.ts`                     | Restore DEFAULT_MIN_WIDTH=320, DEFAULT_MIN_HEIGHT=240 (was 640×400)                                  |
+| `front/apps/media-player/index.html`              | player-root height:100%; player-controls flex:0 0 auto; timeline bar + thumb; .disabled class        |
+| `front/apps/media-player/main.ts`                 | updateTimelineUI, setupTimelineSeek; onloadedmetadata, ontimeupdate; computeSeekTime, isSeekDisabled |
+| `front/lib/fp4/seek.ts`                           | NEW: computeSeekTime(x, rect, duration), isSeekDisabled(duration)                                    |
+| `front/__tests__/fp4/media-player-hotfix.test.ts` | T-FP4-SEEK-CLAMP, T-FP4-SEEK-RECT-OFFSET, T-FP4-SEEK-DISABLED, T-FP4-LAYOUT-ROOT/CONTROLS-LAST/FLEX  |
 
 **Commands:**
 

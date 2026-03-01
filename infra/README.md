@@ -36,6 +36,8 @@ See [docs/dev/DEV_DOMAIN.md](../docs/dev/DEV_DOMAIN.md) for full details.
 
 **Routing:** Traefik uses Docker labels. shell.local → dev-server, api.shell.local → gateway, s3.shell.local → minio.
 
+**HTTPS (Godot):** Godot Web export requires Secure Context (HTTPS). Run `./infra/certs/generate.sh` once, then use **https://shell.local**. HTTP (port 80) still works for non-Godot apps.
+
 ---
 
 ## Fixtures init

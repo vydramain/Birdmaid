@@ -9,8 +9,8 @@ import { createRoot } from "react-dom/client";
 import { Shell } from "../../Shell";
 import "../../index.css";
 
-const EXPECTED_MIN_WIDTH_PX = 320;
-const EXPECTED_MIN_HEIGHT_PX = 240;
+const EXPECTED_MIN_WIDTH_PX = 640;
+const EXPECTED_MIN_HEIGHT_PX = 400;
 
 describe("REPO M1 SSOT: min-size CSS vars on window", () => {
   let container: HTMLDivElement;

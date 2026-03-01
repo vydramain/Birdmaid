@@ -5,6 +5,8 @@
 
 import { useEffect, useLayoutEffect, useRef, useCallback, useState } from "react";
 import { isAllowedOrigin, createShellCaps, type ShellMessage } from "./protocol";
+
+const PRIVILEGED_TYPES = ["SHELL_OPEN", "SHELL_OPEN_FILE", "READ_FILE", "LIST_FILES"] as const;
 import { analytics } from "./analytics";
 
 const HANDSHAKE_TIMEOUT_MS = 2000;
@@ -40,6 +42,8 @@ interface AppHostProps {
     path: string;
     playlist: Array<{ path: string; url: string }>;
   }) => void;
+  /** FP5: User app — stricter sandbox, no token, privileged types rejected */
+  isUserApp?: boolean;
 }
 
 export function AppHost({
@@ -53,7 +57,11 @@ export function AppHost({
   onShellOpen,
   openFilePayload,
   onShellOpenFile,
+  isUserApp: isUserAppProp,
 }: AppHostProps) {
+  const isUserApp = isUserAppProp ?? src.includes("/apps/user/");
+  const isViewer =
+    src?.includes("/apps/image-viewer") === true || src?.includes("/apps/media-player") === true;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [placeholder, setPlaceholder] = useState<string | null>("Loading...");
   const handshakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -75,9 +83,9 @@ export function AppHost({
   const sendShellCaps = useCallback(() => {
     const r = readyRef.current;
     if (!r) return;
-    const caps = createShellCaps(windowId, scale, theme, isExplorer);
+    const caps = createShellCaps(windowId, scale, theme, isExplorer && !isUserApp);
     sendToSource(r.source, r.origin, caps);
-  }, [windowId, scale, theme, isExplorer, sendToSource]);
+  }, [windowId, scale, theme, isExplorer, isUserApp, sendToSource]);
 
   useEffect(() => {
     if (readyRef.current) {
@@ -114,6 +122,26 @@ export function AppHost({
       if (!data || typeof data.type !== "string") return;
 
       if (data.type === "APP_READY") {
+        if (import.meta.env.DEV && typeof performance?.mark === "function") {
+          performance.mark(`app-${windowId}-ready`);
+          try {
+            performance.measure(
+              `app-${windowId}-load`,
+              `app-${windowId}-start`,
+              `app-${windowId}-ready`
+            );
+            const entries = performance.getEntriesByName(`app-${windowId}-load`);
+            if (entries[0]?.duration != null && typeof console?.debug === "function") {
+              console.debug(
+                "[AppHost] APP_READY",
+                windowId,
+                `${Math.round(entries[0].duration)}ms`
+              );
+            }
+          } catch {
+            /* ignore */
+          }
+        }
         if (handshakeTimerRef.current) {
           clearTimeout(handshakeTimerRef.current);
           handshakeTimerRef.current = null;
@@ -128,7 +156,7 @@ export function AppHost({
             timestamp: Date.now(),
           });
         } else {
-          const caps = createShellCaps(windowId, scale, theme, isExplorer);
+          const caps = createShellCaps(windowId, scale, theme, isExplorer && !isUserApp);
           sendToSource(source, origin, caps);
         }
         (window as unknown as { __shellCapsSent?: boolean }).__shellCapsSent = true;
@@ -137,6 +165,16 @@ export function AppHost({
         if (typeof title === "string") {
           onTitleUpdate(knownWindowId, title);
         }
+      } else if (data.type === "ERROR") {
+        const msg = data.payload?.message;
+        if (typeof msg === "string") {
+          setPlaceholder(`App error: ${msg}`);
+        }
+      } else if (isUserApp) {
+        const reason = PRIVILEGED_TYPES.includes(data.type as (typeof PRIVILEGED_TYPES)[number])
+          ? `user_app_privileged:${data.type}`
+          : `user_app_unknown:${data.type}`;
+        analytics.message_rejected(reason, origin);
       } else if (data.type === "SHELL_OPEN" && isExplorer && onShellOpen) {
         const payload = data.payload as unknown as ShellOpenPayload;
         if (payload && typeof payload.kind === "string" && typeof payload.path === "string") {
@@ -157,6 +195,7 @@ export function AppHost({
       scale,
       theme,
       isExplorer,
+      isUserApp,
       onTitleUpdate,
       onShellOpen,
       onShellOpenFile,
@@ -172,6 +211,9 @@ export function AppHost({
   }, [handleMessage]);
 
   const onIframeLoad = useCallback(() => {
+    if (import.meta.env.DEV && typeof console?.debug === "function") {
+      console.debug("[AppHost] iframe load", windowId);
+    }
     const iframe = iframeRef.current;
     if (!iframe) return;
     const cw = iframe.contentWindow;
@@ -179,9 +221,32 @@ export function AppHost({
       sourceToWindowIdRef.current.set(cw, windowId);
       contentWindowRef?.(cw);
     }
-  }, [windowId, contentWindowRef]);
+    // User apps (Godot, etc.): inject overflow:hidden to avoid scrollbars (content scales to fit)
+    if (isUserApp) {
+      try {
+        const doc = iframe.contentDocument;
+        if (doc?.body) {
+          doc.body.style.overflow = "hidden";
+          if (doc.documentElement) doc.documentElement.style.overflow = "hidden";
+        }
+      } catch {
+        /* same-origin required; ignore */
+      }
+      if (handshakeTimerRef.current) {
+        clearTimeout(handshakeTimerRef.current);
+        handshakeTimerRef.current = null;
+      }
+      setPlaceholder(null);
+    }
+  }, [windowId, contentWindowRef, isUserApp]);
 
   useEffect(() => {
+    if (import.meta.env.DEV && typeof performance?.mark === "function") {
+      performance.mark(`app-${windowId}-start`);
+    }
+    if (import.meta.env.DEV && typeof console?.debug === "function") {
+      console.debug("[AppHost] loading", windowId, src);
+    }
     readyRef.current = null;
     handshakeTimerRef.current = setTimeout(() => {
       handshakeTimerRef.current = null;
@@ -209,7 +274,9 @@ export function AppHost({
         ref={iframeRef}
         src={src}
         title={windowId}
-        sandbox={isExplorer ? "allow-scripts allow-same-origin" : "allow-scripts"}
+        sandbox={
+          isExplorer || isUserApp || isViewer ? "allow-scripts allow-same-origin" : "allow-scripts"
+        }
         onLoad={onIframeLoad}
         className="app-host-iframe"
       />

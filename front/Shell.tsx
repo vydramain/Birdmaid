@@ -6,6 +6,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { WindowManager, getComputedMinSize } from "./core/WindowManager";
 import { getHandlerForMime, getMimeForPath } from "./lib/fp4/handler";
+import { isUserAppPath, buildUserAppSrc } from "./lib/fp5/user-app";
 import { analytics } from "./core/analytics";
 import { DesktopView } from "./ui/DesktopView";
 import { DesktopIcon } from "./ui/DesktopIcon";
@@ -37,6 +38,23 @@ const APP_PATHS: Record<string, string> = {
   explorer: "/@root/DISK_C/Program Files/Explorer/",
 };
 
+const SYSTEM_APP_ROUTES: Record<string, string> = {
+  explorer: "/apps/explorer/",
+  "image-viewer": "/apps/image-viewer/",
+  "media-player": "/apps/media-player/",
+};
+
+function pathToSystemAppRoute(path: string): string | null {
+  const normalized = path.replace(/\/$/, "").replace(/\/index\.html$/, "") + "/";
+  for (const [appId, appPath] of Object.entries(APP_PATHS)) {
+    const base = appPath.replace(/\/$/, "") + "/";
+    if (normalized.startsWith(base) || normalized === base) {
+      return SYSTEM_APP_ROUTES[appId] ?? null;
+    }
+  }
+  return null;
+}
+
 function isExplorerWindow(src: string | undefined): boolean {
   if (!src) return false;
   return (
@@ -44,6 +62,12 @@ function isExplorerWindow(src: string | undefined): boolean {
     src.includes("Program%20Files/Explorer") ||
     src.includes("Program Files/Explorer")
   );
+}
+
+/** FP4: Wrap s3.shell.local signed URLs in proxy to bypass CORS (viewers fetch from same origin). */
+function toProxyUrl(signedUrl: string): string {
+  if (!signedUrl.includes("s3.shell.local")) return signedUrl;
+  return `/api/fs/proxy?url=${encodeURIComponent(signedUrl)}`;
 }
 
 function toWindowState(w: WindowRecord): WindowState {
@@ -89,30 +113,14 @@ export function Shell() {
     refresh();
   }, [wm, refresh]);
 
-  const openMyComputer = useCallback(async () => {
-    const appPath = APP_PATHS.explorer;
-    let src = "/apps/explorer/";
-    if (appPath) {
-      try {
-        const res = await fetch("/api/fs/open-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path: appPath.replace(/\/$/, "") + "/index.html" }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (typeof data.url === "string") src = data.url;
-        }
-      } catch {
-        /* fallback to local Explorer */
-      }
-    }
-    wm.createWindow({ src, title: "My Computer" });
+  const openMyComputer = useCallback(() => {
+    // Use /apps/explorer/ (same origin) so handshake works; signed URL from S3 causes cross-origin handshake timeout
+    wm.createWindow({ src: "/apps/explorer/", title: "My Computer" });
     refresh();
   }, [wm, refresh]);
 
   const openViewerFromPlaylist = useCallback(
-    async (path: string, playlist: Array<{ path: string; url: string }>, title: string) => {
+    (path: string, playlist: Array<{ path: string; url: string }>, title: string) => {
       const mime = getMimeForPath(path);
       if (!mime) return;
       const handler = getHandlerForMime(mime);
@@ -120,31 +128,20 @@ export function Shell() {
       const initial = playlist.find((p) => p.path === path) ?? playlist[0];
       if (!initial) return;
       const appId = handler.appId === "image-viewer" ? "image-viewer" : "media-player";
-      const appPath = APP_PATHS[appId];
-      if (!appPath) return;
-      try {
-        const res = await fetch("/api/fs/open-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path: appPath.replace(/\/$/, "") + "/index.html" }),
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const src = typeof data.url === "string" ? data.url : null;
-        if (!src) return;
-        wm.createWindow({
-          src,
-          title,
-          openFilePayload: {
-            initialPath: path,
-            initialUrl: initial.url,
-            playlist,
-          },
-        });
-        refresh();
-      } catch {
-        /* open-url failed — app must be in S3 (run pnpm build:apps) */
-      }
+      const src = SYSTEM_APP_ROUTES[appId];
+      if (!src) return;
+      const proxiedPlaylist = playlist.map((p) => ({ path: p.path, url: toProxyUrl(p.url) }));
+      const proxiedInitial = proxiedPlaylist.find((p) => p.path === path) ?? proxiedPlaylist[0];
+      wm.createWindow({
+        src,
+        title,
+        openFilePayload: {
+          initialPath: path,
+          initialUrl: proxiedInitial.url,
+          playlist: proxiedPlaylist,
+        },
+      });
+      refresh();
     },
     [wm, refresh]
   );
@@ -160,6 +157,25 @@ export function Shell() {
   const handleShellOpen = useCallback(
     async (payload: { kind: string; path: string; mime?: string; title?: string }) => {
       if (payload.kind === "app") {
+        if (isUserAppPath(payload.path)) {
+          const src = buildUserAppSrc(payload.path);
+          const title = payload.title ?? payload.path.split("/").slice(-2, -1)[0] ?? "App";
+          wm.createWindow({
+            src,
+            title,
+            minWidth: 800,
+            minHeight: 600,
+          });
+          refresh();
+          return;
+        }
+        const route = pathToSystemAppRoute(payload.path);
+        if (route) {
+          const title = payload.title ?? payload.path.split("/").slice(-2, -1)[0] ?? "App";
+          wm.createWindow({ src: route, title });
+          refresh();
+          return;
+        }
         const indexPath = payload.path.replace(/\/$/, "") + "/index.html";
         const maxAttempts = 3;
         const delayMs = 300;

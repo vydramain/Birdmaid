@@ -50,5 +50,13 @@ export default tseslint.config(
       "infra/minio/fixtures/DISK_C/Program Files/Media Player/_source/main.ts",
     ],
     rules: { "no-console": "off" }, // FP3/FP4: Explorer + viewers log errors (M3)
+  },
+  {
+    files: [
+      "front/core/analytics.ts",
+      "front/core/AppHost.tsx",
+      "vite.config.ts",
+    ],
+    rules: { "no-console": "off" }, // Dev logging: [Shell], [AppHost], [Vite user-app proxy]
   }
 );

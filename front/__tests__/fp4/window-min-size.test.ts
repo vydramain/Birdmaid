@@ -1,23 +1,22 @@
 /**
- * FP4.1 M1 RED: Min size 320×240 for iframe windows.
- * Tests fail until M2 implementation.
+ * FP4.1 M1: Min size 640×400 for iframe windows.
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
 import * as WindowManagerModule from "../../core/WindowManager";
 import { WindowManager } from "../../core/WindowManager";
 
-const DEFAULT_MIN_WIDTH = 320;
-const DEFAULT_MIN_HEIGHT = 240;
+const DEFAULT_MIN_WIDTH = 640;
+const DEFAULT_MIN_HEIGHT = 400;
 
-describe("FP4.1 iframe window min size (320×240)", () => {
+describe("FP4.1 iframe window min size (640×400)", () => {
   let wm: WindowManager;
 
   beforeEach(() => {
     wm = new WindowManager();
   });
 
-  it("T-MIN-DEFAULT: iframe window without override clamps to 320×240", () => {
+  it("T-MIN-DEFAULT: iframe window without override clamps to 640×400", () => {
     const win = wm.createWindow({ src: "/apps/explorer/", title: "Explorer" });
     wm.updateBounds(win.id, { width: 100, height: 50 });
     const w = wm.getWindow(win.id);
@@ -37,10 +36,10 @@ describe("FP4.1 iframe window min size (320×240)", () => {
 
   it("T-MIN-NO-CHANGE: sizes above min are unchanged", () => {
     const win = wm.createWindow({ src: "/apps/explorer/", title: "Explorer" });
-    wm.updateBounds(win.id, { width: 400, height: 300 });
+    wm.updateBounds(win.id, { width: 800, height: 600 });
     const w = wm.getWindow(win.id);
-    expect(w?.bounds.width).toBe(400);
-    expect(w?.bounds.height).toBe(300);
+    expect(w?.bounds.width).toBe(800);
+    expect(w?.bounds.height).toBe(600);
   });
 
   it("T-MIN-OVERRIDE: per-window minWidth/minHeight respected", () => {
@@ -62,14 +61,14 @@ describe("FP4.1 iframe window min size (320×240)", () => {
  * Fails until getComputedMinSize(scale) is implemented in WindowManager.
  */
 describe("REPO M1 SSOT: computed min size export", () => {
-  it("T-SSOT-COMPUTED: scale=1.0, no override → computedMinWidthPx == 320, computedMinHeightPx == 240", () => {
+  it("T-SSOT-COMPUTED: scale=1.0, no override → computedMinWidthPx == 640, computedMinHeightPx == 400", () => {
     const WM = WindowManagerModule as {
       getComputedMinSize?: (scale: number) => { width: number; height: number };
     };
     const getComputedMinSize = WM.getComputedMinSize;
     expect(getComputedMinSize).toBeDefined();
     const { width, height } = getComputedMinSize!(1.0);
-    expect(width).toBe(320);
-    expect(height).toBe(240);
+    expect(width).toBe(640);
+    expect(height).toBe(400);
   });
 });

@@ -7,10 +7,10 @@
 
 ## Index
 
-| Path   | Content                                                          |
-| ------ | ---------------------------------------------------------------- |
-| [evidence/](evidence/) | Evidence snapshot, key paths                                     |
-| Audit  | [docs/audit/FP4_AUDIT_REPORT.md](../docs/audit/FP4_AUDIT_REPORT.md) — Security + Audit |
+| Path                   | Content                                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| [evidence/](evidence/) | Evidence snapshot, key paths                                                           |
+| Audit                  | [docs/audit/FP4_AUDIT_REPORT.md](../docs/audit/FP4_AUDIT_REPORT.md) — Security + Audit |
 
 ---
 

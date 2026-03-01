@@ -8,13 +8,13 @@
 
 ## 1. Commands Table + Exit Codes
 
-| Command              | Exit | Notes                                      |
-| -------------------- | ---- | ------------------------------------------ |
-| `./infra/smoke.sh`   | 0    | PLATFORM OK                                |
-| `pnpm lint`          | 0    | ESLint + stylelint                         |
-| `pnpm format:check`  | 0    | Prettier                                   |
-| `pnpm test:api`      | 0    | 109 tests (24 files)                       |
-| `pnpm test:e2e`      | 1    | EACCES (permission denied) — env/sandbox   |
+| Command             | Exit | Notes                                    |
+| ------------------- | ---- | ---------------------------------------- |
+| `./infra/smoke.sh`  | 0    | PLATFORM OK                              |
+| `pnpm lint`         | 0    | ESLint + stylelint                       |
+| `pnpm format:check` | 0    | Prettier                                 |
+| `pnpm test:api`     | 0    | 109 tests (24 files)                     |
+| `pnpm test:e2e`     | 1    | EACCES (permission denied) — env/sandbox |
 
 **E2E:** Skipped for verdict — failure is permission (test-results/, playwright-report/), not test logic. REPO M4 scope: API + cleanup assertions.
 
@@ -22,11 +22,11 @@
 
 ## 2. Cleanup Assertions (in test:api)
 
-| Assertion      | File                                              | Status |
-| -------------- | ------------------------------------------------- | ------ |
-| M1-CLEAN       | `back/__tests__/fp3/s3-cleanup.assertion.integration.test.ts` | PASS   |
-| M3-NO-GITKEEP  | same                                              | PASS   |
-| M4-CLEAN       | same                                              | PASS   |
+| Assertion     | File                                                          | Status |
+| ------------- | ------------------------------------------------------------- | ------ |
+| M1-CLEAN      | `back/__tests__/fp3/s3-cleanup.assertion.integration.test.ts` | PASS   |
+| M3-NO-GITKEEP | same                                                          | PASS   |
+| M4-CLEAN      | same                                                          | PASS   |
 
 - **M1-CLEAN:** No `fp3-test-*`, `fp4-test-*`, `fp3-upload-*` under My Documents.
 - **M3-NO-GITKEEP:** No `.gitkeep` in `roots/**`.
@@ -36,14 +36,14 @@
 
 ## 3. Evidence Paths
 
-| Artifact                         | Path                                                       |
-| -------------------------------- | ---------------------------------------------------------- |
-| Audit report                     | `docs/audit/REPO_M4_TEST_POLLUTION_AUDIT.md`                |
-| M0 baseline                     | `docs/dev/_tmp/TEMP_M0_TEST_POLLUTION_AUDIT.md`            |
-| S3 cleanup assertions            | `back/__tests__/fp3/s3-cleanup.assertion.integration.test.ts` |
-| Test namespace helper            | `back/__tests__/helpers/test-namespace.ts`                 |
-| Copy fixtures (excl .gitkeep)    | `infra/minio/copy-fixtures-exclude-gitkeep.sh`             |
-| sample-image.png explicit copy   | `infra/minio/copy-fixtures-exclude-gitkeep.sh` (M4 fix)    |
+| Artifact                       | Path                                                          |
+| ------------------------------ | ------------------------------------------------------------- |
+| Audit report                   | `docs/audit/REPO_M4_TEST_POLLUTION_AUDIT.md`                  |
+| M0 baseline                    | `docs/dev/_tmp/TEMP_M0_TEST_POLLUTION_AUDIT.md`               |
+| S3 cleanup assertions          | `back/__tests__/fp3/s3-cleanup.assertion.integration.test.ts` |
+| Test namespace helper          | `back/__tests__/helpers/test-namespace.ts`                    |
+| Copy fixtures (excl .gitkeep)  | `infra/minio/copy-fixtures-exclude-gitkeep.sh`                |
+| sample-image.png explicit copy | `infra/minio/copy-fixtures-exclude-gitkeep.sh` (M4 fix)       |
 
 ---
 

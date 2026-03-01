@@ -118,10 +118,10 @@ describe("WindowManager", () => {
   describe("updateBounds", () => {
     it("updateBounds updates window position and size", () => {
       wm.createWindow({ id: "win-1" });
-      wm.updateBounds("win-1", { x: 100, y: 50, width: 400, height: 300 });
+      wm.updateBounds("win-1", { x: 100, y: 50, width: 800, height: 600 });
       const win = wm.getWindows().find((w) => w.id === "win-1");
       expect(win?.bounds).toEqual(
-        expect.objectContaining({ x: 100, y: 50, width: 400, height: 300 })
+        expect.objectContaining({ x: 100, y: 50, width: 800, height: 600 })
       );
     });
 
@@ -154,13 +154,13 @@ describe("WindowManager", () => {
 
     it("unmaximize restores prevRect", () => {
       wm.createWindow({ id: "win-1" });
-      wm.updateBounds("win-1", { x: 150, y: 80, width: 400, height: 300 });
+      wm.updateBounds("win-1", { x: 150, y: 80, width: 800, height: 600 });
       wm.maximize("win-1", viewport);
       wm.unmaximize("win-1");
       const win = wm.getWindows().find((w) => w.id === "win-1");
       expect(win?.state).toBe("normal");
       expect(win?.bounds).toEqual(
-        expect.objectContaining({ x: 150, y: 80, width: 400, height: 300 })
+        expect.objectContaining({ x: 150, y: 80, width: 800, height: 600 })
       );
     });
   });

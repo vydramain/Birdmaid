@@ -24,6 +24,9 @@ const MAX_BUFFER = 200;
 function emit(event: ShellEvent): void {
   buffer.push(event);
   if (buffer.length > MAX_BUFFER) buffer.shift();
+  if (import.meta.env.DEV && typeof console?.debug === "function") {
+    console.debug("[Shell]", event.type, event);
+  }
 }
 
 export const analytics = {

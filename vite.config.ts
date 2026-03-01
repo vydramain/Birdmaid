@@ -60,6 +60,11 @@ export default defineConfig({
             res.end(JSON.stringify({ status: "ok" }));
             return;
           }
+          if (req.url === "/favicon.ico") {
+            res.statusCode = 204;
+            res.end();
+            return;
+          }
           // Trailing slash redirect: /apps/{viewer} → /apps/{viewer}/ (base href expects slash)
           const viewerRedirect = (path: string) => {
             if (
@@ -107,6 +112,54 @@ export default defineConfig({
           if (req.url?.startsWith("/viewers/")) {
             const m = req.url.match(/^\/viewers\/([^?]+)(\?.*)?$/);
             if (m) req.url = "/front/viewers/" + m[1] + (m[2] ?? "");
+          }
+          // FP5: /apps/user/pkg/<path>/<subpath> -> gateway serve-user-app (path in URL for relative resolution)
+          // path = single URL segment (encoded, may contain %2F); subpath = rest of path (may contain /, e.g. assets/logo.png)
+          const userAppMatch = req.url?.match(/^\/apps\/user\/pkg\/([^/]+)\/([^?]*)(?:\?.*)?$/);
+          if (userAppMatch) {
+            const incomingUrl = req.url ?? "";
+            if (process.env.NODE_ENV !== "production" && typeof console?.debug === "function") {
+              console.debug("[Vite user-app proxy] request", incomingUrl);
+            }
+            // pathParam: decode, normalize, ensure trailing slash
+            let pathVal =
+              decodeURIComponent(userAppMatch[1]).replace(/\/+/g, "/").replace(/^\/+/, "/") || "/";
+            if (!pathVal.endsWith("/")) pathVal += "/";
+            const subpath = (userAppMatch[2] ?? "").replace(/\/$/, "").replace(/^\/+/, "");
+            const apiUrl = `${API_PROXY_TARGET}/api/fs/serve-user-app?path=${encodeURIComponent(pathVal)}&subpath=${encodeURIComponent(subpath)}`;
+            const headers: Record<string, string> = {};
+            if (API_PROXY_TARGET.includes("127.0.0.1")) headers["Host"] = "api.shell.local";
+            const range = req.headers["range"];
+            if (range && typeof range === "string") headers["Range"] = range;
+            const start = Date.now();
+            fetch(apiUrl, { headers })
+              .then((r) => {
+                const durationMs = Date.now() - start;
+                if (process.env.NODE_ENV !== "production" && typeof console?.debug === "function") {
+                  console.debug(
+                    "[Vite user-app proxy] response",
+                    r.status,
+                    subpath || "(index)",
+                    `${durationMs}ms`
+                  );
+                }
+                res.statusCode = r.status;
+                r.headers.forEach((v, k) => {
+                  if (k.toLowerCase() !== "transfer-encoding") res.setHeader(k, v);
+                });
+                return r.arrayBuffer();
+              })
+              .then((buf) => {
+                res.end(Buffer.from(buf));
+              })
+              .catch((err) => {
+                if (process.env.NODE_ENV !== "production" && typeof console?.debug === "function") {
+                  console.debug("[Vite user-app proxy] error", incomingUrl, err);
+                }
+                res.statusCode = 502;
+                res.end("Bad Gateway");
+              });
+            return;
           }
           next();
         });

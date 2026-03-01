@@ -7,6 +7,7 @@ import {
   listDir,
   statItem,
   getOpenUrl,
+  getObjectContent,
   createFolder,
   deleteItem,
   renameItem,
@@ -21,6 +22,9 @@ const ALLOWED_ORIGINS = [
   "http://shell.local",
   "http://api.shell.local",
   "http://s3.shell.local",
+  "https://shell.local",
+  "https://api.shell.local",
+  "https://s3.shell.local",
   "http://localhost:5173",
 ];
 
@@ -194,6 +198,143 @@ app.post("/api/fs/open-url", async (req, reply) => {
   }
   if (r.code === "INTERNAL_ERROR") {
     logEvent(app.log, "s3_error", { op: "open_url", code: "INTERNAL", durationMs });
+  }
+  if (r.code === "BAD_PATH")
+    return reply.status(400).send({ error: { code: r.code, message: r.message } });
+  if (r.code === "ROOT_NOT_FOUND")
+    return reply.status(403).send({ error: { code: r.code, message: r.message } });
+  if (r.code === "NOT_FOUND")
+    return reply.status(404).send({ error: { code: r.code, message: r.message } });
+  return reply.status(500).send({ error: { code: r.code, message: r.message } });
+});
+
+// FP4: Proxy signed URLs for viewers — bypass CORS (browser blocks fetch to s3.shell.local from shell.local).
+// SSRF guard: only allow URLs for our S3 public endpoint.
+// Gateway MUST fetch from s3.shell.local (Traefik → MinIO). In Docker: extra_hosts s3.shell.local→traefik.
+const S3_PUBLIC = process.env.FS_S3_PUBLIC_URL ?? "https://s3.shell.local";
+const S3_PUBLIC_HTTP = S3_PUBLIC.replace(/^https:/, "http:");
+
+function isAllowedProxyUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return (u.origin === S3_PUBLIC || u.origin === S3_PUBLIC_HTTP) && u.pathname.startsWith("/");
+  } catch {
+    return false;
+  }
+}
+
+app.get("/api/fs/proxy", async (req, reply) => {
+  const raw = (req.query as { url?: string }).url;
+  if (!raw || typeof raw !== "string") {
+    return reply.status(400).send({ error: { code: "BAD_PATH", message: "url required" } });
+  }
+  let url: string;
+  try {
+    url = decodeURIComponent(raw);
+  } catch {
+    return reply.status(400).send({ error: { code: "BAD_PATH", message: "invalid url" } });
+  }
+  if (!isAllowedProxyUrl(url)) {
+    logEvent(app.log, "request_rejected", {
+      reason: "proxy_url_not_allowed",
+      url: url.slice(0, 80),
+    });
+    return reply.status(403).send({ error: { code: "BAD_PATH", message: "url not allowed" } });
+  }
+  const rangeHeader = (req.headers["range"] as string | undefined) ?? "";
+  const headers: Record<string, string> = {};
+  if (rangeHeader) headers["Range"] = rangeHeader;
+  const start = Date.now();
+  try {
+    const res = await fetch(url, { headers });
+    const durationMs = Date.now() - start;
+    if (!res.ok) {
+      logEvent(app.log, "fs_proxy", { status: res.status, durationMs });
+      return reply.status(res.status).send(res.body);
+    }
+    const ct = res.headers.get("Content-Type");
+    if (ct) reply.header("Content-Type", ct);
+    const ar = res.headers.get("Accept-Ranges");
+    if (ar) reply.header("Accept-Ranges", ar);
+    const cr = res.headers.get("Content-Range");
+    const cl = res.headers.get("Content-Length");
+    if (cr) reply.header("Content-Range", cr);
+    if (cl) reply.header("Content-Length", cl);
+    const status = res.status;
+    logEvent(app.log, "fs_proxy", { status, durationMs });
+    return reply.send(res.body);
+  } catch (err) {
+    const durationMs = Date.now() - start;
+    app.log.error({ err, url: url.slice(0, 80), durationMs }, "fs_proxy_error");
+    return reply.status(502).send({ error: { code: "INTERNAL_ERROR", message: "proxy failed" } });
+  }
+});
+
+// Godot Web export: inline style/script ('unsafe-inline'), WebAssembly ('wasm-unsafe-eval').
+const USER_APP_CSP =
+  "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self'; media-src 'self'; connect-src 'self'; frame-src 'none'";
+
+app.get("/api/fs/serve-user-app", async (req, reply) => {
+  const path = (req.query as { path?: string }).path;
+  const subpath = ((req.query as { subpath?: string }).subpath ?? "").replace(/^\/+/, "");
+  const rangeHeader = (req.headers["range"] as string | undefined) ?? "";
+
+  if (!path || typeof path !== "string") {
+    return reply.status(400).send({ error: { code: "BAD_PATH", message: "path required" } });
+  }
+
+  const start = Date.now();
+  const r = await getObjectContent(s3, BUCKET, path, subpath, rangeHeader || undefined);
+  const durationMs = Date.now() - start;
+
+  if (r.ok) {
+    const isHtml = r.contentType.includes("text/html");
+    reply.header("Content-Type", r.contentType);
+    reply.header("Accept-Ranges", "bytes");
+    if (r.contentRange) {
+      reply.status(206).header("Content-Range", r.contentRange);
+      if (r.contentLength != null) reply.header("Content-Length", String(r.contentLength));
+    }
+    if (isHtml) {
+      reply.header("Content-Security-Policy", USER_APP_CSP);
+    }
+    const size = r.contentLength ?? (Buffer.isBuffer(r.body) ? r.body.length : undefined);
+    const logFields: Record<string, unknown> = {
+      path,
+      subpath,
+      durationMs,
+      status: "ok",
+      contentType: r.contentType,
+      ...(size != null && { size }),
+    };
+    if (durationMs > 500) {
+      app.log.warn({ ...logFields, event: "slow_request" }, "slow_request");
+    }
+    logEvent(app.log, "fs_serve_user_app", logFields);
+    return reply.send(r.body);
+  }
+
+  const statusCode =
+    r.code === "BAD_PATH"
+      ? 400
+      : r.code === "ROOT_NOT_FOUND"
+        ? 403
+        : r.code === "NOT_FOUND"
+          ? 404
+          : 500;
+  logEvent(app.log, "serve_user_app_error", {
+    path,
+    subpath,
+    code: r.code,
+    message: r.message,
+    statusCode,
+  });
+
+  if (r.code === "BAD_PATH" || r.code === "ROOT_NOT_FOUND") {
+    logEvent(app.log, "request_rejected", {
+      reason: r.code === "BAD_PATH" ? "bad_path" : "bad_root",
+      path,
+    });
   }
   if (r.code === "BAD_PATH")
     return reply.status(400).send({ error: { code: r.code, message: r.message } });

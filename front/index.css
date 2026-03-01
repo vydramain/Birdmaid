@@ -1,13 +1,13 @@
 :root {
   --wm-scale: 1;
-  --wm-titlebar-height-base: 28px;
-  --wm-border-width-base: 2px;
-  --wm-taskbar-height-base: 32px;
-  --wm-gap-1-base: 4px;
-  --wm-gap-2-base: 8px;
-  --wm-padding-1-base: 4px;
-  --wm-padding-2-base: 8px;
-  --wm-font-size-base: 12px;
+  --wm-titlebar-height-base: 1.75rem;
+  --wm-border-width-base: 0.125rem;
+  --wm-taskbar-height-base: 2rem;
+  --wm-gap-1-base: 0.25rem;
+  --wm-gap-2-base: 0.5rem;
+  --wm-padding-1-base: 0.25rem;
+  --wm-padding-2-base: 0.5rem;
+  --wm-font-size-base: 0.75rem;
   --wm-titlebar-height: calc(var(--wm-titlebar-height-base) * var(--wm-scale));
   --wm-border-width: calc(var(--wm-border-width-base) * var(--wm-scale));
   --wm-taskbar-height: calc(var(--wm-taskbar-height-base) * var(--wm-scale));
@@ -20,7 +20,7 @@
   --wm-fg: #333;
   --wm-border: #ccc;
   --wm-accent: #0078d4;
-  --wm-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --wm-shadow: 0 0.125rem 0.5rem rgb(0 0 0 / 15%);
   --wm-font-family: system-ui;
 }
 
@@ -69,7 +69,7 @@ body {
 }
 
 .desktop-icon:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgb(0 0 0 / 5%);
   border-radius: 0.25rem;
 }
 
@@ -78,6 +78,7 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
 
 .app-host-iframe {
@@ -85,6 +86,7 @@ body {
   height: 100%;
   border: none;
   display: block;
+  overflow: hidden;
 }
 
 .app-host-placeholder {
@@ -130,7 +132,7 @@ body {
 .wm-taskbar-item {
   height: calc(var(--wm-taskbar-height, 2rem) - 0.5rem);
   padding: 0 var(--wm-padding-2, 0.5rem);
-  border: 1px solid transparent;
+  border: 0.0625rem solid transparent;
   border-radius: 0.125rem;
   color: #fff;
   font-size: var(--wm-font-size, 0.75rem);
@@ -143,7 +145,7 @@ body {
 }
 
 .wm-taskbar-item[data-active="true"] {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgb(255 255 255 / 30%);
 }
 
 .wm-taskbar-item:not([data-active="true"]) {
@@ -157,7 +159,7 @@ body {
   min-height: var(--wm-window-min-height-px);
   border: var(--wm-border-width, 0.125rem) solid var(--wm-border, #ccc);
   border-radius: 0.25rem;
-  box-shadow: var(--wm-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
+  box-shadow: var(--wm-shadow, 0 0.125rem 0.5rem rgb(0 0 0 / 15%));
   background: var(--wm-bg, #fff);
   display: flex;
   flex-direction: column;
@@ -198,6 +200,7 @@ body {
 
 .wm-window-body {
   flex: 1;
+  min-height: 0; /* flex shrink; content fills available space */
   overflow: hidden;
   position: relative;
 }
