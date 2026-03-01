@@ -218,4 +218,4 @@ FP=FP6 mode=plan
 - **Structure:** [docs/style/STRUCTURE.md](./docs/style/STRUCTURE.md)
 - **Style contract:** [docs/style/STYLE_GUIDE.md](./docs/style/STYLE_GUIDE.md)
 - **FP contract:** `docs/fps/FP<N>.md` (see [docs/fps/FP_EXAMPLE.md](./docs/fps/FP_EXAMPLE.md))
-- **Process docs:** [docs/dev/COMMITS.md](./docs/dev/COMMITS.md), [CODE_REVIEW.md](./docs/dev/CODE_REVIEW.md), [ARCHITECTURE.md](./docs/dev/ARCHITECTURE.md), [SECURITY.md](./docs/dev/SECURITY.md), [docs/style/REPO_RULES.md](./docs/style/REPO_RULES.md)
+- **Process docs:** [docs/dev/COMMITS.md](./docs/dev/COMMITS.md), [CODE_REVIEW.md](./docs/dev/CODE_REVIEW.md), [ARCHITECTURE.md](./docs/dev/ARCHITECTURE.md), [docs/style/REPO_RULES.md](./docs/style/REPO_RULES.md) § Security

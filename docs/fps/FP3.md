@@ -796,7 +796,7 @@ Build implementation: iframe src = shell.local path; do NOT use open-url for Exp
 
 - [x] API_FP3_DELTA merged into docs/core/API.yaml
 
-**Docs consolidation:** FP3 patchset (M5–M9) merged into FP3; no separate patchset entity. Audit: docs/audit/FP3_AUDIT_REPORT.md (M6 + M10).
+**Docs consolidation:** FP3 patchset (M5–M9) merged into FP3; no separate patchset entity. Evidence: FP3.md § Tests; [docs/audit/FP4_AUDIT_REPORT.md](../audit/FP4_AUDIT_REPORT.md), [archive/FP4/](../../archive/FP4/README.md).
 
 ---
 

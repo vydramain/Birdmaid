@@ -2,7 +2,7 @@
 
 **Archived:** 2025-02-23
 
-Canonical evidence is in [docs/fps/FP4.md](../../docs/fps/FP4.md) § Evidence.
+Canonical evidence is in [docs/fps/FP4.md](../../../docs/fps/FP4.md) § Evidence.
 
 This directory holds supplementary evidence snapshots. Key paths:
 

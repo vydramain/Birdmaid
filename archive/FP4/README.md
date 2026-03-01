@@ -1,7 +1,7 @@
 # FP4 Archive — System Viewers & Players
 
 **Archived:** 2025-02-23  
-**Canonical:** [docs/fps/FP4.md](../docs/fps/FP4.md)
+**Canonical:** [docs/fps/FP4.md](../../docs/fps/FP4.md)
 
 ---
 
@@ -10,7 +10,7 @@
 | Path                   | Content                                                                                |
 | ---------------------- | -------------------------------------------------------------------------------------- |
 | [evidence/](evidence/) | Evidence snapshot, key paths                                                           |
-| Audit                  | [docs/audit/FP4_AUDIT_REPORT.md](../docs/audit/FP4_AUDIT_REPORT.md) — Security + Audit |
+| Audit                  | [docs/audit/FP4_AUDIT_REPORT.md](../../docs/audit/FP4_AUDIT_REPORT.md) — Security + Audit |
 
 ---
 
@@ -25,6 +25,6 @@
 
 ## References
 
-- [FP4.md](../docs/fps/FP4.md) — canonical spec
-- [PROTOCOL_v0.md](../docs/core/PROTOCOL_v0.md) § FP4
+- [FP4.md](../../docs/fps/FP4.md) — canonical spec
+- [PROTOCOL_v0.md](../../docs/core/PROTOCOL_v0.md) § FP4
 - Gate: `./infra/gate.sh FP4`

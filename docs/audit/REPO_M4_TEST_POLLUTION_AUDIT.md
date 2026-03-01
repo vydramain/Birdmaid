@@ -39,7 +39,7 @@
 | Artifact                       | Path                                                          |
 | ------------------------------ | ------------------------------------------------------------- |
 | Audit report                   | `docs/audit/REPO_M4_TEST_POLLUTION_AUDIT.md`                  |
-| M0 baseline                    | `docs/dev/_tmp/TEMP_M0_TEST_POLLUTION_AUDIT.md`               |
+| M0 baseline                    | `archive/REPO/TEMP_M0_TEST_POLLUTION_AUDIT.md`                |
 | S3 cleanup assertions          | `back/__tests__/fp3/s3-cleanup.assertion.integration.test.ts` |
 | Test namespace helper          | `back/__tests__/helpers/test-namespace.ts`                    |
 | Copy fixtures (excl .gitkeep)  | `infra/minio/copy-fixtures-exclude-gitkeep.sh`                |

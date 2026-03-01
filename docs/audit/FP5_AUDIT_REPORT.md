@@ -72,7 +72,7 @@
 | docs/core/API_FP5_DELTA.md                    | Yes    | Yes                    |
 | docs/core/UX_FP5_1.md                         | Yes    | Yes                    |
 | docs/dev/DESIGN_LOG_FP5_1.md                  | Yes    | Yes                    |
-| docs/dev/\_tmp/TEMP(FP5.1)\_M0_BUILD_AUDIT.md | Yes    | Yes                    |
+| archive/REPO/TEMP_FP5.1_M0_BUILD_AUDIT.md     | Yes    | Yes (archived R1)      |
 
 All TEMP(FP5.1) docs: explicitly marked in header; source-of-truth = docs/fps/FP5.md + docs/core/PROTOCOL_v0.md; ready for merge/delete on archive FP5.
 

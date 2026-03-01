@@ -464,7 +464,7 @@ sequenceDiagram
 - docs/core/API.yaml, docs/dev/ARCHITECTURE.md (FS path scheme, CORS)
 - docs/tests/FP2_TESTS.md
 - docs/dev/ARCHITECTURE.md § Dev Domain, infra/README.md
-- docs/audit/FP2_AUDIT_REPORT.md
+- Evidence: FP2.md § Tests; [archive/FP4/](../../archive/FP4/README.md) for related release
 
 **D) Archive link:**
 
