@@ -1,0 +1,49 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "rules": {
+    "declaration-no-important": true,
+    "color-hex-length": "short",
+    "unit-disallowed-list": ["px", "pt", "pc", "in", "cm", "mm", "q", "Q"]
+  },
+  "ignoreFiles": [
+    "**/*.js",
+    "**/*.jsx",
+    "**/*.ts",
+    "**/*.tsx",
+    "node_modules/**",
+    "dist/**",
+    "coverage/**",
+    "__tests__/**/*.test.{ts,tsx,js,jsx,css,scss}",
+    "!__tests__/style-guardrails/**",
+    "infra/minio/fixtures/**"
+  ],
+  "overrides": [
+    {
+      "files": ["**/*.scss"],
+      "customSyntax": "postcss-scss",
+      "rules": {
+        "at-rule-no-unknown": [
+          true,
+          {
+            "ignoreAtRules": [
+              "mixin",
+              "include",
+              "use",
+              "forward",
+              "function",
+              "return",
+              "if",
+              "else",
+              "each",
+              "for",
+              "while",
+              "extend"
+            ]
+          }
+        ],
+        "import-notation": null,
+        "no-invalid-double-slash-comments": null
+      }
+    }
+  ]
+}

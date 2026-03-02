@@ -1,0 +1,54 @@
+{
+  "name": "birdmaid-shell",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "build:apps": "APP=image-viewer vite build -c vite.apps.config.ts && APP=image-viewer node scripts/copy-app-to-fixtures.cjs && APP=media-player vite build -c vite.apps.config.ts && APP=media-player node scripts/copy-app-to-fixtures.cjs && APP=explorer vite build -c vite.apps.config.ts && APP=explorer node scripts/copy-app-to-fixtures.cjs && APP=internet-explorer vite build -c vite.apps.config.ts && APP=internet-explorer node scripts/copy-app-to-fixtures.cjs",
+    "preview": "vite preview",
+    "lint": "pnpm check:styles && eslint front e2e back vite.config.ts playwright.config.ts vitest.config.ts vitest.api.config.ts --max-warnings 0 && stylelint \"front/**/*.{css,scss}\" --max-warnings 0 --allow-empty-input",
+    "format": "prettier -w .",
+    "format:check": "prettier -c .",
+    "lint:staged": "lint-staged",
+    "prepare": "husky",
+    "test": "vitest run",
+    "smoke": "bash infra/smoke.sh",
+    "test:api": "vitest run --config vitest.api.config.ts",
+    "test:e2e": "playwright test",
+    "check:styles": "node scripts/check-inline-styles.cjs front e2e back"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.0",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@eslint/js": "^9.15.0",
+    "@playwright/test": "^1.49.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.15.0",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "husky": "^9.1.7",
+    "jsdom": "^25.0.1",
+    "lint-staged": "^15.4.3",
+    "postcss-scss": "^4.0.9",
+    "prettier": "^3.4.2",
+    "stylelint": "^16.11.0",
+    "stylelint-config-standard": "^36.0.1",
+    "typescript": "~5.6.2",
+    "typescript-eslint": "^8.15.0",
+    "vite": "^6.0.1",
+    "vitest": "^2.1.6",
+    "jszip": "^3.10.1",
+    "mime": "^4.0.4"
+  }
+}

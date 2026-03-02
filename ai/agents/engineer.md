@@ -7,6 +7,7 @@
 ## Required Skills
 
 Before starting work, run the following skill:
+
 - `.codex/skills/agents/engineer` — Technical skills: feasibility assessment, architecture design, NFR evaluation, code quality
 
 This skill provides frameworks, best practices, and quality checklists for technical work.
@@ -35,7 +36,7 @@ This skill provides frameworks, best practices, and quality checklists for techn
 3. **Technical Risks** (таблица):
    | Risk | Probability | Impact | Mitigation |
    |------|-------------|--------|------------|
-   | ...  | ...         | ...    | ...        |
+   | ... | ... | ... | ... |
 
 4. **NFR Checklist**:
    - Security

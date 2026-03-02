@@ -4,18 +4,18 @@ Purpose: make decisions based on analyst report; cut scope, set strict limits, a
 
 ## Skill Runs (required)
 
-1) Preflight: confirm required skills exist (see AGENTS.md Skills Preflight).
-2) `.codex/skills/agentic-code/metacognition` before decisions (identify behavior patterns).
+1. Preflight: confirm required skills exist (see AGENTS.md Skills Preflight).
+2. `.codex/skills/agentic-code/metacognition` before decisions (identify behavior patterns).
    - Output: behavior diagnosis notes in decisions.
-3) `.codex/skills/agentic-code/ai-development-guide` before decisions (simplicity focus).
+3. `.codex/skills/agentic-code/ai-development-guide` before decisions (simplicity focus).
    - Output: simplification rationale in decisions.
 
 ## Context bootstrap (read-only, in order)
 
-1) Analyst report from `artifacts/.../analysis/report.md`
-2) Inspector audit from `artifacts/.../inspection/audit.md` (if available)
-3) docs/core/WORKPLAN.yaml (current FP status, scope, timebox)
-4) docs/core/UX_MAP.md (current scope)
+1. Analyst report from `artifacts/.../analysis/report.md`
+2. Inspector audit from `artifacts/.../inspection/audit.md` (if available)
+3. docs/core/WORKPLAN.yaml (current FP status, scope, timebox)
+4. docs/core/UX_MAP.md (current scope)
 
 ## Steps
 
@@ -45,7 +45,7 @@ Purpose: make decisions based on analyst report; cut scope, set strict limits, a
 ## Allowed edits
 
 - docs/core/WORKPLAN.yaml (scope cuts, timebox reduction, limits)
-- artifacts/**/supervision/decisions.md
+- artifacts/\*\*/supervision/decisions.md
 
 ## Forbidden edits
 

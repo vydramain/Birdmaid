@@ -7,6 +7,7 @@
 ## Required Skills
 
 Before starting work, run the following skill:
+
 - `.codex/skills/agents/compliance` — Security and compliance skills: security assessment, privacy compliance, access control, threat modeling
 
 This skill provides frameworks, best practices, and quality checklists for security and compliance work.
@@ -34,7 +35,7 @@ This skill provides frameworks, best practices, and quality checklists for secur
 3. **Security Threats** (таблица):
    | Threat | Severity | Mitigation |
    |--------|----------|------------|
-   | ...    | ...      | ...        |
+   | ... | ... | ... |
 
 4. **Access Control Requirements**:
    - Who can access what

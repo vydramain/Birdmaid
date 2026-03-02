@@ -8,6 +8,7 @@ Thumbs.db
 
 ## Node / JavaScript
 **/node_modules/
+.pnpm-store/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -15,6 +16,7 @@ pnpm-debug.log*
 
 ## Build outputs
 **/dist/
+dist-app-*/
 **/build/
 **/out/
 
@@ -34,6 +36,7 @@ pnpm-debug.log*
 **/junit.xml
 **/reports/
 **/test-results/
+**/playwright-report/
 
 ## Logs
 logs/
@@ -76,3 +79,6 @@ artifacts/
 *.bak
 *-COPY-*
 *-backup-*
+
+## HAR / network captures (FP4 debug artifacts)
+*.har

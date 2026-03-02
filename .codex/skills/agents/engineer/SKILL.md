@@ -5,6 +5,27 @@ description: "Technical skills: feasibility assessment, architecture design, NFR
 
 # Engineer Skills
 
+## MUST READ (before code changes)
+
+- **docs/dev/GUARDRAILS.md** — canonical rules (output contract, style/units when applicable)
+- **docs/style/STYLE_GUIDE.md** — style guide
+- **docs/fps/FP<N>.md** — product contract for the current FP (see docs/fps/FP_EXAMPLE.md)
+- **docs/dev/ARCHITECTURE.md** — слои front/back, Clean Architecture
+- **docs/dev/COMMITS.md** — Conventional Commits (commitlint в pre-commit)
+
+## MUST NOT (code quality)
+
+- No `!important`, no `px` in CSS/SCSS (use `rem`), no constant inline styles
+- No lazy allow-tags; no patching docs to justify violations
+
+## Gates (pre-commit, CI)
+
+- **lint-staged:** check-inline-styles.cjs, ESLint, stylelint, Prettier
+- **commitlint:** Conventional Commits (type(scope): description)
+- **CI:** pnpm lint, pnpm format:check, pnpm test, pnpm audit
+
+---
+
 ## Core Competencies
 
 ### 1. Technical Feasibility Assessment

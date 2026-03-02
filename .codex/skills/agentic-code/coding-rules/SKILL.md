@@ -5,6 +5,17 @@ description: "Applies coding standards for clean, maintainable code. Use when: w
 
 # Development Rules
 
+## MUST READ (project)
+
+- **docs/dev/GUARDRAILS.md** — canonical rules (output contract, style/units when applicable)
+- **docs/style/STYLE_GUIDE.md** — style guide
+
+## MUST NOT (style)
+
+- No `!important`; no absolute units in CSS/SCSS; no constant inline styles; no patching docs to justify violations
+
+---
+
 ## Language-Specific References
 
 For language-specific rules, also read:

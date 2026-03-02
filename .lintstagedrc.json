@@ -1,0 +1,8 @@
+{
+  "*.{ts,tsx}": ["pnpm check:styles", "eslint --max-warnings=0 --fix", "prettier --write"],
+  "*.{css,scss}": ["stylelint --max-warnings=0 --fix --allow-empty-input", "prettier --write"],
+  "front/public/**/*.{svg,png,jpg,jpeg,gif,webp,woff,woff2,ttf,otf,eot,cur,ani,wav,mp3,ogg,m4a,flac}": [
+    "node scripts/check-asset-provenance.cjs"
+  ],
+  "docs/compliance/ASSET_PROVENANCE.md": ["node scripts/check-asset-provenance.cjs"]
+}

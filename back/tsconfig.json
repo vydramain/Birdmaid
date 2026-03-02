@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "module": "CommonJS",
-    "target": "ES2020",
-    "outDir": "dist",
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "rootDir": "src"
   },
-  "include": ["src", "__tests__"]
+  "include": ["src/**/*"]
 }

@@ -1,163 +1,488 @@
-# API Contract (OpenAPI-style)
-# FP1 + FP4 endpoints
+# OpenAPI 3 — Core API contract (FP2 + FP3)
+# Purpose: Canonical API contract for Gateway + FS endpoints.
+# Referenced by: agents (design, build), ux-map-sync, FP docs.
+# FP3: write endpoints (create-folder, upload-file, upload-zip-app, delete, rename); roots = DISK_A, DISK_C, DISK_D only.
 
-# ===== FP1 Endpoints (existing) =====
+openapi: 3.0.3
+info:
+  title: Birdmaid Gateway API
+  version: 0.3.0
+  description: Gateway API for FS contract (list, stat, open-url, roots, write ops). FP2+FP3 scope.
 
-# Public
-# GET /games?tag=...&sort=...&title=...&teamId=...
-#   Returns: { games: [{ id, title, cover_url, teamId, tags_user, tags_system, status }] }
-#   Filters: only published games for unauthenticated; all for authenticated
+servers:
+  - url: http://api.shell.local
+    description: Dev domain (FP2)
+  - url: http://localhost:3000
+    description: Local fallback
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      tags: [system]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/fs/roots:
+    get:
+      summary: "List virtual roots (FP3: DISK_A, DISK_C, DISK_D only; APPS deprecated)"
+      operationId: getFsRoots
+      tags: [fs]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RootsResponse"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/fs/list:
+    get:
+      summary: List directory contents
+      operationId: getFsList
+      tags: [fs]
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "/@root/DISK_C/"
+          description: Canonical path (dir with trailing slash)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FsListResponse"
+        "400":
+          description: Bad path (invalid format, traversal, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Root not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/fs/stat:
+    get:
+      summary: Get item metadata
+      operationId: getFsStat
+      tags: [fs]
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "/@root/DISK_C/docs/readme.txt"
+          description: Canonical path (file or dir)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FsStatResponse"
+        "400":
+          description: Bad path
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Root not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/fs/open-url:
+    post:
+      summary: Get signed URL for reading object
+      operationId: postFsOpenUrl
+      tags: [fs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenUrlRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenUrlResponse"
+        "400":
+          description: Bad path or invalid ttlSec
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Root not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Object not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/fs/create-folder:
+    post:
+      summary: Create folder in writable path (FP3)
+      operationId: postFsCreateFolder
+      tags: [fs]
+      security:
+        - systemToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFolderRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FsItem"
+        "400":
+          description: BAD_PATH, BAD_REQUEST
+        "403":
+          description: PERMISSION_DENIED, POLICY_VIOLATION
+        "409":
+          description: NAME_CONFLICT (folder exists)
+
+  /api/fs/upload-file:
+    post:
+      summary: Multipart upload single file (FP3)
+      operationId: postFsUploadFile
+      tags: [fs]
+      security:
+        - systemToken: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [path, file]
+              properties:
+                path:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FsItem"
+        "400":
+          description: BAD_PATH, BAD_REQUEST
+        "403":
+          description: PERMISSION_DENIED, POLICY_VIOLATION
+        "409":
+          description: NAME_CONFLICT
+        "413":
+          description: PAYLOAD_TOO_LARGE
+        "415":
+          description: UNSUPPORTED_MEDIA (ext/mime not in allowlist)
+
+  /api/fs/upload-zip-app:
+    post:
+      summary: Multipart zip upload; gateway unpacks; validate index.html (FP3)
+      operationId: postFsUploadZipApp
+      tags: [fs]
+      security:
+        - systemToken: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [path, file]
+              properties:
+                path:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FsItem"
+        "400":
+          description: BAD_PATH, BAD_REQUEST, NO_INDEX_HTML
+        "403":
+          description: PERMISSION_DENIED
+        "413":
+          description: PAYLOAD_TOO_LARGE
+        "415":
+          description: UNSUPPORTED_MEDIA (not zip)
+
+  /api/fs/delete:
+    delete:
+      summary: Delete file or dir (FP3)
+      operationId: deleteFsItem
+      tags: [fs]
+      security:
+        - systemToken: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteRequest"
+      responses:
+        "204":
+          description: No content
+        "403":
+          description: PERMISSION_DENIED, POLICY_VIOLATION
+        "404":
+          description: NOT_FOUND
+
+  /api/fs/rename:
+    put:
+      summary: Rename (same-parent only) (FP3)
+      operationId: putFsRename
+      tags: [fs]
+      security:
+        - systemToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FsItem"
+        "403":
+          description: PERMISSION_DENIED, POLICY_VIOLATION, CROSS_PARENT
+        "404":
+          description: NOT_FOUND
+        "409":
+          description: NAME_CONFLICT
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        version:
+          type: string
+        build:
+          type: string
+
+    FsItem:
+      type: object
+      required: [path, name, kind]
+      properties:
+        path:
+          type: string
+          description: Canonical path (dir ends with /)
+        name:
+          type: string
+          description: Item name without /
+        kind:
+          type: string
+          enum: [dir, file]
+        size:
+          type: integer
+          nullable: true
+          description: Bytes (files only)
+        modified:
+          type: string
+          format: date-time
+          nullable: true
+        mime:
+          type: string
+          nullable: true
+          description: MIME type (files only)
+        isApp:
+          type: boolean
+          default: false
+          description: true if dir contains index.html (HEAD check)
+
+    FsListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FsItem"
+
+    FsStatResponse:
+      allOf:
+        - $ref: "#/components/schemas/FsItem"
+
+    RootsResponse:
+      type: object
+      required: [roots]
+      properties:
+        roots:
+          type: array
+          items:
+            $ref: "#/components/schemas/RootItem"
+
+    RootItem:
+      type: object
+      required: [id, label]
+      properties:
+        id:
+          type: string
+          example: DISK_C
+        label:
+          type: string
+          example: "Disk C"
+
+    OpenUrlRequest:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          example: "/@root/DISK_C/docs/readme.txt"
+        ttlSec:
+          type: integer
+          minimum: 60
+          maximum: 300
+          default: 120
+          description: TTL in seconds. Clamped to TTL_MIN=60, TTL_MAX=300.
+
+    OpenUrlResponse:
+      type: object
+      required: [url, expiresIn]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Presigned GET URL (S3/MinIO)
+        expiresIn:
+          type: integer
+          description: TTL in seconds
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Machine-readable code (e.g. BAD_PATH, NOT_FOUND, POLICY_VIOLATION, PERMISSION_DENIED)
+            message:
+              type: string
+              description: Human-readable message
+            details:
+              type: object
+              additionalProperties: true
+              description: Optional extra context
+
+    CreateFolderRequest:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          description: Parent dir path (trailing slash)
+
+    DeleteRequest:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+
+    RenameRequest:
+      type: object
+      required: [fromPath, toPath]
+      properties:
+        fromPath:
+          type: string
+        toPath:
+          type: string
+          description: Must be same parent; dirname(fromPath) === dirname(toPath)
+
+  securitySchemes:
+    systemToken:
+      type: apiKey
+      in: header
+      name: X-System-Token
+      description: Explorer system token (Write API only). Requires X-System-App explorer.
+
+# Path canonicalization rules (FP2)
+# - Leading slash required
+# - Dir path ends with /
+# - name never contains /
+# - max length 1024
+# - no .., \, double slashes
+# - root isolation: path must start with /@root/{ROOT_ID}/
 #
-# GET /games/{id}
-#   Returns: { id, title, description_md, repo_url, cover_url, teamId, team { name, members[] }, tags_user, tags_system, status, currentBuild { url }, adminRemark }
-#   Auth: public for published; authenticated for editing/archived if team member or super admin
+# Sort rule: dirs first, then files; within group lexicographic
 #
-# GET /teams
-#   Returns: { teams: [{ id, name, leader, members[] }] }
-#   Auth: public
-#
-# GET /teams/{id}/games
-#   Returns: { games: [{ id, title, cover_url, ... }] } (filtered by teamId)
-#   Auth: public (only published)
-
-# ===== FP4: Authentication =====
-
-# POST /auth/register
-#   Body: { email, login, password }
-#   Returns: { user: { id, email, login }, token: "JWT..." }
-#   Validation: email unique, login unique, password min 6 chars
-#
-# POST /auth/login
-#   Body: { identifier (email or login), password }
-#   Returns: { user: { id, email, login, isSuperAdmin }, token: "JWT..." }
-#
-# POST /auth/recovery/request
-#   Body: { email }
-#   Returns: { message: "Code sent" }
-#   Notes: Generates code, invalidates previous code, sends email (ADR-031)
-#
-# POST /auth/recovery/verify
-#   Body: { email, code, newPassword }
-#   Returns: { message: "Password reset", token: "JWT..." }
-#   Notes: Validates code (only last sent code valid), updates password
-
-# ===== FP4: Teams (authenticated) =====
-
-# POST /teams
-#   Auth: JWT required
-#   Body: { name }
-#   Returns: { id, name, leader (current user), members: [current user] }
-#   Notes: Creator becomes leader (ADR-034)
-#
-# PATCH /teams/{id}
-#   Auth: JWT required (team leader only)
-#   Body: { name? }
-#   Returns: { id, name, leader, members[] }
-#
-# POST /teams/{id}/members
-#   Auth: JWT required (team leader only)
-#   Body: { userId }
-#   Returns: { id, name, leader, members[] }
-#   Notes: Only leader can add members (ADR-034)
-#
-# DELETE /teams/{id}/members/{userId}
-#   Auth: JWT required (team leader only)
-#   Returns: { id, name, leader, members[] }
-#
-# POST /teams/{id}/leader
-#   Auth: JWT required (current leader only)
-#   Body: { newLeaderId }
-#   Returns: { id, name, leader (new), members[] }
-#   Notes: Transfer leadership (ADR-034)
-
-# ===== FP4: Games (authenticated users) =====
-
-# POST /games
-#   Auth: JWT required
-#   Body: { teamId, title, description_md?, repo_url?, cover_url? }
-#   Returns: { id, teamId, title, status: "editing", ... }
-#   Notes: User must be team member or super admin
-#
-# PATCH /games/{id}
-#   Auth: JWT required (team member or super admin)
-#   Body: { title?, description_md?, repo_url?, cover_url? }
-#   Returns: { id, ... }
-#   Notes: Super admin can edit any game (FR-FP4-004)
-#
-# POST /games/{id}/build
-#   Auth: JWT required (team member or super admin)
-#   Body: FormData { file: ZIP }
-#   Returns: { buildId, buildUrl }
-#   Notes: Max 300 MB
-#
-# POST /games/{id}/publish
-#   Auth: JWT required (team member or super admin)
-#   Body: {}
-#   Returns: { id, status: "published" }
-#   Validation: requires cover_url + description_md + currentBuild
-#
-# POST /games/{id}/archive
-#   Auth: JWT required (team member or super admin)
-#   Body: {}
-#   Returns: { id, status: "archived" }
-#
-# POST /games/{id}/status
-#   Auth: JWT required (super admin only for forced changes)
-#   Body: { status: "editing"|"published"|"archived", remark?: string }
-#   Returns: { id, status, adminRemark? }
-#   Notes: Super admin can force status change; remark optional (ADR-038)
-
-# ===== FP4: Comments =====
-
-# GET /games/{id}/comments
-#   Auth: public (for published games)
-#   Returns: { comments: [{ id, text, userLogin, userId, createdAt }] }
-#   Notes: Comments visible to all on published games (Q-FP4-007)
-#
-# POST /games/{id}/comments
-#   Auth: JWT required
-#   Body: { text }
-#   Returns: { id, text, userLogin, userId, createdAt }
-#   Notes: Only authenticated users can post comments
-
-# ===== FP4: Tags (team members + super admin) =====
-
-# PATCH /games/{id}/tags
-#   Auth: JWT required (team member or super admin)
-#   Body: { tags_user?: string[], tags_system?: string[] }
-#   Returns: { id, tags_user, tags_system }
-#   Notes: 
-#     - Team members can set tags_user only (tags_system is rejected with 403)
-#     - Super admin can set both tags_user and tags_system
-#     - System tags are predefined (hackathons: omsk-hackathon-2024, omsk-hackathon-2025, global-game-jam, ludum-dare; genres: action, puzzle, platformer, rpg, strategy, arcade)
-#     - UI: User tags added via input field (Enter/comma), displayed as removable chips
-#     - UI: System tags selected from dropdown (multiple select), displayed as removable chips (Super Admin only)
-
-# ===== FP5: User Search =====
-
-# GET /users?login=...
-#   Auth: JWT required
-#   Query: login (optional, partial match, case-insensitive)
-#   Returns: { users: [{ id, login }] }
-#   Notes: Returns up to 20 results. Partial match (e.g., "john" matches "john_doe", "JohnSmith"). Used for team member search (ADR-061).
-
-# ===== FP6: Desktop Workspace & Window Manager =====
-
-# GET /jam/current
-#   Auth: public
-#   Returns: { id, name, startDate, endDate, description_md?, registrationUrl? } | null
-#   Notes: Returns current or nearest upcoming jam. Used for landing window on Desktop. Returns null if no jam found.
-
-# GET /help
-#   Auth: public
-#   Returns: { content: string (markdown) }
-#   Notes: Returns HELP.TXT content as markdown. Can be stored in DB (help collection) or as static file. Used for HelpWindow.
-
-# ===== Constraints =====
-# - Publish requires cover_url + description_md + build_url/build_id.
-# - Tag assignment allowed for team members + Super Admin.
-# - Max upload size 300 MB (configurable later).
-# - Build delivery uses signed build_url for iframe.
-# - JWT tokens include: { userId, email, login, isSuperAdmin, exp }
-# - Password minimum 6 characters (ADR-030).
-# - Email service configurable (ADR-032).
+# Status codes: 200 OK, 400 Bad Request, 403 Forbidden, 404 Not Found, 500 Internal Server Error

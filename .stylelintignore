@@ -1,0 +1,2 @@
+# Built app assets (Vite output), not source
+infra/minio/fixtures/**

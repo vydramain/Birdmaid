@@ -1,0 +1,132 @@
+# FP1+FP2 Dev Domain — Traefik + dev-server + MinIO + Gateway
+# ADR#8: Dev domain via Traefik + docker-compose
+# Usage: docker compose -f infra/docker-compose.dev.yml up -d
+# Prerequisite: 127.0.0.1 shell.local api.shell.local s3.shell.local in /etc/hosts
+
+services:
+  traefik:
+    image: traefik:v3.6.8
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs:/certs:ro
+      - ./traefik-dynamic.yml:/etc/traefik/dynamic.yml:ro
+
+  minio:
+    image: minio/minio:latest
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.rule=Host(`s3.shell.local`)"
+      - "traefik.http.routers.minio.entrypoints=web,websecure"
+      - "traefik.http.routers.minio.tls=true"
+      - "traefik.http.services.minio.loadbalancer.server.port=9000"
+      - "traefik.http.services.minio.loadbalancer.passHostHeader=true"
+      # M6+M2: CORS at Traefik (free MinIO has no bucket CORS). Viewer img/video/audio loads from s3.shell.local.
+      # M3: No compress middleware — Range/Content-Range must pass through for mp4 metadata/seek.
+      # OPTIONS for preflight (Range requests); GET,HEAD for content.
+      - "traefik.http.middlewares.minio-cors.headers.accesscontrolallowmethods=GET,HEAD,OPTIONS"
+      - "traefik.http.middlewares.minio-cors.headers.accesscontrolalloworiginlist=*"
+      - "traefik.http.middlewares.minio-cors.headers.accesscontrolexposeheaders=Content-Length,Content-Type,ETag,Accept-Ranges,Content-Range"
+      - "traefik.http.routers.minio.middlewares=minio-cors"
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_started
+    volumes:
+      - ./minio:/minio
+    working_dir: /minio
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until mc alias set myminio http://minio:9000 minioadmin minioadmin 2>/dev/null; do echo "Waiting for MinIO..."; sleep 2; done
+        mc mb myminio/birdmaid-dev --ignore-existing
+        mc anonymous set download myminio/birdmaid-dev || true
+        # M6: mc cors set not supported by free MinIO; CORS handled by Traefik middleware
+        # M3: copy fixtures excluding .gitkeep (no .gitkeep pollution in S3)
+        sh /minio/copy-fixtures-exclude-gitkeep.sh
+        sh /minio/upload-with-content-type.sh
+        echo "MinIO init done."
+
+  gateway:
+    # M1: real gateway (Node + Fastify). Volume mount for dev; no Dockerfile.gateway.
+    # FP4 proxy: gateway fetches from s3.shell.local; extra_hosts makes it resolve to traefik.
+    image: node:22-alpine
+    working_dir: /app/back
+    volumes:
+      - ..:/app
+    command:
+      - sh
+      - -c
+      - corepack enable pnpm && pnpm install --no-frozen-lockfile && pnpm dev
+    extra_hosts:
+      - "s3.shell.local:host-gateway"
+    environment:
+      CI: "true"
+      PORT: "3000"
+      HOST: "0.0.0.0"
+      FS_S3_ENDPOINT: http://minio:9000
+      FS_S3_PUBLIC_URL: https://s3.shell.local
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      FS_S3_BUCKET: birdmaid-dev
+      FS_S3_ACCESS_KEY: minioadmin
+      FS_S3_SECRET_KEY: minioadmin
+      FS_SIGNED_URL_TTL_SEC: "120"
+      # M2: Avoid x-amz-checksum-mode in presigned URLs (Firefox/MinIO compatibility)
+      AWS_REQUEST_CHECKSUM_CALCULATION: "WHEN_REQUIRED"
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=Host(`api.shell.local`)"
+      - "traefik.http.routers.gateway.entrypoints=web,websecure"
+      - "traefik.http.routers.gateway.tls=true"
+      - "traefik.http.services.gateway.loadbalancer.server.port=3000"
+
+  dev-server:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.dev
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.shell.rule=Host(`shell.local`)"
+      - "traefik.http.routers.shell.entrypoints=websecure"
+      - "traefik.http.routers.shell.tls=true"
+      - "traefik.http.services.shell.loadbalancer.server.port=5173"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+      - "traefik.http.routers.shell-http.rule=Host(`shell.local`)"
+      - "traefik.http.routers.shell-http.entrypoints=web"
+      - "traefik.http.routers.shell-http.middlewares=redirect-to-https"
+      - "traefik.http.routers.shell-http.service=shell"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../:/app
+      - dev_server_node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_PROXY_TARGET=http://gateway:3000
+
+volumes:
+  minio_data: {}
+  dev_server_node_modules: {}

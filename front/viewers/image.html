@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Image Viewer</title>
+  </head>
+  <body>
+    <img
+      id="viewer-img"
+      data-testid="viewer-image"
+      alt="Image"
+      style="max-width: 100%; max-height: 100%; object-fit: contain"
+    />
+    <script>
+      (function () {
+        const params = new URLSearchParams(window.location.search);
+        const url = params.get("url");
+        const img = document.getElementById("viewer-img");
+        if (url && img) {
+          img.src = url;
+        }
+      })();
+    </script>
+  </body>
+</html>

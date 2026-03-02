@@ -4,28 +4,28 @@ Purpose: audit actual code implementation; checks repository, executable code, i
 
 ## Skill Runs (required)
 
-1) Preflight: confirm required skills exist (see AGENTS.md Skills Preflight).
-2) `.codex/skills/agentic-code/coding-rules` before audit (understand code structure).
+1. Preflight: confirm required skills exist (see AGENTS.md Skills Preflight).
+2. `.codex/skills/agentic-code/coding-rules` before audit (understand code structure).
    - Output: code structure understanding; record in audit report.
-3) `.codex/skills/agentic-code/implementation-approach` during audit (verify integration).
+3. `.codex/skills/agentic-code/implementation-approach` during audit (verify integration).
    - Output: integration verification notes in audit report.
 
 ## Context bootstrap (read-only, in order)
 
-1) docs/core/WORKPLAN.yaml (scope, status, claimed features)
-2) docs/core/UX_MAP.md (claimed CTAs and features)
-3) docs/core/API.yaml (claimed endpoints)
-4) Actual source files in front/src/ and back/src/
-5) Test files in front/__tests__/ and back/__tests__/
-6) Build outputs (if applicable)
+1. docs/core/WORKPLAN.yaml (scope, status, claimed features)
+2. docs/core/UX_MAP.md (claimed CTAs and features)
+3. docs/core/API.yaml (claimed endpoints)
+4. Actual source files in front/src/ and back/src/
+5. Test files in front/**tests**/ and back/**tests**/
+6. Build outputs (if applicable)
 
 ## Steps
 
 - Run Skill Runs (required) in order.
 - Read actual source files (not documentation):
-  - Frontend: `front/src/**/*.tsx`, `front/src/**/*.ts`
-  - Backend: `back/src/**/*.ts`
-  - Tests: `front/__tests__/**`, `back/__tests__/**`
+  - Frontend: your project's frontend source (e.g. `front/src/**` or equivalent)
+  - Backend: your project's backend source (e.g. `back/src/**` or equivalent)
+  - Tests: your project's test directories (e.g. `front/__tests__/**`, `back/__tests__/**`)
 - Trace execution paths:
   - Find entry points (main.ts, App.tsx, controllers)
   - Follow call chains
@@ -51,7 +51,7 @@ Purpose: audit actual code implementation; checks repository, executable code, i
 
 ## Allowed edits
 
-- artifacts/**/inspection/audit.md
+- artifacts/\*\*/inspection/audit.md
 
 ## Forbidden edits
 
