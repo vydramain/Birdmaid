@@ -17,6 +17,7 @@ import { ThemeScaleProvider } from "./core/ThemeScaleProvider";
 import { THEME_PACKS, type ThemeId } from "./core/themePacks";
 import type { WindowState, WindowActions, ResizeEdge } from "./core/types";
 import type { WindowRecord } from "./core/WindowManager";
+import { APP_PATHS, APP_ROUTES, EXPLORER_ROUTE, EXPLORER_PATH_SUBSTR } from "./core/app-config";
 
 function themeToTokenSet(themeId: ThemeId) {
   const p = THEME_PACKS[themeId];
@@ -32,24 +33,12 @@ function themeToTokenSet(themeId: ThemeId) {
 
 const TITLEBAR_HEIGHT = 28;
 
-const APP_PATHS: Record<string, string> = {
-  "image-viewer": "/@root/DISK_C/Program Files/Image Viewer/",
-  "media-player": "/@root/DISK_C/Program Files/Media Player/",
-  explorer: "/@root/DISK_C/Program Files/Explorer/",
-};
-
-const SYSTEM_APP_ROUTES: Record<string, string> = {
-  explorer: "/apps/explorer/",
-  "image-viewer": "/apps/image-viewer/",
-  "media-player": "/apps/media-player/",
-};
-
 function pathToSystemAppRoute(path: string): string | null {
   const normalized = path.replace(/\/$/, "").replace(/\/index\.html$/, "") + "/";
   for (const [appId, appPath] of Object.entries(APP_PATHS)) {
     const base = appPath.replace(/\/$/, "") + "/";
     if (normalized.startsWith(base) || normalized === base) {
-      return SYSTEM_APP_ROUTES[appId] ?? null;
+      return APP_ROUTES[appId] ?? null;
     }
   }
   return null;
@@ -58,9 +47,9 @@ function pathToSystemAppRoute(path: string): string | null {
 function isExplorerWindow(src: string | undefined): boolean {
   if (!src) return false;
   return (
-    src.includes("/apps/explorer") ||
-    src.includes("Program%20Files/Explorer") ||
-    src.includes("Program Files/Explorer")
+    src.includes(EXPLORER_ROUTE) ||
+    src.includes(EXPLORER_PATH_SUBSTR) ||
+    src.includes(EXPLORER_PATH_SUBSTR.replace(/ /g, "%20"))
   );
 }
 
@@ -127,8 +116,13 @@ export function Shell() {
       if (!handler) return;
       const initial = playlist.find((p) => p.path === path) ?? playlist[0];
       if (!initial) return;
-      const appId = handler.appId === "image-viewer" ? "image-viewer" : "media-player";
-      const src = SYSTEM_APP_ROUTES[appId];
+      const appId =
+        handler.appId === "image-viewer"
+          ? "image-viewer"
+          : handler.appId === "media-player"
+            ? "media-player"
+            : "internet-explorer";
+      const src = APP_ROUTES[appId];
       if (!src) return;
       const proxiedPlaylist = playlist.map((p) => ({ path: p.path, url: toProxyUrl(p.url) }));
       const proxiedInitial = proxiedPlaylist.find((p) => p.path === path) ?? proxiedPlaylist[0];

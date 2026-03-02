@@ -61,7 +61,9 @@ export function AppHost({
 }: AppHostProps) {
   const isUserApp = isUserAppProp ?? src.includes("/apps/user/");
   const isViewer =
-    src?.includes("/apps/image-viewer") === true || src?.includes("/apps/media-player") === true;
+    src?.includes("/apps/image-viewer") === true ||
+    src?.includes("/apps/media-player") === true ||
+    src?.includes("/apps/internet-explorer") === true;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [placeholder, setPlaceholder] = useState<string | null>("Loading...");
   const handshakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

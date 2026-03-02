@@ -5,16 +5,11 @@
  */
 const fs = require("fs");
 const path = require("path");
+const { FIXTURE_APPS, getAppDisplayName } = require("./fixture-apps.config.cjs");
 
 const APP = process.env.APP || "image-viewer";
 const distDir = path.join(__dirname, "..", "dist-app-" + APP);
-const targetDir =
-  APP === "media-player"
-    ? path.join(__dirname, "..", "infra/minio/fixtures/DISK_C/Program Files/Media Player")
-    : APP === "explorer"
-      ? path.join(__dirname, "..", "infra/minio/fixtures/DISK_C/Program Files/Explorer")
-      : path.join(__dirname, "..", "infra/minio/fixtures/DISK_C/Program Files/Image Viewer");
-// Source is in _source subfolder; build output goes to dist-app-X
+const targetDir = path.join(__dirname, "..", FIXTURE_APPS[APP] ?? FIXTURE_APPS["image-viewer"]);
 
 if (!fs.existsSync(distDir)) {
   console.error("dist-app-" + APP + " not found. Run build:apps first.");
@@ -35,8 +30,7 @@ function copyRecursive(src, dest) {
 }
 
 // Vite outputs to dist-app-X/infra/minio/fixtures/.../App/_source/ when building from _source
-const appName =
-  APP === "image-viewer" ? "Image Viewer" : APP === "media-player" ? "Media Player" : "Explorer";
+const appName = getAppDisplayName(APP);
 const nested = path.join(distDir, "infra", "minio", "fixtures", "DISK_C", "Program Files", appName);
 const srcDir = path.join(nested, "_source");
 const srcDirFallback = fs.existsSync(srcDir) ? srcDir : nested;

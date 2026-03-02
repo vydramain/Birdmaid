@@ -42,7 +42,7 @@ See [docs/style/STRUCTURE.md](docs/style/STRUCTURE.md) for target tree. Key area
 
 2. **Start stack:**
    ```bash
-   docker compose -f infra/docker-compose.dev.yml up -d traefik minio minio-init gateway dev-server
+   docker compose -f infra/docker-compose.dev.yml up -d 
    ```
 
 3. **Verify:** `./infra/smoke.sh` → `PLATFORM OK`

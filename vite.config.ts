@@ -1,14 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
+import { FIXTURE_APPS } from "./scripts/fixture-apps.config.cjs";
 
 const API_PROXY_TARGET = process.env.VITE_API_PROXY_TARGET ?? "http://127.0.0.1:80";
-
-const FIXTURE_APPS = {
-  explorer: "infra/minio/fixtures/DISK_C/Program Files/Explorer",
-  "image-viewer": "infra/minio/fixtures/DISK_C/Program Files/Image Viewer",
-  "media-player": "infra/minio/fixtures/DISK_C/Program Files/Media Player",
-} as const;
 
 export default defineConfig({
   resolve: {
@@ -31,6 +26,7 @@ export default defineConfig({
           const needsCors =
             u.includes("image-viewer") ||
             u.includes("media-player") ||
+            u.includes("internet-explorer") ||
             u.includes("explorer") ||
             u.startsWith("/@vite/") ||
             u.startsWith("/@id/") ||
@@ -45,7 +41,9 @@ export default defineConfig({
           res.end = function (chunk?: unknown, encoding?: unknown, callback?: () => void) {
             const url = req.url ?? "";
             if (
-              (url.includes("image-viewer") || url.includes("media-player")) &&
+              (url.includes("image-viewer") ||
+                url.includes("media-player") ||
+                url.includes("internet-explorer")) &&
               (url.includes("index.html") || !url.includes("."))
             ) {
               res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
@@ -81,17 +79,22 @@ export default defineConfig({
             }
             return false;
           };
-          if (viewerRedirect("/apps/image-viewer") || viewerRedirect("/apps/media-player")) return;
+          if (
+            viewerRedirect("/apps/image-viewer") ||
+            viewerRedirect("/apps/media-player") ||
+            viewerRedirect("/apps/internet-explorer")
+          )
+            return;
           if (req.url?.startsWith("/apps/explorer")) {
             if (!req.url.includes(".") || req.url === "/apps/explorer/") {
-              req.url = "/" + FIXTURE_APPS.explorer + "/index.html";
+              req.url = "/" + FIXTURE_APPS.explorer + "/_source/index.html";
             } else {
               req.url = req.url.replace("/apps/explorer/", "/" + FIXTURE_APPS.explorer + "/");
             }
           }
           if (req.url?.startsWith("/apps/image-viewer")) {
             if (!req.url.includes(".") || req.url === "/apps/image-viewer/") {
-              req.url = "/" + FIXTURE_APPS["image-viewer"] + "/index.html";
+              req.url = "/" + FIXTURE_APPS["image-viewer"] + "/_source/index.html";
             } else {
               req.url = req.url.replace(
                 "/apps/image-viewer/",
@@ -101,11 +104,21 @@ export default defineConfig({
           }
           if (req.url?.startsWith("/apps/media-player")) {
             if (!req.url.includes(".") || req.url === "/apps/media-player/") {
-              req.url = "/" + FIXTURE_APPS["media-player"] + "/index.html";
+              req.url = "/" + FIXTURE_APPS["media-player"] + "/_source/index.html";
             } else {
               req.url = req.url.replace(
                 "/apps/media-player/",
                 "/" + FIXTURE_APPS["media-player"] + "/"
+              );
+            }
+          }
+          if (req.url?.startsWith("/apps/internet-explorer")) {
+            if (!req.url.includes(".") || req.url === "/apps/internet-explorer/") {
+              req.url = "/" + FIXTURE_APPS["internet-explorer"] + "/_source/index.html";
+            } else {
+              req.url = req.url.replace(
+                "/apps/internet-explorer/",
+                "/" + FIXTURE_APPS["internet-explorer"] + "/"
               );
             }
           }
@@ -201,6 +214,12 @@ export default defineConfig({
         explorer: resolve(__dirname, FIXTURE_APPS.explorer, "index.html"),
         "image-viewer": resolve(__dirname, FIXTURE_APPS["image-viewer"], "index.html"),
         "media-player": resolve(__dirname, FIXTURE_APPS["media-player"], "index.html"),
+        "internet-explorer": resolve(
+          __dirname,
+          FIXTURE_APPS["internet-explorer"],
+          "_source",
+          "index.html"
+        ),
         "viewers/image": resolve(__dirname, "front/viewers/image.html"),
       },
     },

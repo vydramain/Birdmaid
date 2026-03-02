@@ -2,6 +2,7 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import reactPlugin from "eslint-plugin-react";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
+import { getEslintAppFiles } from "./scripts/fixture-apps.config.cjs";
 
 export default tseslint.config(
   js.configs.recommended,
@@ -41,14 +42,7 @@ export default tseslint.config(
     ignores: ["node_modules", "dist", "coverage", "playwright-report", "test-results"],
   },
   {
-    files: [
-      "infra/minio/fixtures/DISK_C/Program Files/Explorer/main.ts",
-      "infra/minio/fixtures/DISK_C/Program Files/Explorer/_source/main.ts",
-      "infra/minio/fixtures/DISK_C/Program Files/Image Viewer/main.ts",
-      "infra/minio/fixtures/DISK_C/Program Files/Image Viewer/_source/main.ts",
-      "infra/minio/fixtures/DISK_C/Program Files/Media Player/main.ts",
-      "infra/minio/fixtures/DISK_C/Program Files/Media Player/_source/main.ts",
-    ],
+    files: getEslintAppFiles(),
     rules: { "no-console": "off" }, // FP3/FP4: Explorer + viewers log errors (M3)
   },
   {

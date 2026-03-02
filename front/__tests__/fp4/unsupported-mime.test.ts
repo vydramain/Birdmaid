@@ -9,7 +9,6 @@ import { getHandlerForMime, getMimeForPath } from "../../lib/fp4/handler";
 describe("FP4 unsupported-mime", () => {
   it("getHandlerForMime returns null for unsupported", () => {
     expect(getHandlerForMime("application/pdf")).toBeNull();
-    expect(getHandlerForMime("text/plain")).toBeNull();
     expect(getHandlerForMime("image/gif")).toBeNull();
   });
   it("getMimeForPath returns null for unsupported ext", () => {

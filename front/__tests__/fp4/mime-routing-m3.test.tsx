@@ -10,12 +10,14 @@ import { createRoot } from "react-dom/client";
 import { getMimeForPath, getHandlerForMime, isAllowedMime } from "../../lib/fp4/handler";
 import { AppHost } from "../../core/AppHost";
 
-function resolveAppIdForPath(path: string): "image-viewer" | "media-player" | null {
+function resolveAppIdForPath(
+  path: string
+): "image-viewer" | "media-player" | "internet-explorer" | null {
   const mime = getMimeForPath(path);
   if (!mime) return null;
   const handler = getHandlerForMime(mime);
   if (!handler) return null;
-  return handler.appId === "image-viewer" ? "image-viewer" : "media-player";
+  return handler.appId as "image-viewer" | "media-player" | "internet-explorer";
 }
 
 describe("FP4 M3 MIME routing", () => {
@@ -32,20 +34,22 @@ describe("FP4 M3 MIME routing", () => {
       expect(getMimeForPath("a.mp4")).toBe("video/mp4");
       expect(getMimeForPath("a.webm")).toBe("video/webm");
     });
+    it("text ext → text MIME (Internet Explorer)", () => {
+      expect(getMimeForPath("file.txt")).toBe("text/plain");
+      expect(getMimeForPath("page.html")).toBe("text/html");
+    });
     it("unknown ext → null (denied)", () => {
-      expect(getMimeForPath("file.txt")).toBeNull();
       expect(getMimeForPath("file.pdf")).toBeNull();
       expect(getMimeForPath("file.gif")).toBeNull();
       expect(getMimeForPath("file.xyz")).toBeNull();
     });
     it("isAllowedMime rejects unknown", () => {
-      expect(isAllowedMime("text/plain")).toBe(false);
       expect(isAllowedMime("application/pdf")).toBe(false);
       expect(isAllowedMime("image/gif")).toBe(false);
     });
   });
 
-  describe("T-FP4-DEFAULT-APP: shell selects ImageViewer/MediaPlayer", () => {
+  describe("T-FP4-DEFAULT-APP: shell selects ImageViewer/MediaPlayer/InternetExplorer", () => {
     it("image path → image-viewer", () => {
       expect(resolveAppIdForPath("/dir/photo.png")).toBe("image-viewer");
       expect(resolveAppIdForPath("img.jpg")).toBe("image-viewer");
@@ -58,8 +62,11 @@ describe("FP4 M3 MIME routing", () => {
       expect(resolveAppIdForPath("/video/clip.mp4")).toBe("media-player");
       expect(resolveAppIdForPath("movie.webm")).toBe("media-player");
     });
+    it("text path → internet-explorer", () => {
+      expect(resolveAppIdForPath("doc.txt")).toBe("internet-explorer");
+      expect(resolveAppIdForPath("page.html")).toBe("internet-explorer");
+    });
     it("unknown path → null", () => {
-      expect(resolveAppIdForPath("doc.txt")).toBeNull();
       expect(resolveAppIdForPath("file.pdf")).toBeNull();
     });
   });

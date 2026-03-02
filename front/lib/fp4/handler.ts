@@ -6,7 +6,8 @@ import mime from "mime";
 
 export type HandlerResult =
   | { appId: "image-viewer" }
-  | { appId: "media-player"; mode: "audio" | "video" };
+  | { appId: "media-player"; mode: "audio" | "video" }
+  | { appId: "internet-explorer" };
 
 const ALLOWED_MIME = new Set([
   "image/png",
@@ -15,6 +16,8 @@ const ALLOWED_MIME = new Set([
   "audio/mpeg",
   "video/mp4",
   "video/webm",
+  "text/html",
+  "text/plain",
 ]);
 
 export function getHandlerForMime(mimeType: string): HandlerResult | null {
@@ -22,6 +25,7 @@ export function getHandlerForMime(mimeType: string): HandlerResult | null {
   if (mimeType.startsWith("image/")) return { appId: "image-viewer" };
   if (mimeType === "audio/mpeg") return { appId: "media-player", mode: "audio" };
   if (mimeType.startsWith("video/")) return { appId: "media-player", mode: "video" };
+  if (mimeType === "text/html" || mimeType === "text/plain") return { appId: "internet-explorer" };
   return null;
 }
 

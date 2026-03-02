@@ -27,8 +27,11 @@ describe("FP4 mime-mapping", () => {
     it("returns video/webm for .webm", () => {
       expect(getMimeForPath("video.webm")).toBe("video/webm");
     });
+    it("returns text/plain for .txt, text/html for .html", () => {
+      expect(getMimeForPath("doc.txt")).toBe("text/plain");
+      expect(getMimeForPath("page.html")).toBe("text/html");
+    });
     it("returns null for unsupported ext", () => {
-      expect(getMimeForPath("file.txt")).toBeNull();
       expect(getMimeForPath("file.exe")).toBeNull();
       expect(getMimeForPath("file.gif")).toBeNull();
     });
@@ -45,8 +48,11 @@ describe("FP4 mime-mapping", () => {
       expect(isAllowedMime("video/mp4")).toBe(true);
       expect(isAllowedMime("video/webm")).toBe(true);
     });
+    it("allows text/html, text/plain (Internet Explorer)", () => {
+      expect(isAllowedMime("text/html")).toBe(true);
+      expect(isAllowedMime("text/plain")).toBe(true);
+    });
     it("rejects unsupported mime", () => {
-      expect(isAllowedMime("text/plain")).toBe(false);
       expect(isAllowedMime("image/gif")).toBe(false);
       expect(isAllowedMime("application/octet-stream")).toBe(false);
     });

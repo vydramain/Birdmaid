@@ -43,10 +43,16 @@ describe("FP4 handler-routing", () => {
     });
   });
 
-  describe("unsupported", () => {
-    it("returns null for text/plain", () => {
-      expect(getHandlerForMime("text/plain")).toBeNull();
+  describe("text types (Internet Explorer)", () => {
+    it("text/html → internet-explorer", () => {
+      expect(getHandlerForMime("text/html")).toEqual({ appId: "internet-explorer" });
     });
+    it("text/plain → internet-explorer", () => {
+      expect(getHandlerForMime("text/plain")).toEqual({ appId: "internet-explorer" });
+    });
+  });
+
+  describe("unsupported", () => {
     it("returns null for image/gif", () => {
       expect(getHandlerForMime("image/gif")).toBeNull();
     });
