@@ -118,7 +118,7 @@ export default defineConfig({
             } else {
               req.url = req.url.replace(
                 "/apps/internet-explorer/",
-                "/" + FIXTURE_APPS["internet-explorer"] + "/"
+                "/" + FIXTURE_APPS["internet-explorer"] + "/_source/"
               );
             }
           }

@@ -71,12 +71,12 @@ describe("FP3.1 M7: upload-file allowlist (api-fs-upload)", () => {
     expect(found.kind).toBe("file");
   });
 
-  it("T-C1.2: disallowed ext (.txt) -> 415", async () => {
-    const fileName = testPrefix + "disallowed-" + Date.now() + ".txt";
+  it("T-C1.2: disallowed ext (.exe) -> 415", async () => {
+    const fileName = testPrefix + "disallowed-" + Date.now() + ".exe";
     const path = basePath + fileName;
     const form = new FormData();
     form.append("path", path);
-    form.append("file", new Blob(["hello"], { type: "text/plain" }), fileName);
+    form.append("file", new Blob(["MZ"], { type: "application/octet-stream" }), fileName);
 
     const res = await fetchApi("/api/fs/upload-file", {
       method: "POST",

@@ -7,7 +7,7 @@
  */
 
 import "@shared/fs-tile.css";
-import { getMimeForPath } from "@lib/fp4/handler";
+import { getMimeForPath, getHandlerForMime } from "@lib/fp4/handler";
 import { getExtensionsForMedia, filterMediaItems, sortByLocaleCompare } from "@lib/fp4/playlist";
 
 let systemToken: string | null = null;
@@ -338,39 +338,54 @@ async function buildPlaylistAndOpen(clickedPath: string): Promise<void> {
       console.warn("[Explorer] Unsupported file type, no handler:", clickedPath);
     return;
   }
+  const handler = getHandlerForMime(mime);
+  if (!handler) {
+    if (typeof console !== "undefined" && console.warn)
+      console.warn("[Explorer] Unsupported file type, no handler:", clickedPath);
+    return;
+  }
   const media = mimeToMedia(mime);
-  if (!media) return;
-  const dirPath = dirname(clickedPath);
-  let items: FsItem[];
-  try {
-    items = await fetchList(dirPath);
-  } catch {
-    if (typeof console !== "undefined" && console.warn)
-      console.warn("[Explorer] List failed for playlist:", dirPath);
+  if (media) {
+    const dirPath = dirname(clickedPath);
+    let items: FsItem[];
+    try {
+      items = await fetchList(dirPath);
+    } catch {
+      if (typeof console !== "undefined" && console.warn)
+        console.warn("[Explorer] List failed for playlist:", dirPath);
+      return;
+    }
+    const ext = getExtensionsForMedia(media);
+    const playlistItems = filterMediaItems(items, ext);
+    const sorted = sortByLocaleCompare(playlistItems);
+    const limited = sorted.slice(0, PLAYLIST_LIMIT);
+    const playlist: Array<{ path: string; url: string }> = [];
+    for (const p of limited) {
+      const url = await fetchOpenUrl(p.path);
+      if (url) playlist.push({ path: p.path, url });
+    }
+    if (playlist.length === 0) {
+      if (typeof console !== "undefined" && console.warn)
+        console.warn("[Explorer] No signed URLs for playlist:", clickedPath);
+      return;
+    }
+    send("SHELL_OPEN_FILE", { path: clickedPath, playlist });
     return;
   }
-  const ext = getExtensionsForMedia(media);
-  const playlistItems = filterMediaItems(items, ext);
-  const sorted = sortByLocaleCompare(playlistItems);
-  const limited = sorted.slice(0, PLAYLIST_LIMIT);
-  const playlist: Array<{ path: string; url: string }> = [];
-  for (const p of limited) {
-    const url = await fetchOpenUrl(p.path);
-    if (url) playlist.push({ path: p.path, url });
-  }
-  if (playlist.length === 0) {
+  const url = await fetchOpenUrl(clickedPath);
+  if (!url) {
     if (typeof console !== "undefined" && console.warn)
-      console.warn("[Explorer] No signed URLs for playlist:", clickedPath);
+      console.warn("[Explorer] No signed URL for file:", clickedPath);
     return;
   }
-  send("SHELL_OPEN_FILE", { path: clickedPath, playlist });
+  send("SHELL_OPEN_FILE", { path: clickedPath, playlist: [{ path: clickedPath, url }] });
 }
 
 async function onItemDblClick(item: FsItem): Promise<void> {
   if (item.kind === "file") {
     const mime = getMimeForPath(item.path);
-    const media = mime ? mimeToMedia(mime) : null;
-    if (media) {
+    const handler = mime ? getHandlerForMime(mime) : null;
+    if (handler) {
       await buildPlaylistAndOpen(item.path);
       return;
     }
@@ -605,7 +620,7 @@ async function onNewFolder(): Promise<void> {
   startRename(placeholder);
 }
 
-const UPLOAD_ACCEPT = ".png,.jpg,.jpeg,.webp,.mp3,.mp4,.webm";
+const UPLOAD_ACCEPT = ".png,.jpg,.jpeg,.webp,.mp3,.mp4,.webm,.html,.htm,.txt";
 const UPLOAD_MAX_FILES = 10;
 
 let uploadFileInput: HTMLInputElement | null = null;

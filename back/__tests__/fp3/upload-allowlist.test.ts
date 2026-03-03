@@ -17,8 +17,13 @@ describe("upload-allowlist", () => {
     expect(checkUploadAllowlist("a.mp4", "video/mp4")).toEqual({ ok: true });
     expect(checkUploadAllowlist("a.webm", "video/webm")).toEqual({ ok: true });
   });
-  it("rejects disallowed ext (.txt) -> 415", () => {
-    const r = checkUploadAllowlist("file.txt", "text/plain");
+  it("allows html, htm, txt (Internet Explorer)", () => {
+    expect(checkUploadAllowlist("page.html", "text/html")).toEqual({ ok: true });
+    expect(checkUploadAllowlist("page.htm", "text/html")).toEqual({ ok: true });
+    expect(checkUploadAllowlist("readme.txt", "text/plain")).toEqual({ ok: true });
+  });
+  it("rejects disallowed ext (.exe) -> 415", () => {
+    const r = checkUploadAllowlist("file.exe", "application/octet-stream");
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.code).toBe("UNSUPPORTED_MEDIA");
   });

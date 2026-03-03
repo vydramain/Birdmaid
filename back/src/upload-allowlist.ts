@@ -3,7 +3,18 @@
  * API_FP3_DELTA: png/jpg/webp/mp3/mp4/webm -> 415 if disallowed.
  */
 
-const ALLOWED_EXT = new Set([".png", ".jpg", ".jpeg", ".webp", ".mp3", ".mp4", ".webm"]);
+const ALLOWED_EXT = new Set([
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".mp3",
+  ".mp4",
+  ".webm",
+  ".html",
+  ".htm",
+  ".txt",
+]);
 const ALLOWED_MIME = new Set([
   "image/png",
   "image/jpeg",
@@ -11,6 +22,8 @@ const ALLOWED_MIME = new Set([
   "audio/mpeg",
   "video/mp4",
   "video/webm",
+  "text/html",
+  "text/plain",
 ]);
 
 export function checkUploadAllowlist(
