@@ -26,8 +26,8 @@ export interface WindowActions {
   onMaximize: () => void;
   onClose: () => void;
   onFocus: () => void;
-  onDragStart: (e: React.MouseEvent | React.PointerEvent) => void;
-  onResizeStart: (edge: ResizeEdge, e: React.MouseEvent | React.PointerEvent) => void;
+  onDragStart: (e: MouseEvent) => void;
+  onResizeStart: (edge: ResizeEdge, e: MouseEvent) => void;
 }
 
 export interface TaskbarItemState {

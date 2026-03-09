@@ -1,9 +1,9 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
 import { FIXTURE_APPS } from "./scripts/fixture-apps.config.cjs";
 
-const API_PROXY_TARGET = process.env.VITE_API_PROXY_TARGET ?? "http://127.0.0.1:80";
+const API_PROXY_TARGET = process.env.VITE_API_PROXY_TARGET ?? "https://127.0.0.1:443";
 
 export default defineConfig({
   resolve: {
@@ -21,7 +21,7 @@ export default defineConfig({
           const u = req.url ?? "";
           // M1 fix (Option C): viewer assets need ACAO for opaque-origin iframe (sandbox allow-scripts).
           // Module scripts in opaque-origin context require CORS; ACAO: * allows load.
-          // Include @vite/client, @id/, @react-refresh (Vite injects these into HTML in dev).
+          // Include @vite/client, @id/ (Vite injects these into HTML in dev).
           // Include /front/lib/ (viewer imports e.g. playlist.ts) and fixture app paths.
           const needsCors =
             u.includes("image-viewer") ||
@@ -30,7 +30,6 @@ export default defineConfig({
             u.includes("explorer") ||
             u.startsWith("/@vite/") ||
             u.startsWith("/@id/") ||
-            u.startsWith("/@react-refresh") ||
             u.startsWith("/front/lib/") ||
             u.startsWith("/infra/minio/fixtures/") ||
             u.includes("/node_modules/");
@@ -178,7 +177,7 @@ export default defineConfig({
         });
       },
     },
-    react(),
+    vue(),
   ],
   root: ".",
   publicDir: "public",
@@ -197,6 +196,7 @@ export default defineConfig({
       "/api": {
         target: API_PROXY_TARGET,
         changeOrigin: true,
+        secure: false, // self-signed TLS cert
         configure(proxy) {
           proxy.on("proxyReq", (proxyReq) => {
             if (API_PROXY_TARGET.includes("127.0.0.1")) {

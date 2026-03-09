@@ -1,41 +1,44 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
-import reactPlugin from "eslint-plugin-react";
-import reactHooksPlugin from "eslint-plugin-react-hooks";
+import vuePlugin from "eslint-plugin-vue";
+import vueParser from "vue-eslint-parser";
 import { getEslintAppFiles } from "./scripts/fixture-apps.config.cjs";
 
 export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  ...vuePlugin.configs["flat/essential"],
   {
-    plugins: { react: reactPlugin, "react-hooks": reactHooksPlugin },
+    files: ["**/*.vue"],
     languageOptions: {
+      parser: vueParser,
       parserOptions: {
-        ecmaFeatures: { jsx: true },
+        parser: tseslint.parser,
+        ecmaVersion: "latest",
+        sourceType: "module",
       },
+    },
+  },
+  {
+    files: ["**/*.ts", "**/*.tsx", "**/*.vue"],
+    rules: {
+      "no-undef": "off", // TypeScript handles undeclared variables
+    },
+  },
+  {
+    languageOptions: {
       globals: {
         window: "readonly",
         document: "readonly",
         fetch: "readonly",
       },
     },
-    settings: {
-      react: { version: "detect" },
-    },
     rules: {
-      ...reactPlugin.configs.recommended.rules,
-      ...reactHooksPlugin.configs.recommended.rules,
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "no-console": "warn",
       "prefer-const": "warn",
       "no-var": "error",
-      "react/prop-types": "off",
-    },
-  },
-  {
-    rules: {
-      "react/react-in-jsx-scope": "off",
-      "react/jsx-uses-react": "off",
+      "vue/multi-word-component-names": "off",
     },
   },
   {
@@ -48,7 +51,7 @@ export default tseslint.config(
   {
     files: [
       "front/core/analytics.ts",
-      "front/core/AppHost.tsx",
+      "front/core/AppHost.vue",
       "vite.config.ts",
     ],
     rules: { "no-console": "off" }, // Dev logging: [Shell], [AppHost], [Vite user-app proxy]

@@ -2,28 +2,16 @@
  * FP4 M1+M2: T-FP4-IV-HANDSHAKE — viewer responds APP_READY, after OPEN_FILE no crash/timeout.
  * Tests AppHost: when APP_READY received from iframe, placeholder cleared, OPEN_FILE sent.
  * Regression: random iframe with origin null must NOT be accepted.
- * M2: StrictMode handshake — same flow under React StrictMode (double-mount).
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { act } from "react";
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import { AppHost } from "../../core/AppHost";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { mount } from "@vue/test-utils";
+import { nextTick } from "vue";
+import AppHost from "../../core/AppHost.vue";
 import { analytics } from "../../core/analytics";
 
 describe("FP4 AppHost handshake (T-FP4-IV-HANDSHAKE)", () => {
-  let container: HTMLDivElement;
-  let onTitleUpdate: ReturnType<typeof vi.fn>;
-
-  beforeEach(() => {
-    container = document.createElement("div");
-    document.body.appendChild(container);
-    onTitleUpdate = vi.fn();
-  });
-
   afterEach(() => {
-    container.remove();
     vi.restoreAllMocks();
   });
 
@@ -34,27 +22,26 @@ describe("FP4 AppHost handshake (T-FP4-IV-HANDSHAKE)", () => {
       playlist: [{ path: "/test.webp", url: "http://s3.shell.local/test.webp" }],
     };
 
-    const root = createRoot(container);
-    root.render(
-      <AppHost
-        windowId="win-test"
-        src="about:blank"
-        scale={1}
-        theme="DefaultMock"
-        onTitleUpdate={onTitleUpdate}
-        openFilePayload={openFilePayload}
-      />
-    );
+    const wrapper = mount(AppHost, {
+      props: {
+        windowId: "win-test",
+        src: "about:blank",
+        scale: 1,
+        theme: "DefaultMock",
+        openFilePayload,
+      },
+      attachTo: document.body,
+    });
 
     // Wait for iframe to mount; jsdom may need time for contentWindow
     await new Promise((r) => setTimeout(r, 100));
 
-    const iframe = container.querySelector("iframe");
+    const iframe = wrapper.find("iframe").element as HTMLIFrameElement;
     expect(iframe).toBeTruthy();
-    const cw = (iframe as HTMLIFrameElement).contentWindow;
+    const cw = iframe.contentWindow;
     if (!cw) {
       // jsdom: about:blank may not provide contentWindow; skip
-      root.unmount();
+      wrapper.unmount();
       return;
     }
 
@@ -62,109 +49,100 @@ describe("FP4 AppHost handshake (T-FP4-IV-HANDSHAKE)", () => {
     cw.postMessage = vi.fn();
 
     // Simulate APP_READY from iframe (as ImageViewer does)
-    await act(async () => {
-      window.dispatchEvent(
-        new MessageEvent("message", {
-          data: { type: "APP_READY", timestamp: Date.now() },
-          origin: "null",
-          source: cw,
-        })
-      );
-    });
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { type: "APP_READY", timestamp: Date.now() },
+        origin: "null",
+        source: cw,
+      })
+    );
+    await nextTick();
 
-    const placeholderAfter = container.querySelector(".app-host-placeholder");
-    expect(placeholderAfter).toBeFalsy();
+    const placeholderAfter = wrapper.find(".app-host-placeholder");
+    expect(placeholderAfter.exists()).toBe(false);
 
-    root.unmount();
+    wrapper.unmount();
   });
 
-  it("T-FP4-M2-STRICT: handshake works under StrictMode (double-mount)", async () => {
+  it("T-FP4-M2-STRICT: handshake works (Vue equivalent of StrictMode double-mount)", async () => {
     const openFilePayload = {
       initialPath: "/@root/DISK_C/My Documents/Images/sample.webp",
       initialUrl: "http://s3.shell.local/test.webp",
       playlist: [{ path: "/test.webp", url: "http://s3.shell.local/test.webp" }],
     };
 
-    const root = createRoot(container);
-    root.render(
-      <StrictMode>
-        <AppHost
-          windowId="win-strict-test"
-          src="about:blank"
-          scale={1}
-          theme="DefaultMock"
-          onTitleUpdate={onTitleUpdate}
-          openFilePayload={openFilePayload}
-        />
-      </StrictMode>
-    );
-
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 150));
+    const wrapper = mount(AppHost, {
+      props: {
+        windowId: "win-strict-test",
+        src: "about:blank",
+        scale: 1,
+        theme: "DefaultMock",
+        openFilePayload,
+      },
+      attachTo: document.body,
     });
 
-    const iframe = container.querySelector("iframe");
+    await new Promise((r) => setTimeout(r, 150));
+
+    const iframe = wrapper.find("iframe").element as HTMLIFrameElement;
     expect(iframe).toBeTruthy();
-    const cw = (iframe as HTMLIFrameElement).contentWindow;
+    const cw = iframe.contentWindow;
     if (!cw) {
-      root.unmount();
+      wrapper.unmount();
       return;
     }
 
     cw.postMessage = vi.fn();
 
-    await act(async () => {
-      window.dispatchEvent(
-        new MessageEvent("message", {
-          data: { type: "APP_READY", timestamp: Date.now() },
-          origin: "null",
-          source: cw,
-        })
-      );
-    });
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { type: "APP_READY", timestamp: Date.now() },
+        origin: "null",
+        source: cw,
+      })
+    );
+    await nextTick();
 
-    const placeholderAfter = container.querySelector(".app-host-placeholder");
-    expect(placeholderAfter).toBeFalsy();
+    const placeholderAfter = wrapper.find(".app-host-placeholder");
+    expect(placeholderAfter.exists()).toBe(false);
 
-    root.unmount();
+    wrapper.unmount();
   });
 
   it("T-FP4-M1-REGRESS: rejects APP_READY from origin null when source is not our iframe", async () => {
     analytics.clearBuffer();
 
-    const root = createRoot(container);
-    root.render(
-      <AppHost
-        windowId="win-test"
-        src="about:blank"
-        scale={1}
-        theme="DefaultMock"
-        onTitleUpdate={onTitleUpdate}
-      />
-    );
+    const wrapper = mount(AppHost, {
+      props: {
+        windowId: "win-test",
+        src: "about:blank",
+        scale: 1,
+        theme: "DefaultMock",
+      },
+      attachTo: document.body,
+    });
 
     await new Promise((r) => setTimeout(r, 100));
 
     const fakeSource = { postMessage: vi.fn() } as unknown as MessageEventSource;
 
-    await act(async () => {
-      window.dispatchEvent(
-        new MessageEvent("message", {
-          data: { type: "APP_READY", timestamp: Date.now() },
-          origin: "null",
-          source: fakeSource,
-        })
-      );
-    });
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { type: "APP_READY", timestamp: Date.now() },
+        origin: "null",
+        source: fakeSource,
+      })
+    );
+    await nextTick();
 
     const rejected = analytics.getBuffer().filter((e) => e.type === "message_rejected");
     expect(
       rejected.some((e) => e.type === "message_rejected" && e.reason === "unknown_source")
     ).toBe(true);
 
-    const placeholderAfter = container.querySelector(".app-host-placeholder");
-    expect(placeholderAfter).toBeTruthy();
+    const placeholderAfter = wrapper.find(".app-host-placeholder");
+    expect(placeholderAfter.exists()).toBe(true);
 
-    root.unmount();
+    wrapper.unmount();
   });
 });

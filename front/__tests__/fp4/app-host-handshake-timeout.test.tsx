@@ -4,60 +4,50 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { act } from "react";
-import { createRoot } from "react-dom/client";
-import { AppHost } from "../../core/AppHost";
+import { mount } from "@vue/test-utils";
+import { nextTick } from "vue";
+import AppHost from "../../core/AppHost.vue";
 
 const HANDSHAKE_TIMEOUT_MS = 2000;
 
 describe("FP4 AppHost handshake timeout (T-FP4-M0-HANDSHAKE-TIMEOUT)", () => {
-  let container: HTMLDivElement;
-  let onTitleUpdate: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
     vi.useFakeTimers();
-    container = document.createElement("div");
-    document.body.appendChild(container);
-    onTitleUpdate = vi.fn();
   });
 
   afterEach(() => {
     vi.useRealTimers();
-    container.remove();
     vi.restoreAllMocks();
   });
 
   it("T-FP4-M0-HANDSHAKE-TIMEOUT: placeholder shows 'App not responding' when APP_READY never received", async () => {
-    const root = createRoot(container);
-    root.render(
-      <AppHost
-        windowId="win-timeout-test"
-        src="about:blank"
-        scale={1}
-        theme="DefaultMock"
-        onTitleUpdate={onTitleUpdate}
-      />
-    );
-
-    await act(async () => {
-      vi.advanceTimersByTime(50);
+    const wrapper = mount(AppHost, {
+      props: {
+        windowId: "win-timeout-test",
+        src: "about:blank",
+        scale: 1,
+        theme: "DefaultMock",
+      },
+      attachTo: document.body,
     });
+
+    vi.advanceTimersByTime(50);
+    await nextTick();
 
     // Before timeout: placeholder shows "Loading..."
-    const placeholderBefore = container.querySelector(".app-host-placeholder");
-    expect(placeholderBefore).toBeTruthy();
-    expect(placeholderBefore?.textContent).toBe("Loading...");
+    const placeholderBefore = wrapper.find(".app-host-placeholder");
+    expect(placeholderBefore.exists()).toBe(true);
+    expect(placeholderBefore.text()).toBe("Loading...");
 
     // Advance past handshake timeout (AppHost uses 2000ms)
-    await act(async () => {
-      vi.advanceTimersByTime(HANDSHAKE_TIMEOUT_MS + 100);
-    });
+    vi.advanceTimersByTime(HANDSHAKE_TIMEOUT_MS + 100);
+    await nextTick();
 
     // After timeout: placeholder shows "App not responding"
-    const placeholderAfter = container.querySelector(".app-host-placeholder");
-    expect(placeholderAfter).toBeTruthy();
-    expect(placeholderAfter?.textContent).toBe("App not responding");
+    const placeholderAfter = wrapper.find(".app-host-placeholder");
+    expect(placeholderAfter.exists()).toBe(true);
+    expect(placeholderAfter.text()).toBe("App not responding");
 
-    root.unmount();
+    wrapper.unmount();
   }, 3000);
 });

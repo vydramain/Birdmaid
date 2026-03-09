@@ -8,235 +8,197 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { act } from "react";
-import { createRoot } from "react-dom/client";
-import { AppHost } from "../../core/AppHost";
+import { mount } from "@vue/test-utils";
+import { nextTick } from "vue";
+import AppHost from "../../core/AppHost.vue";
 import { analytics } from "../../core/analytics";
 
 describe("FP5 Hostile App (H1, H2, H5, protocol, sandbox)", () => {
-  let container: HTMLDivElement;
-  let onShellOpen: ReturnType<typeof vi.fn>;
-  let onShellOpenFile: ReturnType<typeof vi.fn>;
-  let onTitleUpdate: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
-    container = document.createElement("div");
-    document.body.appendChild(container);
-    onShellOpen = vi.fn();
-    onShellOpenFile = vi.fn();
-    onTitleUpdate = vi.fn();
     analytics.clearBuffer();
   });
 
   afterEach(() => {
-    container.remove();
     vi.restoreAllMocks();
   });
 
   it("H1: user app sends SHELL_OPEN => rejected (onShellOpen not called)", async () => {
-    const root = createRoot(container);
-    root.render(
-      <AppHost
-        windowId="win-fp5-h1"
-        src="/apps/user/?path=%2F%40root%2FDISK_C%2FMy%20Documents%2FMyApp%2F"
-        scale={1}
-        theme="DefaultMock"
-        onTitleUpdate={onTitleUpdate}
-        isExplorer={false}
-        isUserApp={true}
-        onShellOpen={onShellOpen}
-      />
-    );
-
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 100));
+    const wrapper = mount(AppHost, {
+      props: {
+        windowId: "win-fp5-h1",
+        src: "/apps/user/?path=%2F%40root%2FDISK_C%2FMy%20Documents%2FMyApp%2F",
+        scale: 1,
+        theme: "DefaultMock",
+        isExplorer: false,
+        isUserApp: true,
+      },
+      attachTo: document.body,
     });
 
-    const iframe = container.querySelector("iframe");
-    const cw = (iframe as HTMLIFrameElement)?.contentWindow;
+    await new Promise((r) => setTimeout(r, 100));
+
+    const iframe = wrapper.find("iframe").element as HTMLIFrameElement;
+    const cw = iframe?.contentWindow;
     if (!cw) {
       throw new Error("contentWindow not available (jsdom)");
     }
 
     cw.postMessage = vi.fn();
 
-    await act(async () => {
-      window.dispatchEvent(
-        new MessageEvent("message", {
-          data: {
-            type: "APP_READY",
-            timestamp: Date.now(),
-          },
-          origin: "null",
-          source: cw,
-        })
-      );
-    });
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { type: "APP_READY", timestamp: Date.now() },
+        origin: "null",
+        source: cw,
+      })
+    );
+    await nextTick();
 
-    await act(async () => {
-      window.dispatchEvent(
-        new MessageEvent("message", {
-          data: {
-            type: "SHELL_OPEN",
-            payload: { kind: "app", path: "/@root/DISK_C/My Documents/OtherApp/", title: "Other" },
-            timestamp: Date.now(),
-          },
-          origin: "null",
-          source: cw,
-        })
-      );
-    });
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: {
+          type: "SHELL_OPEN",
+          payload: { kind: "app", path: "/@root/DISK_C/My Documents/OtherApp/", title: "Other" },
+          timestamp: Date.now(),
+        },
+        origin: "null",
+        source: cw,
+      })
+    );
+    await nextTick();
 
-    expect(onShellOpen).not.toHaveBeenCalled();
+    expect(wrapper.emitted("shellOpen")).toBeUndefined();
 
-    root.unmount();
+    wrapper.unmount();
   });
 
   it("H2: user app sends SHELL_OPEN_FILE => rejected (onShellOpenFile not called)", async () => {
-    const root = createRoot(container);
-    root.render(
-      <AppHost
-        windowId="win-fp5-h2"
-        src="/apps/user/?path=%2F%40root%2FDISK_C%2FMy%20Documents%2FMyApp%2F"
-        scale={1}
-        theme="DefaultMock"
-        onTitleUpdate={onTitleUpdate}
-        isExplorer={false}
-        isUserApp={true}
-        onShellOpenFile={onShellOpenFile}
-      />
-    );
-
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 100));
+    const wrapper = mount(AppHost, {
+      props: {
+        windowId: "win-fp5-h2",
+        src: "/apps/user/?path=%2F%40root%2FDISK_C%2FMy%20Documents%2FMyApp%2F",
+        scale: 1,
+        theme: "DefaultMock",
+        isExplorer: false,
+        isUserApp: true,
+      },
+      attachTo: document.body,
     });
 
-    const iframe = container.querySelector("iframe");
-    const cw = (iframe as HTMLIFrameElement)?.contentWindow;
+    await new Promise((r) => setTimeout(r, 100));
+
+    const iframe = wrapper.find("iframe").element as HTMLIFrameElement;
+    const cw = iframe?.contentWindow;
     if (!cw) {
       throw new Error("contentWindow not available (jsdom)");
     }
 
     cw.postMessage = vi.fn();
 
-    await act(async () => {
-      window.dispatchEvent(
-        new MessageEvent("message", {
-          data: {
-            type: "APP_READY",
-            timestamp: Date.now(),
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { type: "APP_READY", timestamp: Date.now() },
+        origin: "null",
+        source: cw,
+      })
+    );
+    await nextTick();
+
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: {
+          type: "SHELL_OPEN_FILE",
+          payload: {
+            path: "/@root/DISK_C/My Documents/image.png",
+            playlist: [{ path: "/image.png", url: "http://s3.shell.local/image.png" }],
           },
-          origin: "null",
-          source: cw,
-        })
-      );
-    });
+          timestamp: Date.now(),
+        },
+        origin: "null",
+        source: cw,
+      })
+    );
+    await nextTick();
 
-    await act(async () => {
-      window.dispatchEvent(
-        new MessageEvent("message", {
-          data: {
-            type: "SHELL_OPEN_FILE",
-            payload: {
-              path: "/@root/DISK_C/My Documents/image.png",
-              playlist: [{ path: "/image.png", url: "http://s3.shell.local/image.png" }],
-            },
-            timestamp: Date.now(),
-          },
-          origin: "null",
-          source: cw,
-        })
-      );
-    });
+    expect(wrapper.emitted("shellOpenFile")).toBeUndefined();
 
-    expect(onShellOpenFile).not.toHaveBeenCalled();
-
-    root.unmount();
+    wrapper.unmount();
   });
 
   it("H5: user app never receives systemToken in SHELL_CAPS", async () => {
-    const root = createRoot(container);
     const postMessages: unknown[] = [];
-    root.render(
-      <AppHost
-        windowId="win-fp5-h5"
-        src="/apps/user/?path=%2F%40root%2FDISK_C%2FMy%20Documents%2FMyApp%2F"
-        scale={1}
-        theme="DefaultMock"
-        onTitleUpdate={onTitleUpdate}
-        isExplorer={false}
-        isUserApp={true}
-      />
-    );
-
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 100));
+    const wrapper = mount(AppHost, {
+      props: {
+        windowId: "win-fp5-h5",
+        src: "/apps/user/?path=%2F%40root%2FDISK_C%2FMy%20Documents%2FMyApp%2F",
+        scale: 1,
+        theme: "DefaultMock",
+        isExplorer: false,
+        isUserApp: true,
+      },
+      attachTo: document.body,
     });
 
-    const iframe = container.querySelector("iframe");
-    const cw = (iframe as HTMLIFrameElement)?.contentWindow;
+    await new Promise((r) => setTimeout(r, 100));
+
+    const iframe = wrapper.find("iframe").element as HTMLIFrameElement;
+    const cw = iframe?.contentWindow;
     if (!cw) throw new Error("contentWindow not available");
     cw.postMessage = vi.fn((data: unknown) => postMessages.push(data));
 
-    await act(async () => {
-      window.dispatchEvent(
-        new MessageEvent("message", {
-          data: { type: "APP_READY", timestamp: Date.now() },
-          origin: "null",
-          source: cw,
-        })
-      );
-    });
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { type: "APP_READY", timestamp: Date.now() },
+        origin: "null",
+        source: cw,
+      })
+    );
+    await nextTick();
 
     const caps = postMessages.find((m) => (m as { type?: string })?.type === "SHELL_CAPS");
     expect(caps).toBeDefined();
     const payload = (caps as { payload?: Record<string, unknown> })?.payload;
     expect(payload?.systemToken).toBeUndefined();
 
-    root.unmount();
+    wrapper.unmount();
   });
 
   it("protocol allowlist: user app sends READ_FILE => rejected and logged", async () => {
-    const root = createRoot(container);
-    root.render(
-      <AppHost
-        windowId="win-fp5-proto"
-        src="/apps/user/?path=%2F%40root%2FDISK_C%2FMyApp%2F"
-        scale={1}
-        theme="DefaultMock"
-        onTitleUpdate={onTitleUpdate}
-        isExplorer={false}
-        isUserApp={true}
-      />
-    );
-
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 100));
+    const wrapper = mount(AppHost, {
+      props: {
+        windowId: "win-fp5-proto",
+        src: "/apps/user/?path=%2F%40root%2FDISK_C%2FMyApp%2F",
+        scale: 1,
+        theme: "DefaultMock",
+        isExplorer: false,
+        isUserApp: true,
+      },
+      attachTo: document.body,
     });
 
-    const iframe = container.querySelector("iframe");
-    const cw = (iframe as HTMLIFrameElement)?.contentWindow;
+    await new Promise((r) => setTimeout(r, 100));
+
+    const iframe = wrapper.find("iframe").element as HTMLIFrameElement;
+    const cw = iframe?.contentWindow;
     if (!cw) throw new Error("contentWindow not available");
 
-    await act(async () => {
-      window.dispatchEvent(
-        new MessageEvent("message", {
-          data: { type: "APP_READY", timestamp: Date.now() },
-          origin: "null",
-          source: cw,
-        })
-      );
-    });
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { type: "APP_READY", timestamp: Date.now() },
+        origin: "null",
+        source: cw,
+      })
+    );
+    await nextTick();
 
-    await act(async () => {
-      window.dispatchEvent(
-        new MessageEvent("message", {
-          data: { type: "READ_FILE", payload: { path: "/secret" }, timestamp: Date.now() },
-          origin: "null",
-          source: cw,
-        })
-      );
-    });
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { type: "READ_FILE", payload: { path: "/secret" }, timestamp: Date.now() },
+        origin: "null",
+        source: cw,
+      })
+    );
+    await nextTick();
 
     const rejected = analytics.getBuffer().filter((e) => e.type === "message_rejected");
     expect(
@@ -245,50 +207,45 @@ describe("FP5 Hostile App (H1, H2, H5, protocol, sandbox)", () => {
       )
     ).toBe(true);
 
-    root.unmount();
+    wrapper.unmount();
   });
 
   it("non-allowlist: user app sends UNKNOWN_TYPE => rejected and logged", async () => {
-    const root = createRoot(container);
-    root.render(
-      <AppHost
-        windowId="win-fp5-unknown"
-        src="/apps/user/?path=%2F%40root%2FDISK_C%2FMyApp%2F"
-        scale={1}
-        theme="DefaultMock"
-        onTitleUpdate={onTitleUpdate}
-        isExplorer={false}
-        isUserApp={true}
-      />
-    );
-
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 100));
+    const wrapper = mount(AppHost, {
+      props: {
+        windowId: "win-fp5-unknown",
+        src: "/apps/user/?path=%2F%40root%2FDISK_C%2FMyApp%2F",
+        scale: 1,
+        theme: "DefaultMock",
+        isExplorer: false,
+        isUserApp: true,
+      },
+      attachTo: document.body,
     });
 
-    const iframe = container.querySelector("iframe");
-    const cw = (iframe as HTMLIFrameElement)?.contentWindow;
+    await new Promise((r) => setTimeout(r, 100));
+
+    const iframe = wrapper.find("iframe").element as HTMLIFrameElement;
+    const cw = iframe?.contentWindow;
     if (!cw) throw new Error("contentWindow not available");
 
-    await act(async () => {
-      window.dispatchEvent(
-        new MessageEvent("message", {
-          data: { type: "APP_READY", timestamp: Date.now() },
-          origin: "null",
-          source: cw,
-        })
-      );
-    });
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { type: "APP_READY", timestamp: Date.now() },
+        origin: "null",
+        source: cw,
+      })
+    );
+    await nextTick();
 
-    await act(async () => {
-      window.dispatchEvent(
-        new MessageEvent("message", {
-          data: { type: "UNKNOWN_TYPE", payload: {}, timestamp: Date.now() },
-          origin: "null",
-          source: cw,
-        })
-      );
-    });
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { type: "UNKNOWN_TYPE", payload: {}, timestamp: Date.now() },
+        origin: "null",
+        source: cw,
+      })
+    );
+    await nextTick();
 
     const rejected = analytics.getBuffer().filter((e) => e.type === "message_rejected");
     expect(
@@ -297,29 +254,26 @@ describe("FP5 Hostile App (H1, H2, H5, protocol, sandbox)", () => {
       )
     ).toBe(true);
 
-    root.unmount();
+    wrapper.unmount();
   });
 
   it("sandbox: user app iframe has allow-scripts allow-same-origin (Godot needs sessionStorage)", () => {
-    const root = createRoot(container);
-    act(() => {
-      root.render(
-        <AppHost
-          windowId="win-fp5-sandbox"
-          src="/apps/user/pkg/%2F%40root%2FDISK_C%2FMyApp%2F/"
-          scale={1}
-          theme="DefaultMock"
-          onTitleUpdate={onTitleUpdate}
-          isExplorer={false}
-          isUserApp={true}
-        />
-      );
+    const wrapper = mount(AppHost, {
+      props: {
+        windowId: "win-fp5-sandbox",
+        src: "/apps/user/pkg/%2F%40root%2FDISK_C%2FMyApp%2F/",
+        scale: 1,
+        theme: "DefaultMock",
+        isExplorer: false,
+        isUserApp: true,
+      },
+      attachTo: document.body,
     });
-    const iframe = container.querySelector("iframe") as HTMLIFrameElement;
+    const iframe = wrapper.find("iframe").element as HTMLIFrameElement;
     expect(iframe).toBeTruthy();
     const sandbox = iframe?.getAttribute("sandbox") ?? "";
     expect(sandbox).toContain("allow-scripts");
     expect(sandbox).toContain("allow-same-origin");
-    root.unmount();
+    wrapper.unmount();
   });
 });

@@ -4,11 +4,9 @@
  */
 
 import { describe, it, expect } from "vitest";
-import React from "react";
-import { act } from "react";
-import { createRoot } from "react-dom/client";
+import { mount } from "@vue/test-utils";
 import { getMimeForPath, getHandlerForMime, isAllowedMime } from "../../lib/fp4/handler";
-import { AppHost } from "../../core/AppHost";
+import AppHost from "../../core/AppHost.vue";
 
 function resolveAppIdForPath(
   path: string
@@ -94,32 +92,26 @@ describe("FP4 M3 MIME routing", () => {
     });
 
     it("viewer iframe (image-viewer) has sandbox allow-scripts allow-same-origin", () => {
-      const container = document.createElement("div");
-      document.body.appendChild(container);
-      const root = createRoot(container);
-      act(() => {
-        root.render(
-          <AppHost
-            windowId="win-m3"
-            src="/apps/image-viewer/"
-            scale={1}
-            theme="DefaultMock"
-            onTitleUpdate={() => {}}
-            openFilePayload={{
-              initialPath: "/test.png",
-              initialUrl: "http://s3.shell.local/test.png",
-              playlist: [{ path: "/test.png", url: "http://s3.shell.local/test.png" }],
-            }}
-          />
-        );
+      const wrapper = mount(AppHost, {
+        props: {
+          windowId: "win-m3",
+          src: "/apps/image-viewer/",
+          scale: 1,
+          theme: "DefaultMock",
+          openFilePayload: {
+            initialPath: "/test.png",
+            initialUrl: "http://s3.shell.local/test.png",
+            playlist: [{ path: "/test.png", url: "http://s3.shell.local/test.png" }],
+          },
+        },
+        attachTo: document.body,
       });
-      const iframe = container.querySelector("iframe");
+      const iframe = wrapper.find("iframe").element as HTMLIFrameElement;
       expect(iframe).toBeTruthy();
-      const sandbox = (iframe as HTMLIFrameElement).getAttribute("sandbox");
+      const sandbox = iframe.getAttribute("sandbox");
       expect(sandbox).toContain("allow-scripts");
       expect(sandbox).toContain("allow-same-origin");
-      root.unmount();
-      container.remove();
+      wrapper.unmount();
     });
   });
 });

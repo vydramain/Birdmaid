@@ -3,48 +3,30 @@
  * Fails until --wm-window-min-width-px and --wm-window-min-height-px are set from TS.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { act } from "react";
-import { createRoot } from "react-dom/client";
-import { Shell } from "../../Shell";
+import { describe, it, expect } from "vitest";
+import { mount } from "@vue/test-utils";
+import { nextTick } from "vue";
+import Shell from "../../Shell.vue";
 import "../../index.css";
 
 const EXPECTED_MIN_WIDTH_PX = 640;
 const EXPECTED_MIN_HEIGHT_PX = 400;
 
 describe("REPO M1 SSOT: min-size CSS vars on window", () => {
-  let container: HTMLDivElement;
-
-  beforeEach(() => {
-    container = document.createElement("div");
-    document.body.appendChild(container);
-  });
-
-  afterEach(() => {
-    container.remove();
-  });
-
   it("T-SSOT-CSS-VARS: window element has --wm-window-min-width-px and --wm-window-min-height-px set and match expected", async () => {
-    const root = createRoot(container);
-    root.render(<Shell />);
+    const wrapper = mount(Shell, { attachTo: document.body });
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 50));
-    });
+    await nextTick();
+    await new Promise((r) => setTimeout(r, 50));
 
-    const myComputerBtn = container.querySelector(
-      '[data-testid="desktop-icon-my-computer"]'
-    ) as HTMLElement;
-    expect(myComputerBtn).toBeTruthy();
-    await act(async () => {
-      myComputerBtn.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
-    });
+    const myComputerBtn = wrapper.find('[data-testid="desktop-icon-my-computer"]');
+    expect(myComputerBtn.exists()).toBe(true);
+    await myComputerBtn.trigger("dblclick");
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 50));
-    });
+    await nextTick();
+    await new Promise((r) => setTimeout(r, 50));
 
-    const windowEl = container.querySelector(".wm-window") as HTMLElement;
+    const windowEl = wrapper.find(".wm-window").element as HTMLElement;
     expect(windowEl).toBeTruthy();
 
     const styles = getComputedStyle(windowEl);
@@ -60,6 +42,6 @@ describe("REPO M1 SSOT: min-size CSS vars on window", () => {
     expect(widthVal).toBe(EXPECTED_MIN_WIDTH_PX);
     expect(heightVal).toBe(EXPECTED_MIN_HEIGHT_PX);
 
-    root.unmount();
+    wrapper.unmount();
   });
 });
